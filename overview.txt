@@ -1,0 +1,20 @@
+
+
+main module
+- register, init, and allow interactions between other modules
+- do task scheduling
+
+positioner module
+- set piezo position
+
+heka comm module
+- heka writer
+- heka reader
+
+data processing module
+- get data from heka reader or from saved files
+- create images
+
+GUI
+
+ 
