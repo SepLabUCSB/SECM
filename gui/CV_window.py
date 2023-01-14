@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk
+from tkinter.ttk import *
 import numpy as np
 from functools import partial
 
@@ -85,8 +85,6 @@ def make_CV_window(gui, master_frame):
     
     Button(frame, text='Run CV', command=
            partial(run, gui.run_CV)).grid(column=2, row=8)
-    Button(frame, text='printout', command=
-           partial(run, gui.printout)).grid(column=2, row=9)
     
     fig, ax = plt.subplots(figsize=(3,2), dpi=50)
     canvas = FigureCanvasTkAgg(fig, master=figframe)

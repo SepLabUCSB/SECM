@@ -143,8 +143,11 @@ class HekaWriter:
     
     
     def macro(self, cmd):
-        self.send_command(f'Set {cmd}')
-     
+        if not self.isRunning():
+            self.running()
+            self.send_command(f'Set {cmd}')
+            self.idle()
+            
     
     def save_last_experiment(self):
         # Select last <Series>
@@ -175,23 +178,15 @@ class HekaWriter:
         values, duration = generate_CV_params(E0, E1, E2, E3, 
                                               scan_rate, quiet_time)
         
-        # TODO: store state of amplifier. Don't need to reset settings every time
-        print('CV setup')
-        cmds = [
-            # Amplifier settings
-            'E  VHold    0',
-            'E  Filter1       2',
-            'E  StimFilter    0',
-            'E  TestDacToStim1  0',
-            'E  F2Response    0',
-            'E  Filter2    0',
-            'E  ElectrMode   1',
-            'E  StimFilter 1',
-            ]
-        self.running()
-        for cmd in cmds:
-            self.macro(f'{cmd}')
         
+        print('CV setup')
+        
+        # Get and set amplifier params from GUI module
+        self.master.GUI.set_amplifier()
+        
+        self.running()
+        
+        # Set CV parameters
         self.update_Values(values)
         self.send_command('SelectSequence _reset')
         self.send_command('SelectSequence _CV')
@@ -270,13 +265,13 @@ if __name__ == '__main__':
     
     
     # timeout = 5
-    master_thread = threading.Thread(target=master.run)
-    writer_thread = threading.Thread(target=writer.run_CV_loop)
-    reader_thread = threading.Thread(target=reader.read_stream)
+    # master_thread = threading.Thread(target=master.run)
+    # writer_thread = threading.Thread(target=writer.run_CV_loop)
+    # reader_thread = threading.Thread(target=reader.read_stream)
     
-    master_thread.start()
-    writer_thread.start()
-    reader_thread.start()
+    # master_thread.start()
+    # writer_thread.start()
+    # reader_thread.start()
     
     # master_thread.join()
     # writer_thread.join()

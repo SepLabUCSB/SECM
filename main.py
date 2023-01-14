@@ -10,6 +10,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from heka_io import master, HekaReader, HekaWriter
 # from gui import *
 from gui.CV_window import make_CV_window
+from gui.amp_window import make_amp_window, convert_to_index
 from utils.utils import run
 
     
@@ -38,6 +39,8 @@ class GUI():
     
     def __init__(self, root, master):
         self.master = master
+        self.master.register(self)
+        self.willStop = False
         self.root = root
         
         masterthread = run(self.master.run)
@@ -90,11 +93,31 @@ class GUI():
         
         
         self.cv_params = make_CV_window(self, cv_control) 
+        self.amp_param_fields = make_amp_window(self, amplifier_control)
+        self.amp_params = {}
+        ### UNCOMMENT ME FOR FINAL CONFIG. START FROM KNOWN AMP. STATE ###
+        # self.set_amplifier()
+        ######################
+        
         
         # readerthread = run(self.master.HekaReader.test_read)
         # writerthread = run(self.master.HekaWriter.test_write)
+    
+    
+    def set_amplifier(self):
+        new_params = convert_to_index(self.amp_param_fields)
+        cmds = []
+        for key, val in new_params.items():
+            if val != self.amp_params.get(key, None):
+                cmds.append(f'{key} {val}')
         
+        for cmd in cmds:
+            self.master.HekaWriter.macro(cmd)
         
+        self.amp_params = new_params
+        return
+        
+    
     def run_CV(self):
         #unpack params
         cv_params = self.cv_params.copy()
@@ -111,12 +134,9 @@ class GUI():
             print('invalid CV inputs')
         self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
         self.master.HekaWriter.run_CV_loop()
-    
-    def printout(self):
-        print(self.master.modules)
-        time.sleep(3)
-        print(self.master.modules)
         return
+    
+    
             
                                                         
         
@@ -138,5 +158,5 @@ if __name__ == '__main__':
     gui = GUI(root, master)
     
     root.mainloop()
-    gui.master.willStop = True
+    gui.willStop = True
     

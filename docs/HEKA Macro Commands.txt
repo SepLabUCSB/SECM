@@ -1,0 +1,1213 @@
+;    MENU items:
+  @  File          "New..."
+  @  File          "Open Read Only..."
+  @  File          "Open Modify..."
+  @  File          "Merge..."
+  @  File          "Update File"
+  @  File          "Close"
+  @  File          "File Status"
+  @  File          "New Group"
+  @  File          "New Experiment"
+  @  File          "Convert To PPC Format"
+  @  File          "Convert To Intel Format"
+  @  File          "Page Setup..."
+  @  File          "Page Properties Notebook..."
+  @  File          "Page Properties Traces..."
+  @  File          "Quit"
+
+  @  WriteTrees    "After Update File"
+  @  WriteTrees    "After Series"
+  @  WriteTrees    "After Sweeps"
+
+  @  Edit          "Undo"
+  @  Edit          "Cut"
+  @  Edit          "Copy"
+  @  Edit          "Paste"
+  @  Edit          "Clear"
+  @  Edit          "Select All"
+  @  Edit          "Find..."
+  @  Edit          "Find Same"
+  @  Edit          "Find Selection..."
+  @  Edit          "Replace..."
+  @  Edit          "Replace Same"
+
+  @  Windows       "Control Window"
+  @  Windows       "Configuration"
+  @  Windows       "Oscilloscope"
+  @  Windows       "Amplifier"
+  @  Windows       "Replay"
+  @  Windows       "Protocol Editor"
+  @  Windows       "Pulse Generator"
+  @  Windows       "Analysis"
+  @  Windows       "Analysis Window 1"
+  @  Windows       "Analysis Window 2"
+  @  Windows       "Parameters"
+  @  Windows       "I/O Control"
+  @  Windows       "Photometry/Imaging"
+  @  Windows       "LockIn"
+  @  Windows       "Spectroscopy"
+  @  Windows       "Solution Base"
+  @  Windows       "Solution Changer"
+  @  Windows       "Markers"
+  @  Windows       "Protocol Methods"
+  @  Windows       "Calculator"
+  @  Windows       "Notebook"
+  @  Windows       "Close Front Window"
+  @  Windows       "Save Front Dialog"
+  @  Windows       "Reset Front Window Position"
+  @  Windows       "Enable Icon Configuration"
+
+  @  Replay        "Show"
+  @  Replay        "Show PGF-Template"
+  @  Replay        "Copy PGF to PGF-Pool"
+  @  Replay        "Show Protocol Method"
+  @  Replay        "Delete"
+  @  Replay        "Print"
+  @  Replay        "Export"
+  @  Replay        "Export Full Sweep"
+  @  Replay        "With Marked Target and Children"
+  @  Replay        "Show Target"
+  @  Replay        "Print Target"
+  @  Replay        "Export Target"
+  @  Replay        "Export Full Target"
+  @  Replay        "Recompute Zero Offset"
+  @  Replay        "Average Sweep"
+  @  Replay        "Average Series"
+  @  Replay        "Duplicate Target"
+  @  Replay        "Compress Target"
+  @  Replay        "Collapse Target"
+  @  Replay        "Delete Target"
+
+  @  RefSeries     "Set"
+  @  RefSeries     "Off"
+
+  @  ExportTarget  "ASCII"
+  @  ExportTarget  "Igor Pro"
+  @  ExportTarget  "MatLab"
+  @  ExportTarget  "WMF"
+  @  ExportTarget  "Printer"
+  @  ExportTarget  "Trace Time relative to Sweep"
+  @  ExportTarget  "Trace Time relative to Series"
+  @  ExportTarget  "Trace Time relative to Timer"
+  @  ExportTarget  "Relative Trace Time"
+  @  ExportTarget  "Igor - Allow Raw Data Access"
+  @  ExportTarget  "Igor - Create Binary Wave"
+  @  ExportTarget  "Igor - Create Text Wave"
+  @  ExportTarget  "Igor - Make Graphs"
+  @  ExportTarget  "Igor - Make Layouts"
+  @  ExportTarget  "Igor - One Graph per Full Sweep"
+
+  @  ExportMode    "Traces"
+  @  ExportMode    "Stimulus"
+  @  ExportMode    "Analysis - Graphs"
+  @  ExportMode    "Analysis - Notebook"
+
+  @  ASCIIForm     "Space separator"
+  @  ASCIIForm     "Comma separator"
+  @  ASCIIForm     "TAB separator"
+  @  ASCIIForm     "Include headers"
+
+  @  Import        "from ASCII file"
+  @  Import        "from Binary file"
+  @  Import        "from Igor Wave"
+
+  @  Export        "as ASCII file"
+  @  Export        "as Binary file"
+  @  Export        "as Igor Wave"
+  @  Export        "as Stimulus Template file"
+
+  @  Display       "Auto Show"
+  @  Display       "Trace Properties"
+  @  Display       "Show Leak Traces"
+  @  Display       "Show Zero Line"
+  @  Display       "Subtract Leak Traces"
+  @  Display       "Subtract Zero Offset"
+  @  Display       "Subtract Ref. Series"
+  @  Display       "Subtract Trace Buffers"
+  @  Display       "Dimmed Overlay"
+  @  Display       "Overlay Pages"
+  @  Display       "Overlay Traces"
+  @  Display       "Overlay Sweeps"
+  @  Display       "Overlay Series"
+  @  Display       "Auto Y-scale"
+  @  Display       "Fixed Y-scale"
+  @  Display       "Fixed X-width"
+  @  Display       "Freeze Zero Line"
+  @  Display       "Show Tree Info"
+
+  @  Labeling      "Oscilloscope"
+  @  Labeling      "Labels Only"
+  @  Labeling      "Grid + Labels"
+  @  Labeling      "Grid + Values"
+  @  Labeling      "No Labels"
+  @  Labeling      "PGF-Editor Cartoon"
+  @  Labeling      "Labels Only [Pgf]"
+  @  Labeling      "Grid + Labels [Pgf]"
+  @  Labeling      "Grid + Values [Pgf]"
+  @  Labeling      "No Labels [Pgf]"
+
+  @  GrafMode      "3D Graph - On"
+  @  GrafMode      "3D Graph - Color"
+
+  @  Buffer        "Buffer 1"
+  @  Buffer        "Buffer 2"
+  @  Buffer        "Buffer 3"
+  @  Buffer        "Buffer 4"
+  @  Buffer        "Use Full Trace"
+  @  Buffer        "Clear All"
+  @  Buffer        "Clear"
+  @  Buffer        "Show"
+  @  Buffer        "Scale"
+  @  Buffer        "Equation"
+  @  Buffer        "Add Trace"
+  @  Buffer        "Subtract Trace"
+  @  Buffer        "Accumulate Trace"
+  @  Buffer        "Deaccumulate Trace"
+  @  Buffer        "With Marked Target and Children"
+  @  Buffer        "Add"
+  @  Buffer        "Subtract"
+  @  Buffer        "Accumulate"
+  @  Buffer        "Deaccumulate"
+  @  Buffer        "Replace Target Trace"
+
+  @  ImportBuffer  "Add ASCII file"
+  @  ImportBuffer  "Add Binary file"
+  @  ImportBuffer  "Add Igor Wave"
+
+  @  ExportBuffer  "as ASCII file"
+  @  ExportBuffer  "as Binary file"
+  @  ExportBuffer  "as Igor Wave"
+  @  ExportBuffer  "as Stimulus Template file"
+
+  @  TraceSource   "Trace 1"
+  @  TraceSource   "Trace 2"
+  @  TraceSource   "Trace 3"
+  @  TraceSource   "Trace 4"
+  @  TraceSource   "Trace 5"
+  @  TraceSource   "Trace 6"
+  @  TraceSource   "Trace 7"
+  @  TraceSource   "Trace 8"
+  @  TraceSource   "Trace 9"
+  @  TraceSource   "Trace 10"
+  @  TraceSource   "Trace 11"
+  @  TraceSource   "Trace 12"
+  @  TraceSource   "Trace 13"
+  @  TraceSource   "Trace 14"
+  @  TraceSource   "Trace 15"
+  @  TraceSource   "Trace 16"
+
+  @  Notebook      "Save"
+  @  Notebook      "Save As..."
+  @  Notebook      "Merge..."
+  @  Notebook      "Print..."
+  @  Notebook      "Clear when Saved"
+  @  Notebook      "Clear"
+  @  Notebook      "Set Length..."
+  @  Notebook      "Line Numbers"
+  @  Notebook      "Font Size..."
+  @  Notebook      "Zoom In"
+  @  Notebook      "Zoom Out"
+  @  Notebook      "Scientific Notation"
+  @  Notebook      "Auto Store"
+
+  @  Protocols     "Append Macros File"
+  @  Protocols     "Execute while Recording"
+  @  Protocols     "Execute Protocol 1"
+  @  Protocols     "Execute Protocol 2"
+  @  Protocols     "Execute Protocol 3"
+  @  Protocols     "Execute Protocol 4"
+  @  Protocols     "Execute Protocol 5"
+  @  Protocols     "Execute Protocol 6"
+  @  Protocols     "Execute Protocol 7"
+  @  Protocols     "Execute Protocol 8"
+  @  Protocols     "Execute Protocol 9"
+  @  Protocols     "Execute Protocol 10"
+  @  Protocols     "Execute Protocol 11"
+  @  Protocols     "Execute Protocol 12"
+  @  Protocols     "Execute Protocol 13"
+  @  Protocols     "Execute Protocol 14"
+  @  Protocols     "Execute Protocol 15"
+  @  Protocols     "Execute Protocol 16"
+  @  Protocols     "Execute Protocol 17"
+  @  Protocols     "Execute Protocol 18"
+  @  Protocols     "Execute Protocol 19"
+  @  Protocols     "Execute Protocol 20"
+  @  Protocols     "Execute Protocol 21"
+  @  Protocols     "Execute Protocol 22"
+  @  Protocols     "Execute Protocol 23"
+  @  Protocols     "Execute Protocol 24"
+  @  Protocols     "Execute Protocol 25"
+  @  Protocols     "Execute Protocol 26"
+  @  Protocols     "Execute Protocol 27"
+  @  Protocols     "Execute Protocol 28"
+
+  @  AmplMenu      "Enable Background"
+  @  AmplMenu      "Extended C-fast Range"
+  @  AmplMenu      "Extended Stimulus Range"
+  @  AmplMenu      "Log Tracking"
+  @  AmplMenu      "Auto C-slow Settings"
+  @  AmplMenu      "Auto Rs-Comp Settings"
+  @  AmplMenu      "Timeout Settings"
+  @  AmplMenu      "Monitor Refresh Interval"
+  @  AmplMenu      "Search Mode Delay"
+  @  AmplMenu      "Minimum Test Pulse Interval"
+  @  AmplMenu      "Initialize"
+  @  AmplMenu      "Join two Units"
+  @  AmplMenu      "Split joined Units"
+  @  AmplMenu      "Info"
+
+  @  CFastMode     "Use Lookup Table"
+  @  CFastMode     "Computed"
+
+  @  Calibrate     "Calibrate"
+  @  Calibrate     "Full Test"
+  @  Calibrate     "External Gain Calibration"
+  @  Calibrate     "External Zero Calibration"
+  @  Calibrate     "Scale from/to EEPROM"
+  @  Calibrate     "Scale from/to Disk"
+  @  Calibrate     "Save Protocol"
+  @  Calibrate     "Print Protocol File"
+
+  @  Help          "Show Tooltips"
+  @  Help          "Show Keys"
+  @  Help          "Hide Keys"
+  @  Help          "List Keys"
+  @  Help          "Save Keys"
+  @  Help          "List All Items"
+  @  Help          "List All Macro Items"
+  @  Help          "About"
+
+;    DIALOG macro items:
+;    DIALOG: "T" = "TrProperties"
+  T  Done
+  T  Repaint
+  T  ExtendShow
+  T  ExtendVector
+  T  ExtendMarker
+  T  ExtendCenter
+  T  ExtendRefCorr
+  T  ExtendTBuffer
+  T  Show1         boolean
+  T  Show2         boolean
+  T  Show3         boolean
+  T  Show4         boolean
+  T  Show5         boolean
+  T  Show6         boolean
+  T  Show7         boolean
+  T  Show8         boolean
+  T  Show9         boolean
+  T  Show10        boolean
+  T  Show11        boolean
+  T  Show12        boolean
+  T  Show13        boolean
+  T  Show14        boolean
+  T  Show15        boolean
+  T  Show16        boolean
+  T  Show33        boolean
+  T  Show34        boolean
+  T  Show35        boolean
+  T  Show36        boolean
+  T  Vector1       boolean
+  T  Vector2       boolean
+  T  Vector3       boolean
+  T  Vector4       boolean
+  T  Vector5       boolean
+  T  Vector6       boolean
+  T  Vector7       boolean
+  T  Vector8       boolean
+  T  Vector9       boolean
+  T  Vector10      boolean
+  T  Vector11      boolean
+  T  Vector12      boolean
+  T  Vector13      boolean
+  T  Vector14      boolean
+  T  Vector15      boolean
+  T  Vector16      boolean
+  T  Vector33      boolean
+  T  Vector34      boolean
+  T  Vector35      boolean
+  T  Vector36      boolean
+  T  Marker1       list index
+  T  Marker2       list index
+  T  Marker3       list index
+  T  Marker4       list index
+  T  Marker5       list index
+  T  Marker6       list index
+  T  Marker7       list index
+  T  Marker8       list index
+  T  Marker9       list index
+  T  Marker10      list index
+  T  Marker11      list index
+  T  Marker12      list index
+  T  Marker13      list index
+  T  Marker14      list index
+  T  Marker15      list index
+  T  Marker16      list index
+  T  Marker33      list index
+  T  Marker34      list index
+  T  Marker35      list index
+  T  Marker36      list index
+  T  RefCorr1      boolean
+  T  RefCorr2      boolean
+  T  RefCorr3      boolean
+  T  RefCorr4      boolean
+  T  RefCorr5      boolean
+  T  RefCorr6      boolean
+  T  RefCorr7      boolean
+  T  RefCorr8      boolean
+  T  RefCorr9      boolean
+  T  RefCorr10     boolean
+  T  RefCorr11     boolean
+  T  RefCorr12     boolean
+  T  RefCorr13     boolean
+  T  RefCorr14     boolean
+  T  RefCorr15     boolean
+  T  RefCorr16     boolean
+  T  Center1       boolean
+  T  Center2       boolean
+  T  Center3       boolean
+  T  Center4       boolean
+  T  Center5       boolean
+  T  Center6       boolean
+  T  Center7       boolean
+  T  Center8       boolean
+  T  Center9       boolean
+  T  Center10      boolean
+  T  Center11      boolean
+  T  Center12      boolean
+  T  Center13      boolean
+  T  Center14      boolean
+  T  Center15      boolean
+  T  Center16      boolean
+  T  TBuffer1      list index
+  T  TBuffer2      list index
+  T  TBuffer3      list index
+  T  TBuffer4      list index
+  T  TBuffer5      list index
+  T  TBuffer6      list index
+  T  TBuffer7      list index
+  T  TBuffer8      list index
+  T  TBuffer9      list index
+  T  TBuffer10     list index
+  T  TBuffer11     list index
+  T  TBuffer12     list index
+  T  TBuffer13     list index
+  T  TBuffer14     list index
+  T  TBuffer15     list index
+  T  TBuffer16     list index
+  T  TBufScale1    list index
+  T  TBufScale2    list index
+  T  TBufScale3    list index
+  T  TBufScale4    list index
+  T  WindowSwitch  list index
+
+;    DIALOG: "J" = "Calculator"
+  J  ParserString  string
+  J  Select        list index
+  J  EquationName  string
+  J  SaveEquation
+  J  Load
+  J  Save
+  J  Help
+  J  WindowSwitch  list index
+
+;    DIALOG: "Q" = "AcquisitionMethods"
+
+;    DIALOG: "K" = "Markers"
+  K  NewMarker
+  K  NewTrace      list index
+  K  NewGetTime
+  K  NewTime       string
+  K  NewText       string
+  K  NextMarker
+  K  PrevMarker
+  K  OldTrace      list index
+  K  OldText       string
+  K  DeleteMarker
+  K  SweepToMarker
+  K  MarkerToSweep
+  K  ListMarkers
+  K  WindowSwitch  list index
+
+;    DIALOG: "B" = "Protocol"
+  B  ProtIndex     integer
+  B  Pr1           boolean
+  B  Pr2           boolean
+  B  Pr3           boolean
+  B  Pr4           boolean
+  B  Pr5           boolean
+  B  Pr6           boolean
+  B  ProtBegin
+  B  ProtPageLeft
+  B  ProtPageRight
+  B  ProtEnd
+  B  WriteEvents   boolean
+  B  Load
+  B  Merge
+  B  Name          string
+  B  Relative      boolean
+  B  ToggleRelative  boolean
+  B  WindowSwitch  list index
+
+;    DIALOG: "N" = "Control"
+  N  Stop          boolean
+  N  Break         boolean
+  N  Store         boolean
+  N  Next          boolean
+  N  Wait          boolean
+  N  Resume        boolean
+  N  TimerSet
+  N  Comment       string
+  N  PGFIndex      integer
+  N  PG1           boolean
+  N  PG2           boolean
+  N  PG3           boolean
+  N  PG4           boolean
+  N  PG5           boolean
+  N  PG6           boolean
+  N  PGFBegin
+  N  PGFPageLeft
+  N  PGFPageRight
+  N  PGFEnd
+  N  ProtIndex     integer
+  N  Pr1           boolean
+  N  Pr2           boolean
+  N  Pr3           boolean
+  N  Pr4           boolean
+  N  Pr5           boolean
+  N  Pr6           boolean
+  N  ProtBegin
+  N  ProtPageLeft
+  N  ProtPageRight
+  N  ProtEnd
+  N  WindowSwitch  list index
+
+;    DIALOG: "E" = "Amplifier"
+  E  Monitor       boolean
+  E  Tune          boolean
+  E  ShowAll       boolean
+  E  Ampl1         boolean
+  E  Ampl2         boolean
+  E  TestDacToStim1  list index + 2. integer
+  E  TestDacToStim2  list index + 2. integer
+  E  RsMode        list index
+  E  RsOff
+  E  RsPrediction  real
+  E  RsPredictOn   boolean
+  E  AutoGLeak
+  E  TrackGLeak    boolean
+  E  GLeak         real
+  E  VmonX100      list index
+  E  Filter1       list index
+  E  StimFilter    list index
+  E  ExtScale      real
+  E  Gain          list index
+  E  IHold         real
+  E  VHold         real
+  E  Mode          list index
+  E  TestAdc       list index
+  E  PulseMode     list index
+  E  PulseTrace    list index
+  E  PulseOff      boolean
+  E  PulseOn       boolean
+  E  NoiseOn       boolean
+  E  PulseAmp      real
+  E  PulseDur      real
+  E  Ljunc         real
+  E  AutoZero
+  E  SearchMode    boolean
+  E  Vzero         real
+  E  AutoCFast
+  E  CFastTau      real
+  E  CFastTot      real
+  E  AutoCSlow
+  E  CSlowRange    list index
+  E  RSeries       real
+  E  CSlow         real
+  E  AutoRsComp
+  E  RsComp        real
+  E  F2Response    list index
+  E  Filter2       real
+  E  Zap
+  E  ZapDur        real
+  E  ZapAmpl       real
+  E  VmembToLFVCVmemb
+  E  VmonToLFVCVmemb
+  E  LFVCVmemb     real
+  E  LFVCVmembTau  list index
+  E  SaveRpip
+  E  GentleSwitch  list index
+  E  ElectrMode    list index
+  E  Reset
+  E  ListState
+  E  CCGain        list index
+  E  LastVHold
+  E  TestOverlay   boolean
+  E  SoundHz       real
+  E  SoundVol      real
+  E  SoundOn       boolean
+  E  IScale        real
+  E  IOffset       real
+  E  VScale        real
+  E  VOffset       real
+  E  IScaleInc     real
+  E  IScaleDec     real
+  E  IOffsetInc    real
+  E  IOffsetDec    real
+  E  VScaleInc     real
+  E  VScaleDec     real
+  E  VOffsetInc    real
+  E  VOffsetDec    real
+  E  GainInc       real
+  E  GainDec       real
+  E  HoldInc1      real
+  E  HoldDec1      real
+  E  HoldInc2      real
+  E  HoldDec2      real
+  E  OnePulse
+  E  WindowSwitch  list index
+
+;    DIALOG: "P" = "PgfEditor"
+
+;    DIALOG: "A" = "Analysis"
+  A  GraphWin1     set16
+  A  GraphWin2     set16
+  A  OA1           boolean
+  A  OA2           boolean
+  A  OA3           boolean
+  A  OA4           boolean
+  A  OABegin
+  A  OAPageLeft
+  A  OAPageRight
+  A  OAEnd
+  A  Assign
+  A  Duplicate
+  A  CopyToPool
+  A  Load
+  A  Save
+  A  Merge
+  A  Delete
+  A  New
+  A  Copy
+  A  Move
+  A  Name          string
+  A  OnlineControl  list index
+  A  WindowSwitch  list index
+  A  GraphBegin
+  A  GraphPageLeft
+  A  GraphPageRight
+  A  GraphEnd
+  A  Gr1           boolean
+  A  Gr2           boolean
+  A  Gr3           boolean
+  A  Gr1Active     list index
+  A  Gr2Active     list index
+  A  Gr3Active     list index
+  A  GrCopy
+  A  GrSave
+  A  Print
+  A  Ana1          boolean
+  A  Ana2          boolean
+  A  Ana3          boolean
+  A  Ana4          boolean
+  A  FuncBegin
+  A  FuncPageLeft
+  A  FuncPageRight
+  A  FuncEnd
+  A  NewFunction
+  A  CopyFunction
+  A  DelFunction
+  A  MoveFunction
+  A  ListFunction
+  A  ChangeFuncKind
+  A  Cursor
+  A  LBound        real
+  A  RBound        real
+  A  YTrace        list index
+  A  XOffs         integer
+  A  YOffs         integer
+  A  Constant      real
+  A  LeftOp        integer
+  A  RightOp       integer
+  A  SourceVal     list index
+  A  TargetVal     list index
+  A  DoFit         boolean
+  A  Notebook      boolean
+  A  CursorAnker   list index
+  A  Baseline      list index
+  A  SearchDir     list index
+  A  AvgPoints     integer
+  A  XTraceAmpl    list index
+  A  XTraceScale   list index
+  A  ParseEdit
+  A  ParseText     string
+  A  FName         string
+  A  XMin          real
+  A  XMax          real
+  A  XScale        list index
+  A  YScale        list index
+  A  ScMore
+  A  Overlay       boolean
+  A  OvrlSwp       boolean
+  A  SharedX       boolean
+  A  Wrap          list index
+  A  ENr1          boolean
+  A  ENr2          boolean
+  A  ENr3          boolean
+  A  ENr4          boolean
+  A  EnX0          list index
+  A  EnX1          list index
+  A  EnX2          list index
+  A  EnX3          list index
+  A  EnY0          list index
+  A  EnY1          list index
+  A  EnY2          list index
+  A  EnY3          list index
+  A  EMore0
+  A  EMore1
+  A  EMore2
+  A  EMore3
+
+;    DIALOG: "U" = "Analysis1"
+  U  WindowSwitch  list index
+
+;    DIALOG: "V" = "Analysis2"
+  V  WindowSwitch  list index
+
+;    DIALOG: "I" = "IOControl"
+  I  DigClear
+  I  DigBitsOUT    set16
+  I  DigWordOUT    integer
+  I  DigMode       boolean
+  I  Dac0          real
+  I  Dac1          real
+  I  Dac2          real
+  I  Dac3          real
+  I  Value1        real
+  I  Value2        real
+  I  Value3        real
+  I  Value4        real
+  I  IntSolList    list index
+  I  ExtSolList    list index
+  I  IntSol        integer
+  I  ExtSol        integer
+  I  RMSNoise      real
+  I  WindowSwitch  list index
+
+;    DIALOG: "D" = "Parameters"
+  D  EditIntSol
+  D  Collaps       boolean
+  D  Flag1         boolean
+  D  Flag2         boolean
+  D  Flag3         boolean
+  D  Flag4         boolean
+  D  InfoBlock     list index
+  D  EditExtSol
+  D  CopyFlag1
+  D  CopyFlag2
+  D  CopyFlag3
+  D  CopyFlag4
+  D  TargetToBook
+  D  MarkedToBook
+  D  TargetToFile
+  D  MarkedToFile
+  D  DefaultFlags
+  D  ClearAllFlags
+  D  RootDateH     boolean
+  D  RootDateLF    boolean
+  D  RootEntriesH  boolean
+  D  RootEntriesLF  boolean
+  D  RootProgramVersionH  boolean
+  D  RootProgramVersionLF  boolean
+  D  RootText      real
+  D  RootTextH     boolean
+  D  RootTextLF    boolean
+  D  GrpHeaderH    boolean
+  D  GrpHeaderLF   boolean
+  D  GrpLabelH     boolean
+  D  GrpLabelLF    boolean
+  D  GrpCountH     boolean
+  D  GrpCountLF    boolean
+  D  GrpEntriesH   boolean
+  D  GrpEntriesLF  boolean
+  D  GrpExpNumberH  boolean
+  D  GrpExpNumberLF  boolean
+  D  GrpText       real
+  D  GrpTextH      boolean
+  D  GrpTextLF     boolean
+  D  SerHeaderH    boolean
+  D  SerHeaderLF   boolean
+  D  SerLabelH     boolean
+  D  SerLabelLF    boolean
+  D  SerCountH     boolean
+  D  SerCountLF    boolean
+  D  SerEntriesH   boolean
+  D  SerEntriesLF  boolean
+  D  SerNumberSweepsH  boolean
+  D  SerNumberSweepsLF  boolean
+  D  SerUserNameH  boolean
+  D  SerUserNameLF  boolean
+  D  SerDateH      boolean
+  D  SerDateLF     boolean
+  D  SerTimeH      boolean
+  D  SerTimeLF     boolean
+  D  SerTimerH     boolean
+  D  SerTimerLF    boolean
+  D  SerAux1H      boolean
+  D  SerAux1LF     boolean
+  D  SerAux2H      boolean
+  D  SerAux2LF     boolean
+  D  SerAux3H      boolean
+  D  SerAux3LF     boolean
+  D  SerAux4H      boolean
+  D  SerAux4LF     boolean
+  D  SerAux5H      boolean
+  D  SerAux5LF     boolean
+  D  SerComment    real
+  D  SerCommentH   boolean
+  D  SerCommentLF  boolean
+  D  SerMethodH    boolean
+  D  SerMethodLF   boolean
+  D  SerAux6H      boolean
+  D  SerAux6LF     boolean
+  D  SwpHeaderH    boolean
+  D  SwpHeaderLF   boolean
+  D  SwpLabelH     boolean
+  D  SwpLabelLF    boolean
+  D  SwpCountH     boolean
+  D  SwpCountLF    boolean
+  D  SwpEntriesH   boolean
+  D  SwpEntriesLF  boolean
+  D  SwpStimCountH  boolean
+  D  SwpStimCountLF  boolean
+  D  SwpTimeH      boolean
+  D  SwpTimeLF     boolean
+  D  SwpTimerH     boolean
+  D  SwpTimerLF    boolean
+  D  SwpTemperatureH  boolean
+  D  SwpTemperatureLF  boolean
+  D  SwpPipettePressureH  boolean
+  D  SwpPipettePressureLF  boolean
+  D  SwpRMSNoiseH  boolean
+  D  SwpRMSNoiseLF  boolean
+  D  SwpUser1H     boolean
+  D  SwpUser1LF    boolean
+  D  SwpUser2H     boolean
+  D  SwpUser2LF    boolean
+  D  SwpUser3H     boolean
+  D  SwpUser3LF    boolean
+  D  SwpUser4H     boolean
+  D  SwpUser4LF    boolean
+  D  SwpUser5H     boolean
+  D  SwpUser5LF    boolean
+  D  SwpUser6H     boolean
+  D  SwpUser6LF    boolean
+  D  SwpUser7H     boolean
+  D  SwpUser7LF    boolean
+  D  SwpUser8H     boolean
+  D  SwpUser8LF    boolean
+  D  SwpUser9H     boolean
+  D  SwpUser9LF    boolean
+  D  SwpUser10H    boolean
+  D  SwpUser10LF   boolean
+  D  SwpDigitalOutH  boolean
+  D  SwpDigitalOutLF  boolean
+  D  SwpDigitalInH  boolean
+  D  SwpDigitalInLF  boolean
+  D  TraHeaderH    boolean
+  D  TraHeaderLF   boolean
+  D  TraLabelH     boolean
+  D  TraLabelLF    boolean
+  D  TraCountH     boolean
+  D  TraCountLF    boolean
+  D  TraDataPointsH  boolean
+  D  TraDataPointsLF  boolean
+  D  TraAverageCountH  boolean
+  D  TraAverageCountLF  boolean
+  D  TraLeakCountH  boolean
+  D  TraLeakCountLF  boolean
+  D  TraLeakTracesH  boolean
+  D  TraLeakTracesLF  boolean
+  D  TraDataKindH  boolean
+  D  TraDataKindLF  boolean
+  D  TraRecordingModeH  boolean
+  D  TraRecordingModeLF  boolean
+  D  TraAmplifierH  boolean
+  D  TraAmplifierLF  boolean
+  D  TraDataFormatH  boolean
+  D  TraDataFormatLF  boolean
+  D  TraDataFactorH  boolean
+  D  TraDataFactorLF  boolean
+  D  TraTimeOffsetH  boolean
+  D  TraTimeOffsetLF  boolean
+  D  TraZeroOffsetH  boolean
+  D  TraZeroOffsetLF  boolean
+  D  TraYunitH     boolean
+  D  TraYunitLF    boolean
+  D  TraXunitH     boolean
+  D  TraXunitLF    boolean
+  D  TraXintervalH  boolean
+  D  TraXintervalLF  boolean
+  D  TraXstartH    boolean
+  D  TraXstartLF   boolean
+  D  TraYrangeH    boolean
+  D  TraYrangeLF   boolean
+  D  TraYOffsetH   boolean
+  D  TraYOffsetLF  boolean
+  D  TraYminH      boolean
+  D  TraYminLF     boolean
+  D  TraYmaxH      boolean
+  D  TraYmaxLF     boolean
+  D  TraBandwidthH  boolean
+  D  TraBandwidthLF  boolean
+  D  TraPipResistanceH  boolean
+  D  TraPipResistanceLF  boolean
+  D  TraCellPotentialH  boolean
+  D  TraCellPotentialLF  boolean
+  D  TraSealResistanceH  boolean
+  D  TraSealResistanceLF  boolean
+  D  TraCslowH     boolean
+  D  TraCslowLF    boolean
+  D  TraRseriesH   boolean
+  D  TraRseriesLF  boolean
+  D  TraRsvalueH   boolean
+  D  TraRsvalueLF  boolean
+  D  TraLeakCompH  boolean
+  D  TraLeakCompLF  boolean
+  D  TraMconductanceH  boolean
+  D  TraMconductanceLF  boolean
+  D  TraADChannelH  boolean
+  D  TraADChannelLF  boolean
+  D  TraInternalSolutionH  boolean
+  D  TraInternalSolutionLF  boolean
+  D  TraIntSolValueH  boolean
+  D  TraIntSolValueLF  boolean
+  D  TraExternalSolutionH  boolean
+  D  TraExternalSolutionLF  boolean
+  D  TraExtSolValueH  boolean
+  D  TraExtSolValueLF  boolean
+  D  TraDAChannelH  boolean
+  D  TraDAChannelLF  boolean
+  D  TraFileOffsetH  boolean
+  D  TraFileOffsetLF  boolean
+  D  TraHoldingH   boolean
+  D  TraHoldingLF  boolean
+  D  AmplAmplifierH  boolean
+  D  AmplAmplifierLF  boolean
+  D  AmplClampModeH  boolean
+  D  AmplClampModeLF  boolean
+  D  AmplVpipetteH  boolean
+  D  AmplVpipetteLF  boolean
+  D  AmplGainH     boolean
+  D  AmplGainLF    boolean
+  D  AmplExtStimulationH  boolean
+  D  AmplExtStimulationLF  boolean
+  D  AmplLockInPhaseH  boolean
+  D  AmplLockInPhaseLF  boolean
+  D  AmplFilter1H  boolean
+  D  AmplFilter1LF  boolean
+  D  AmplFilter2H  boolean
+  D  AmplFilter2LF  boolean
+  D  AmplFilter2TypeH  boolean
+  D  AmplFilter2TypeLF  boolean
+  D  AmplStimulusFilterH  boolean
+  D  AmplStimulusFilterLF  boolean
+  D  AmplCfastH    boolean
+  D  AmplCfastLF   boolean
+  D  AmplCfastTauH  boolean
+  D  AmplCfastTauLF  boolean
+  D  AmplCslowH    boolean
+  D  AmplCslowLF   boolean
+  D  AmplCslowRangeH  boolean
+  D  AmplCslowRangeLF  boolean
+  D  AmplRseriesH  boolean
+  D  AmplRseriesLF  boolean
+  D  AmplRscompH   boolean
+  D  AmplRscompLF  boolean
+  D  AmplRscompTauH  boolean
+  D  AmplRscompTauLF  boolean
+  D  AmplLeakCompH  boolean
+  D  AmplLeakCompLF  boolean
+  D  AmplLiquidJunctionH  boolean
+  D  AmplLiquidJunctionLF  boolean
+  D  AmplVoffsetH  boolean
+  D  AmplVoffsetLF  boolean
+  D  AmplCCgainH   boolean
+  D  AmplCCgainLF  boolean
+  D  AmplLowFreqVCH  boolean
+  D  AmplLowFreqVCLF  boolean
+  D  AmplLFVCVmembH  boolean
+  D  AmplLFVCVmembLF  boolean
+  D  AmplCCfastH   boolean
+  D  AmplCCfastLF  boolean
+  D  AmplAutoCfastH  boolean
+  D  AmplAutoCfastLF  boolean
+  D  AmplAutoCslowH  boolean
+  D  AmplAutoCslowLF  boolean
+  D  AmplVmonScaleH  boolean
+  D  AmplVmonScaleLF  boolean
+  D  AmplCalibrationDateH  boolean
+  D  AmplCalibrationDateLF  boolean
+  D  AmplCfastRangeH  boolean
+  D  AmplCfastRangeLF  boolean
+  D  AmplElectrodeModeH  boolean
+  D  AmplElectrodeModeLF  boolean
+  D  AmplLockInCalibrationH  boolean
+  D  AmplLockInCalibrationLF  boolean
+  D  AmplLockInModeH  boolean
+  D  AmplLockInModeLF  boolean
+  D  AmplLockInAttenuationH  boolean
+  D  AmplLockInAttenuationLF  boolean
+  D  AmplSerialNumberH  boolean
+  D  AmplSerialNumberLF  boolean
+  D  AmplStimScaleH  boolean
+  D  AmplStimScaleLF  boolean
+  D  AmplWithTrace  boolean
+  D  AmplifierState  boolean
+  D  TRACE         boolean
+  D  SWEEP         boolean
+  D  SERIES        boolean
+  D  GROUP         boolean
+  D  ROOT          boolean
+  D  RootPane      boolean
+  D  GroupPane     boolean
+  D  SeriesPane    boolean
+  D  SweepPane     boolean
+  D  TracePane     boolean
+  D  AmplifierPane  boolean
+  D  WindowSwitch  list index
+
+;    DIALOG: "W" = "SolChanger"
+  W  Control       boolean
+  W  Configure     boolean
+  W  Set1          boolean
+  W  Set2          boolean
+  W  Set3          boolean
+  W  Set4          boolean
+  W  Set5          boolean
+  W  Set6          boolean
+  W  Set7          boolean
+  W  Set8          boolean
+  W  Set9          boolean
+  W  Set10         boolean
+  W  Set11         boolean
+  W  Set12         boolean
+  W  Set13         boolean
+  W  Set14         boolean
+  W  Set15         boolean
+  W  Set16         boolean
+  W  Set17         boolean
+  W  SolIndex1     integer
+  W  SolIndex2     integer
+  W  SolIndex3     integer
+  W  SolIndex4     integer
+  W  SolIndex5     integer
+  W  SolIndex6     integer
+  W  SolIndex7     integer
+  W  SolIndex8     integer
+  W  SolIndex9     integer
+  W  SolIndex10    integer
+  W  SolIndex11    integer
+  W  SolIndex12    integer
+  W  SolIndex13    integer
+  W  SolIndex14    integer
+  W  SolIndex15    integer
+  W  SolIndex16    integer
+  W  SolIndex17    integer
+  W  SolList1      list index
+  W  SolList2      list index
+  W  SolList3      list index
+  W  SolList4      list index
+  W  SolList5      list index
+  W  SolList6      list index
+  W  SolList7      list index
+  W  SolList8      list index
+  W  SolList9      list index
+  W  SolList10     list index
+  W  SolList11     list index
+  W  SolList12     list index
+  W  SolList13     list index
+  W  SolList14     list index
+  W  SolList15     list index
+  W  SolList16     list index
+  W  SolList17     list index
+  W  DacKind1      list index
+  W  DacKind2      list index
+  W  DacKind3      list index
+  W  DacKind4      list index
+  W  DacKind5      list index
+  W  DacKind6      list index
+  W  DacKind7      list index
+  W  DacKind8      list index
+  W  DacKind9      list index
+  W  DacKind10     list index
+  W  DacKind11     list index
+  W  DacKind12     list index
+  W  DacKind13     list index
+  W  DacKind14     list index
+  W  DacKind15     list index
+  W  DacKind16     list index
+  W  DacKind17     list index
+  W  DacVolt1      real
+  W  DacVolt2      real
+  W  DacVolt3      real
+  W  DacVolt4      real
+  W  DacVolt5      real
+  W  DacVolt6      real
+  W  DacVolt7      real
+  W  DacVolt8      real
+  W  DacVolt9      real
+  W  DacVolt10     real
+  W  DacVolt11     real
+  W  DacVolt12     real
+  W  DacVolt13     real
+  W  DacVolt14     real
+  W  DacVolt15     real
+  W  DacVolt16     real
+  W  DacVolt17     real
+  W  DigValue1     integer
+  W  DigValue2     integer
+  W  DigValue3     integer
+  W  DigValue4     integer
+  W  DigValue5     integer
+  W  DigValue6     integer
+  W  DigValue7     integer
+  W  DigValue8     integer
+  W  DigValue9     integer
+  W  DigValue10    integer
+  W  DigValue11    integer
+  W  DigValue12    integer
+  W  DigValue13    integer
+  W  DigValue14    integer
+  W  DigValue15    integer
+  W  DigValue16    integer
+  W  DigValue17    integer
+  W  Internal1     list index
+  W  Internal2     list index
+  W  Internal3     list index
+  W  Internal4     list index
+  W  Internal5     list index
+  W  Internal6     list index
+  W  Internal7     list index
+  W  Internal8     list index
+  W  Internal9     list index
+  W  Internal10    list index
+  W  Internal11    list index
+  W  Internal12    list index
+  W  Internal13    list index
+  W  Internal14    list index
+  W  Internal15    list index
+  W  Internal16    list index
+  W  Internal17    list index
+  W  SolutionCount  list index
+  W  WindowSwitch  list index
+
+;    DIALOG: "C" = "Solution"
+  C  Index
+  C  Next
+  C  Last
+  C  Name          string
+  C  NumericName   string
+  C  Value         real
+  C  pH            real
+  C  pHComp        string
+  C  Osmol         real
+  C  Chem0Op       list index
+  C  Chem0Name     string
+  C  Chem0Val      real
+  C  Chem1Op       list index
+  C  Chem1Name     string
+  C  Chem1Val      real
+  C  Chem2Op       list index
+  C  Chem2Name     string
+  C  Chem2Val      real
+  C  Chem3Op       list index
+  C  Chem3Name     string
+  C  Chem3Val      real
+  C  Chem4Op       list index
+  C  Chem4Name     string
+  C  Chem4Val      real
+  C  Chem5Op       list index
+  C  Chem5Name     string
+  C  Chem5Val      real
+  C  Chem6Op       list index
+  C  Chem6Name     string
+  C  Chem6Val      real
+  C  Chem7Op       list index
+  C  Chem7Name     string
+  C  Chem7Val      real
+  C  Chem8Op       list index
+  C  Chem8Name     string
+  C  Chem8Val      real
+  C  Chem9Op       list index
+  C  Chem9Name     string
+  C  Chem9Val      real
+  C  Chem10Op      list index
+  C  Chem10Name    string
+  C  Chem10Val     real
+  C  Chem11Op      list index
+  C  Chem11Name    string
+  C  Chem11Val     real
+
+;    DIALOG: "R" = "Replay"
+  R  ShowIt
+  R  MarkIt
+  R  UnmarkIt
+  R  ShowChildren
+  R  HideChildren
+  R  NameString    string
+  R  MarkByName
+  R  Text
+  R  Label
+  R  LowShow       list index
+  R  HighShow      list index
+  R  Tracing       list index
+  R  Visible       list index
+  R  ApplyVisible
+  R  Rate          real
+  R  ScrollLeft    real
+  R  ScrollRight   real
+  R  ScrollHome    real
+  R  ScrollPageUp  real
+  R  ScrollUp      real
+  R  ScrollDown    real
+  R  ScrollPageDown  real
+  R  ScrollEnd     real
+  R  WindowSwitch  list index
+
+;    DIALOG: "S" = "Configuration"
+
+;    DIALOG: "O" = "Oscilloscope"
+  O  MoveLLeft
+  O  MoveLRight
+  O  ToNotebook
+  O  MoveRLeft
+  O  MoveRRight
+  O  Measure       boolean
+  O  Scan          boolean
+  O  Cursors       boolean
+  O  Freeze        boolean
+  O  Repaint
+  O  Wipe
+  O  OverlSer      boolean
+  O  OverlSwp      boolean
+  O  DispTrace     list index
+  O  DFilter       real
+  O  ResetY
+  O  YScale        real
+  O  YCenter
+  O  YOffset       real
+  O  ResetX
+  O  AutoSweep
+  O  AutoYScaleSeries
+  O  Xmin          real
+  O  Xmax          real
+  O  ResetP
+  O  PageLeft
+  O  Page          real
+  O  PageRight
+  O  YScaleInc     real
+  O  YScaleDec     real
+  O  YOffsetInc    real
+  O  YOffsetDec    real
+  O  WindowSwitch  list index
