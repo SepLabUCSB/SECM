@@ -8,9 +8,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 
 from heka_io import master, HekaReader, HekaWriter
-# from gui import *
-from gui.CV_window import make_CV_window
-from gui.amp_window import make_amp_window, convert_to_index
+from gui import *
 from utils.utils import run
 
     
