@@ -2,9 +2,12 @@ import numpy as np
 
 
 
-class piezoController():
+class Piezo():
     
-    def __init__(self):
+    def __init__(self, master):
+        self.master = master
+        self.master.register(self)
+        self.willStop = False
         self.x = 0
         self.y = 0
         self.z = 0
@@ -33,13 +36,3 @@ class piezoController():
                 reverse = True
         return points
     
-    def approach(self, step, threshold):
-
-        while True:
-            current = readHekaCurrent()
-            if current > threshold:
-                break
-            
-            self.goto(self.x, self.y, self.z - step)
-        
-        return self.z

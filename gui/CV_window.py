@@ -78,15 +78,20 @@ def make_CV_window(gui, master_frame):
                  'E2':E2_field,
                  'Ef':Ef_field,
                  'v':v_field}
-    def print_params(variables=cv_params):
-        for p, i in variables.items():
-            print(p, i.get('1.0', 'end'))
-        return {p:i.get('1.0', 'end') for p, i in variables.items()}
     
     Button(frame, text='Run CV', command=
            partial(run, gui.run_CV)).grid(column=2, row=8)
     
-    fig, ax = plt.subplots(figsize=(3,2), dpi=50)
+    Button(frame, text='Abort', command= 
+           partial(run, gui.master.HekaWriter.abort)).grid(column=2, row=9)
+    
+    Button(frame, text='Test', command= 
+           partial(run, gui.master.HekaWriter.test_btn)
+           ).grid(column=2, row=10)
+    
+    
+    fig = plt.Figure(figsize=(3,2), dpi=50)
+    ax = fig.add_subplot(111)
     canvas = FigureCanvasTkAgg(fig, master=figframe)
     canvas.get_tk_widget().grid(row=0, column=0)
     make_CV_fig(ax)
