@@ -3,9 +3,6 @@ from tkinter.ttk import *
 import numpy as np
 from functools import partial
 
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
 from utils.utils import focus_next_widget, run
 
 

@@ -17,6 +17,8 @@ class ADC():
     https://github.com/dataq-instruments/Simple-Python-Examples/blob/master/simpletest_binary.py
     '''
     
+    # TODO: add buffer of previous x seconds of currents data
+    
     def __init__(self, master=None, SER_PORT = CONST_SER_PORT):
         if master:
             self.master = master
@@ -28,6 +30,7 @@ class ADC():
         self.port.write(b"stop\r")
         time.sleep(1)
         self.port.close()
+        return
         
     def setup(self, n_channels=1, srate=1000, dec=1, deca=1, ps=6):
         # TODO: input checks
@@ -85,6 +88,9 @@ class ADC():
         
         times = np.linspace(t[0], t[-1], len(t))
         return times, data
+
+
+    
         
 
 

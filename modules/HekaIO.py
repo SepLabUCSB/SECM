@@ -53,6 +53,8 @@ class HekaReader:
                 self.willStop = True
                 break
             
+            if not os.path.exists(self.file): continue
+            
             with open(self.file, 'r') as f:
                 lines = [line.rstrip() for line in f]
                 if (lines != self.last and lines != None):

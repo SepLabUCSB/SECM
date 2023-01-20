@@ -21,6 +21,10 @@ class Piezo():
         return self.loc()
     
     def get_xy_coords(self, length, n_points):
+        # Generate ordered list of xy coordinates for a scan
+        # ----->
+        # <-----
+        # ----->
         points = []
         coords = np.linspace(0, length, n_points)
         
