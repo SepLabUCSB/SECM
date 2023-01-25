@@ -64,11 +64,19 @@ class FeedbackController():
         
         points, order = get_xy_coords(length, n_pts)
         
-        # Setup figure
+        # Setup figure, need blitting to plot fast enough
+        gridpts = np.array([
+            np.array([0 for _ in range(n_pts)]) for _ in range(n_pts)
+            ], dtype=np.float32)
+        
         ax = fig.gca()
-        gridpts = [
-            [0 for _ in range(n_pts)] for _ in range(n_pts)
-            ]
+        image = ax.imshow(gridpts, cmap='afmhot')
+        fig.canvas.draw()
+        
+        bg = fig.canvas.copy_from_bbox(ax.bbox)
+        ax.draw_artist(image)
+        fig.canvas.blit(ax.bbox)
+        
         
         for i, (x, y) in enumerate(points):
             if self.master.STOP:
@@ -77,17 +85,23 @@ class FeedbackController():
             
             # TODO: run variable echem experiment(s) at each pt
             I = self.approach_curve(0)
-            print(I)
             
             grid_i, grid_j = order[i]
-            gridpts[grid_i][grid_j] = I
-            ax.imshow(gridpts)
+            # gridpts[grid_i][grid_j] = I
+            gridpts[grid_i][grid_j] = i
             
-            # TODO: blit this, make drawing class
-            # fig.canvas.draw()
-            # plt.pause(0.001)
+            image.set_data(gridpts)
+            minval = min(gridpts.flatten())
+            maxval = max(gridpts.flatten())
+            image.set(clim=( minval - abs(0.1*minval), # Update color scale
+                             maxval + abs(0.1*maxval)) 
+                      ) 
             
-            time.sleep(0.1)
+            ax.draw_artist(image)
+            fig.canvas.blit(ax.bbox)
+            
+            fig.canvas.draw_idle()
+            plt.pause(0.001)
         
         
         return
