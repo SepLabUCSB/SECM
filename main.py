@@ -1,12 +1,13 @@
 from tkinter import *
 from tkinter.ttk import *
 import threading
+import asyncio
 import time
 import traceback
 from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
+import matplotlib
 from modules.HekaIO import HekaReader, HekaWriter
 from modules.ADC import ADC
 from modules.Piezo import Piezo
@@ -15,6 +16,7 @@ from modules.Plotter import Plotter
 from gui import *
 from utils.utils import run
 
+matplotlib.use('TkAgg')
     
 '''
 TODO:
@@ -252,7 +254,7 @@ class GUI():
         # Always-running functions
         masterthread    = run(self.master.run)
         readerthread    = run(self.master.HekaReader.read_stream)
-        plotterthread   = run(self.master.Plotter.run)
+        # plotterthread   = run(self.master.Plotter.run)
     
         self.threads = [masterthread, readerthread]
         return
@@ -337,11 +339,12 @@ class GUI():
         
     
     def run_hopping(self):
-        # func = partial(self.master.FeedbackController.hopping_mode,
-        #                 self.params['hopping'], self.topfig)
-        # run(func)
-        self.master.FeedbackController.hopping_mode(
-            self.params['hopping'], self.topfig)
+        func = partial(self.master.FeedbackController.hopping_mode,
+                        self.params['hopping'], self.topfig)
+        run(func)
+        # self.master.FeedbackController.hopping_mode(
+        #     self.params['hopping'], self.topfig)
+        
         
     
             
@@ -370,7 +373,9 @@ if __name__ == '__main__':
     try:
         gui = GUI(root, master)
         
+        root.after(2000, master.Plotter.update_figs)
         root.mainloop()
+        root.quit()
         gui.willStop = True
     except Exception as e:
         print(traceback.format_exc())
