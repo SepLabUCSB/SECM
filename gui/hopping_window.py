@@ -39,6 +39,8 @@ def make_hopping_window(gui, master_frame):
     
     Button(frame, text='Hopping mode scan', 
            command=gui.run_hopping).grid(column=3, row=4)
+    Button(frame, text='Abort', 
+           command=gui.master.abort).grid(column=3, row=5)
     
     ttk.Label(frame, text='    ').grid(column=5, row=5)
     

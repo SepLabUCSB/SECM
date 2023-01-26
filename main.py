@@ -11,6 +11,7 @@ from modules.HekaIO import HekaReader, HekaWriter
 from modules.ADC import ADC
 from modules.Piezo import Piezo
 from modules.FeedbackController import FeedbackController
+from modules.Plotter import Plotter
 from gui import *
 from utils.utils import run
 
@@ -60,6 +61,7 @@ class MasterModule():
     def __init__(self):
         self.willStop = False
         self.STOP = False
+        self.ABORT = False
         self.modules = [self]
         
     def register(self, module):
@@ -74,11 +76,23 @@ class MasterModule():
             
             for module in self.modules:
                 if module.willStop:
+                    # STOP flag stops everything
                     self.STOP = True
+                    self.abort()
                     print('master stopping')
                     return self.endState()
             time.sleep(0.5)
+    
+    def abort(self):
+        # general callback for aborting an operation
+        # submodule should call master.make_ready() after
+        # aborting process
+        self.ABORT = True
+    
+    def make_ready(self):
+        self.ABORT = False
         
+    
     def endState(self):
         for module in self.modules:
             if hasattr(module, 'stop'):
@@ -128,7 +142,7 @@ class GUI():
         rightpanel.grid(row=1, column=1)
         
         
-        tabControl = ttk.Notebook(leftpanel)
+        tabControl = Notebook(leftpanel)
         
         secm_frame  = Frame(tabControl)
         pstat_frame = Frame(tabControl)
@@ -231,10 +245,14 @@ class GUI():
         self.params['hopping'] = make_hopping_window(self, hopping_mode)
     
     
-        
+        # Initialize plotter
+        Plotter(self.master, self.topfig, self.botfig)
+    
+    
         # Always-running functions
-        masterthread = run(self.master.run)
-        readerthread = run(self.master.HekaReader.read_stream)
+        masterthread    = run(self.master.run)
+        readerthread    = run(self.master.HekaReader.read_stream)
+        plotterthread   = run(self.master.Plotter.run)
     
         self.threads = [masterthread, readerthread]
         return
@@ -319,9 +337,11 @@ class GUI():
         
     
     def run_hopping(self):
+        # func = partial(self.master.FeedbackController.hopping_mode,
+        #                 self.params['hopping'], self.topfig)
+        # run(func)
         self.master.FeedbackController.hopping_mode(
-            self.params['hopping'], self.topfig
-            )
+            self.params['hopping'], self.topfig)
         
     
             

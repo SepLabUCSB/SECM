@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import matplotlib.pyplot as plt
+from utils.utils import run
 
 
 def get_xy_coords(length, n_points):
@@ -69,17 +70,18 @@ class FeedbackController():
             np.array([0 for _ in range(n_pts)]) for _ in range(n_pts)
             ], dtype=np.float32)
         
-        ax = fig.gca()
-        image = ax.imshow(gridpts, cmap='afmhot')
-        fig.canvas.draw()
+        # ax = fig.gca()
+        # image = ax.imshow(gridpts, cmap='afmhot')
+        # fig.canvas.draw()
         
-        bg = fig.canvas.copy_from_bbox(ax.bbox)
-        ax.draw_artist(image)
-        fig.canvas.blit(ax.bbox)
+        # bg = fig.canvas.copy_from_bbox(ax.bbox)
+        # ax.draw_artist(image)
+        # fig.canvas.blit(ax.bbox)
         
         
         for i, (x, y) in enumerate(points):
-            if self.master.STOP:
+            if self.master.ABORT:
+                self.master.make_ready()
                 return
             self.Piezo.goto(x, y, height)
             
@@ -89,19 +91,21 @@ class FeedbackController():
             grid_i, grid_j = order[i]
             # gridpts[grid_i][grid_j] = I
             gridpts[grid_i][grid_j] = i
+            self.master.Plotter.data1 = gridpts
+            self.master.Plotter.NEW_DATA = True
+            time.sleep(0.1)
+            # image.set_data(gridpts)
+            # minval = min(gridpts.flatten())
+            # maxval = max(gridpts.flatten())
+            # image.set(clim=( minval - abs(0.1*minval), # Update color scale
+            #                   maxval + abs(0.1*maxval)) 
+            #           ) 
             
-            image.set_data(gridpts)
-            minval = min(gridpts.flatten())
-            maxval = max(gridpts.flatten())
-            image.set(clim=( minval - abs(0.1*minval), # Update color scale
-                             maxval + abs(0.1*maxval)) 
-                      ) 
+            # ax.draw_artist(image)
+            # fig.canvas.blit(ax.bbox)
             
-            ax.draw_artist(image)
-            fig.canvas.blit(ax.bbox)
-            
-            fig.canvas.draw_idle()
-            plt.pause(0.001)
+            # fig.canvas.draw_idle()
+            # plt.pause(0.001)
         
         
         return

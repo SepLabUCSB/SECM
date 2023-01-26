@@ -66,11 +66,13 @@ class ADC():
         
         st = time.time()
         while True:
-            if time.time() - st > timeout:    
+            if (self.master.ABORT or
+                time.time() - st > timeout):   
                 self.port.write(b"stop\r")
                 time.sleep(1)           
                 self.port.close()
                 print("ADC recording finished")
+                self.master.make_ready()
                 break
             else:
                 i= self.port.in_waiting
