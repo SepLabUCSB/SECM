@@ -20,6 +20,12 @@ matplotlib.use('TkAgg')
 '''
 TODO:
     
+    1. CV at each point in hopping mode
+        - trigger HEKA to record
+        - use ADC to plot in real time
+        - save to known path and to Experiment()
+    
+    
     Lock thread - i.e. make only one button call an object at a time
     
     Logging
@@ -288,6 +294,8 @@ class GUI():
     # save current file to disk
     def save(self):
         if self.master.expt:
+            if self.master.expt.path == 'temp.json':
+                return self.saveAs()
             self.master.expt.save()
     
     # save current file under new path
@@ -297,7 +305,6 @@ class GUI():
                 defaultextension='.json', initialdir='D:\SECM\Data')
             if not f: return
             self.master.expt.save(f)
-        pass
     
     # Exit program
     def Quit(self):
@@ -341,8 +348,8 @@ class GUI():
             print('max scan rate 100mV/s - gotta fix')
             return
         self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
-        self.master.HekaWriter.run_CV_loop()
-        return
+        path = self.master.HekaWriter.run_CV_loop()
+        return path
     
     
     

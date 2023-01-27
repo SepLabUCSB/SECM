@@ -183,7 +183,7 @@ class HekaWriter:
         
         shutil.copy2(savepath, path)
         print(f'Saved to {path}')
-        return
+        return path
     
      
         
@@ -259,10 +259,9 @@ class HekaWriter:
         if not self.master.HekaReader.last[1] == 'Query_Idle':
             print('CV failed!')
             return
-        self.save_last_experiment(path=save_path, name=name)
+        path = self.save_last_experiment(path=save_path, name=name)
         self.idle()
-        if __name__ == '__main__':
-            self.willStop = True
+        return path
         
       
         

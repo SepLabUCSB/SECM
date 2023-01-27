@@ -60,6 +60,7 @@ class FeedbackController():
         length = params['size'].get('1.0', 'end')
         height = params['Z'].get('1.0', 'end')
         n_pts  = params['n_pts'].get('1.0', 'end')
+        method = params['method'].get()
         
         length = float(length) 
         z      = float(height)
@@ -67,7 +68,6 @@ class FeedbackController():
         
         points, order = get_xy_coords(length, n_pts)
         
-        # Setup figure, need blitting to plot fast enough
         gridpts = np.array([
             np.array([0 for _ in range(n_pts)]) for _ in range(n_pts)
             ], dtype=np.float32)
@@ -90,6 +90,8 @@ class FeedbackController():
             
             # TODO: run variable echem experiment(s) at each pt
             I = self.approach_curve(0)
+            if method == 'CV':
+                self.master.GUI.run_CV()
             I = i
             
             grid_i, grid_j = order[i]

@@ -5,6 +5,8 @@ from functools import partial
 
 from utils.utils import focus_next_widget, run
 
+methods = ['CV', ]
+
 
 def make_hopping_window(gui, master_frame):
     
@@ -37,17 +39,23 @@ def make_hopping_window(gui, master_frame):
     Label(frame, text='um').grid(column=4, row=2, sticky=(W))
     Label(frame, text='(n x n grid)').grid(column=4, row=3, sticky=(W))
     
-    Button(frame, text='Hopping mode scan', 
-           command=gui.run_hopping).grid(column=3, row=4)
-    Button(frame, text='Abort', 
-           command=gui.master.abort).grid(column=3, row=5)
+    method = StringVar()
+    OptionMenu(frame, method, methods[0],
+               *methods).grid(column=3, row=4, 
+                                     sticky=(E,W))
     
-    ttk.Label(frame, text='    ').grid(column=5, row=5)
+    Button(frame, text='Hopping mode scan', 
+           command=gui.run_hopping).grid(column=3, row=5)
+    Button(frame, text='Abort', 
+           command=gui.master.abort).grid(column=3, row=6)
+    
+    ttk.Label(frame, text='    ').grid(column=5, row=7)
     
     hopping_params = {
         'size': size_field,
         'Z': Z_field,
-        'n_pts': points_field
+        'n_pts': points_field,
+        'method':method,
         }
     return hopping_params
     
