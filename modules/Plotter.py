@@ -35,7 +35,12 @@ class Plotter():
         self.ax1.draw_artist(self.image1)
         self.fig1.canvas.blit(self.ax1.bbox)
         plt.pause(0.001)
-        
+    
+    def load_from_expt(self, expt):
+        self.data1 = expt.data
+        xlim = (0, expt.length)
+        ylim = (0, expt.length)
+        self.set_axlim('fig1', xlim, ylim)
             
    
     def update_figs(self, **kwargs):
@@ -67,7 +72,7 @@ class Plotter():
         bottom, top = self.ax1lim[1][0], self.ax1lim[1][1]
         self.image1.set_extent((left, right, bottom, top))
         self.ax1.draw_artist(self.image1)
-        # self.fig1.canvas.blit(self.fig1.bbox)
+        self.fig1.canvas.blit(self.fig1.bbox)
         self.fig1.canvas.draw_idle()
         self.last_data1_sum = self.data1.sum()
         plt.pause(0.001)

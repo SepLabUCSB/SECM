@@ -1,7 +1,5 @@
 from tkinter import *
 from tkinter.ttk import *
-import threading
-import asyncio
 import time
 import traceback
 from functools import partial
@@ -13,6 +11,7 @@ from modules.ADC import ADC
 from modules.Piezo import Piezo
 from modules.FeedbackController import FeedbackController
 from modules.Plotter import Plotter
+from modules.DataStorage import Experiment, load_from_file
 from gui import *
 from utils.utils import run
 
@@ -61,10 +60,13 @@ gl_st = time.time()
 class MasterModule():
     
     def __init__(self):
-        self.willStop = False
-        self.STOP = False
-        self.ABORT = False
-        self.modules = [self]
+        self.willStop   = False
+        self.STOP       = False
+        self.ABORT      = False
+        
+        self.modules    = [self]
+        
+        self.expt = None
         
     def register(self, module):
         # register a submodule to master
@@ -100,6 +102,9 @@ class MasterModule():
             if hasattr(module, 'stop'):
                 module.stop()
         return 
+    
+    def set_expt(self, expt):
+        self.expt = expt
             
 
 
@@ -274,14 +279,24 @@ class GUI():
     
     # load previous data
     def openFile(self):
+        f = filedialog.askopenfilename(initialdir='D:\SECM\Data')
+        expt = load_from_file(f)
+        self.master.set_expt(expt)
+        self.master.Plotter.load_from_expt(expt)
         pass
     
     # save current file to disk
     def save(self):
-        pass
+        if self.master.expt:
+            self.master.expt.save()
     
     # save current file under new path
     def saveAs(self):
+        if self.master.expt:
+            f = filedialog.asksaveasfilename(
+                defaultextension='.json', initialdir='D:\SECM\Data')
+            if not f: return
+            self.master.expt.save(f)
         pass
     
     # Exit program
@@ -342,9 +357,6 @@ class GUI():
         func = partial(self.master.FeedbackController.hopping_mode,
                         self.params['hopping'], self.topfig)
         run(func)
-        # self.master.FeedbackController.hopping_mode(
-        #     self.params['hopping'], self.topfig)
-        
         
     
             
@@ -373,7 +385,7 @@ if __name__ == '__main__':
     try:
         gui = GUI(root, master)
         
-        root.after(2000, master.Plotter.update_figs)
+        root.after(1000, master.Plotter.update_figs)
         root.mainloop()
         root.quit()
         gui.willStop = True

@@ -1,8 +1,8 @@
 import numpy as np
 import time
-import asyncio
-import matplotlib.pyplot as plt
+import datetime
 from utils.utils import run
+from modules.DataStorage import Experiment
 
 
 def get_xy_coords(length, n_points):
@@ -29,6 +29,7 @@ def get_xy_coords(length, n_points):
                     order.append((i,j))
                 reverse = True
                 i += 1
+                
         return points, order
 
 
@@ -61,7 +62,7 @@ class FeedbackController():
         n_pts  = params['n_pts'].get('1.0', 'end')
         
         length = float(length) 
-        height = float(height)
+        z      = float(height)
         n_pts  = int(n_pts)
         
         points, order = get_xy_coords(length, n_pts)
@@ -76,20 +77,28 @@ class FeedbackController():
                                       ylim=(0,length)
                                       )
         
+        # Initialize data storage
+        expt = Experiment(data = gridpts, length = length)
+        expt.set_scale(length)
+        self.master.set_expt(expt)
+        
         for i, (x, y) in enumerate(points):
             if self.master.ABORT:
                 self.master.make_ready()
                 return
-            self.Piezo.goto(x, y, height)
+            self.Piezo.goto(x, y, z)
             
             # TODO: run variable echem experiment(s) at each pt
             I = self.approach_curve(0)
+            I = i
             
             grid_i, grid_j = order[i]
             gridpts[grid_i][grid_j] = I
             
             # Send data for plotting
             self.master.Plotter.data1 = gridpts
+            
+            expt.set_datapoint( (grid_i, grid_j), I)
             
             time.sleep(0.01)
         
