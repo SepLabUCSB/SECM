@@ -83,10 +83,10 @@ def make_CV_window(gui, master_frame):
            partial(run, gui.run_CV)).grid(column=2, row=8)
     
     Button(frame, text='Abort', command= 
-           partial(run, gui.master.HekaWriter.abort)).grid(column=2, row=9)
+           partial(run, gui.master.abort)).grid(column=2, row=9)
     
     Button(frame, text='Test', command= 
-           partial(run, gui.master.HekaWriter.test_btn)
+           partial(run, gui.master.ADC.polling)
            ).grid(column=2, row=10)
     
     

@@ -56,7 +56,6 @@ class FeedbackController():
         return current
     
     def hopping_mode(self, params, fig):
-        
         length = params['size'].get('1.0', 'end')
         height = params['Z'].get('1.0', 'end')
         n_pts  = params['n_pts'].get('1.0', 'end')
@@ -81,7 +80,7 @@ class FeedbackController():
         expt = Experiment(data = gridpts, length = length)
         expt.set_scale(length)
         self.master.set_expt(expt)
-        
+
         for i, (x, y) in enumerate(points):
             if self.master.ABORT:
                 self.master.make_ready()
@@ -90,8 +89,8 @@ class FeedbackController():
             
             # TODO: run variable echem experiment(s) at each pt
             I = self.approach_curve(0)
-            if method == 'CV':
-                self.master.GUI.run_CV()
+            # if method == 'CV':
+            #     self.master.GUI.run_CV()
             I = i
             
             grid_i, grid_j = order[i]

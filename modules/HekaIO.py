@@ -249,6 +249,9 @@ class HekaWriter:
         self.run_CV()
         st = time.time()
         while time.time() - st < self.CV_duration + 3:
+            if self.master.ABORT:
+                self.master.make_ready()
+                self.abort()
             self.send_command('Query')
             try:
                 if self.master.HekaReader.last[1] == 'Query_Idle':

@@ -3,6 +3,15 @@ import time
 import numpy as np
 
 
+def checksum(data):
+    if type(data) == np.ndarray:
+        # Heatmap type data
+        return data.sum()
+    if type(data) == list:
+        # CV curve type data
+        # From polling ADC, of form [ [idxs], [times], [*data] ]
+        return sum(data[0])
+
 class Plotter():
     
     def __init__(self, master, fig1, fig2):
@@ -15,11 +24,12 @@ class Plotter():
         self.ax1  = fig1.gca()
         self.ax2  = fig2.gca()
         
-        self.data1 = np.array([0])
-        self.data2 = np.array([0])
+        self.data1 = np.array([0,])
+        self.data2poll = self.master.ADC.pollingdata
+        self.data2plot = [ [0,], [], [] ] #idx, x, y
         
-        self.last_data1_sum = self.data1.sum()
-        self.last_data2_sum = self.data2.sum()
+        self.last_data1checksum = checksum(self.data1)
+        self.last_data2checksum = checksum(self.data2plot)
         
         
         
@@ -35,6 +45,21 @@ class Plotter():
         self.ax1.draw_artist(self.image1)
         self.fig1.canvas.blit(self.ax1.bbox)
         plt.pause(0.001)
+        
+        
+        # Initialize echem fig
+        self.ln, = self.ax2.plot([], [])
+        self.ax2.set_xlim(-0., 2.1)
+        self.ax2.set_xlabel('')
+        self.ax2.set_ylabel('')
+        self.fig2.canvas.draw()
+        self.fig2.tight_layout()
+        self.ax2bg = self.fig2.canvas.copy_from_bbox(self.ax2.bbox)
+        self.ax2.draw_artist(self.ln)
+        self.fig2.canvas.blit(self.ax2.bbox)
+        plt.pause(0.001)
+        
+        
     
     def load_from_expt(self, expt):
         self.data1 = expt.data
@@ -47,11 +72,12 @@ class Plotter():
         # Called every 10 ms by TK mainloop.
         # Check if data has updated. If so, plot it to
         # the appropriate figure.
-        
-        if self.data1.sum() != self.last_data1_sum:
+        # self.data2poll = self.master.ADC.pollingdata
+        self.data2poll = self.master.ADC.pollingdata
+        if checksum(self.data1) != self.last_data1checksum:
             self.update_fig1()
         
-        if self.data2.sum() != self.last_data2_sum:
+        if checksum(self.data2poll) != self.last_data2checksum:
             self.update_fig2()        
         
         self.master.GUI.root.after(10, self.update_figs)
@@ -74,12 +100,32 @@ class Plotter():
         self.ax1.draw_artist(self.image1)
         self.fig1.canvas.blit(self.fig1.bbox)
         self.fig1.canvas.draw_idle()
-        self.last_data1_sum = self.data1.sum()
+        self.last_data1checksum = checksum(self.data1)
         plt.pause(0.001)
     
     
     def update_fig2(self):
-        return
+        idxs, ts, ch1data, ch2data = self.master.ADC.pollingdata.copy()
+        self.last_data2checksum = checksum([idxs, ts])
+        idx, x, y = self.data2plot
+        last_idx = max(idx)
+        startpoint = min([i for i, val in enumerate(idxs)
+                          if val > last_idx])
+        idx += idxs[startpoint:]
+        x   += ts[startpoint:]
+        y   += ch1data[startpoint:]
+        
+        self.ln.set_data(x, y)
+        self.set_axlim('fig2', 
+                       (min(x) - 0.05*abs(min(x)),
+                        max(x) + 0.05*abs(max(x))),
+                       (min(y) - 0.05*abs(min(y)),
+                        max(y) + 0.05*abs(max(y)))
+                       )
+        self.ax2.draw_artist(self.ln)
+        self.fig2.canvas.blit(self.ax2.bbox)
+        self.fig2.canvas.draw_idle()
+        plt.pause(0.001)
     
     
     def set_axlim(self, fig, xlim, ylim):
