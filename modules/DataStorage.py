@@ -13,7 +13,7 @@ class Experiment:
         self.exp_type   = ''
         self.path       = path
         
-        self.data   = np.array(data)
+        self.data   = np.array(data, dtype=object)
         self.length = length # scale of SECM grid in um
         
     
@@ -66,6 +66,19 @@ class DataPoint:
         #  * float: single potential measurements
         #  * list: CV: [ [t], [V], [I] ]
         self.data = data
+        
+    def get_val(self, valtype='max', valarg=None):
+        '''
+        valtype: str, defines what to return
+            'max': max I
+            'avg': avg I
+            'val_at': I at valarg voltage
+            etc
+        '''
+        if type(self.data) == float:
+            return self.data
+        elif valtype=='max':
+            return max(self.data[2])
     
 
 
