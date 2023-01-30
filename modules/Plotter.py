@@ -12,6 +12,19 @@ def checksum(data):
         # From polling ADC, of form [ [idxs], [times], [*data] ]
         return sum(data[0])
 
+
+def get_plotlim(xdata, ydata):
+    lim = (
+     (min(xdata) - 0.05*abs(min(xdata)),
+      max(xdata) + 0.05*abs(max(xdata))
+      ),
+     (min(ydata) - 0.05*abs(min(ydata)),
+      max(ydata) + 0.05*abs(max(ydata))
+      )
+     )
+    return lim
+
+
 class Plotter():
     
     def __init__(self, master, fig1, fig2):
@@ -104,27 +117,45 @@ class Plotter():
         plt.pause(0.001)
     
     
-    def update_fig2(self):
-        idxs, ts, ch1data, ch2data = self.master.ADC.pollingdata.copy()
+    def update_fig2(self, xval='t', yval='ch1'):
+        '''
+        xval: 't', 'ch1', 'ch2'
+        yval: 'ch1', 'ch2'
+        '''
+        # Get new data from ADC
+        idxs, ts, ch1, ch2 = self.master.ADC.pollingdata.copy()
         self.last_data2checksum = checksum([idxs, ts])
-        idx, x, y = self.data2plot
-        last_idx = max(idx)
+        
+        # local copy of data already on plot
+        idx, x, y = self.data2plot.copy()
+        last_idx = idx[-1]
+        
+        # Find new points to plot
         startpoint = min([i for i, val in enumerate(idxs)
                           if val > last_idx])
         idx += idxs[startpoint:]
-        x   += ts[startpoint:]
-        y   += ch1data[startpoint:]
         
+        # str -> array lookup table
+        d = {'t': ts,
+             'ch1': ch1,
+             'ch2': ch2
+             }
+        
+        # Set new data and draw
+        new_x = d[xval][startpoint:]
+        new_y = d[yval][startpoint:]
+        
+        x += new_x
+        y += new_y
+                
         self.ln.set_data(x, y)
         self.set_axlim('fig2', 
-                       (min(x) - 0.05*abs(min(x)),
-                        max(x) + 0.05*abs(max(x))),
-                       (min(y) - 0.05*abs(min(y)),
-                        max(y) + 0.05*abs(max(y)))
+                       *get_plotlim(x, y)
                        )
         self.ax2.draw_artist(self.ln)
         self.fig2.canvas.blit(self.ax2.bbox)
         self.fig2.canvas.draw_idle()
+        self.data2plot = [idx, x, y]
         plt.pause(0.001)
     
     
