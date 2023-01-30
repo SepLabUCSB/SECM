@@ -30,7 +30,7 @@ class ADC():
             self.master = master
             self.master.register(self)
         self.willStop = False
-        self.port = serial.Serial(port = SER_PORT, timeout=0.5)
+        # self.port = serial.Serial(port = SER_PORT, timeout=0.5)
         self.pollingdata = [[0],]
     
     def stop(self):
@@ -64,7 +64,7 @@ class ADC():
         return
     
     
-    def polling(self):
+    def polling(self, timeout=2):
         self.setup(n_channels=2)
         numofbyteperscan = 2**(self.ps + 4)
         idxs = []
@@ -77,14 +77,14 @@ class ADC():
         
         st = time.time()
         idx = 0
+        self.master.Plotter.reinit_fig2()
+        self.master.Plotter.poll_ADC()
         while True:
-            if time.time() - st > 2:
+            if time.time() - st > timeout:
                 print('stopping polling')
-                # self.stop()
                 break
             if self.master.ABORT:
                 print('aborting polling')
-                # self.stop()
                 self.master.make_ready()
                 break
             i = self.port.in_waiting
@@ -102,7 +102,7 @@ class ADC():
                 t.append(time.time() - st)
                 idx += 1
                 if len(t) > 100:
-                    # Only save most recent 1000 pts
+                    # Only save most recent 100 pts
                     t = t[-100:] 
                     idxs = idxs[-100:]
                     data = [

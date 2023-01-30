@@ -44,6 +44,21 @@ class Experiment:
             'timestamp':self.timestamp,
             }
     
+    def get_nearest_datapoint(self, x, y):
+        # Returns DataPoint object with location nearest to the 
+        # requested (x, y) coordinates
+        min_dist = 1e10
+        closest  = None
+        for datapoint in self.data.flatten():
+            x0, y0, z0 = datapoint.loc
+            distance = np.sqrt(
+                               (x - x0)**2 + (y - y0)**2 
+                                )
+            if distance < min_dist:
+                min_dist = distance
+                closest = datapoint
+        return closest
+    
     
     def save(self, path=None):
         if path: 

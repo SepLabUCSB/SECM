@@ -90,7 +90,7 @@ class FeedbackController():
         for i, (x, y) in enumerate(points):
             if self.master.ABORT:
                 self.master.make_ready()
-                return
+                break
             self.Piezo.goto(x, y, z)
             
             # TODO: run variable echem experiment(s) at each pt
@@ -123,8 +123,9 @@ class FeedbackController():
             
             time.sleep(0.01)
         
-        
-        return
+        self.master.expt = expt
+            
+        return 
 
     
 

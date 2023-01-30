@@ -16,6 +16,7 @@ from gui import *
 from utils.utils import run
 
 matplotlib.use('TkAgg')
+plt.style.use('default')
     
 '''
 TODO:
@@ -399,5 +400,5 @@ if __name__ == '__main__':
     except Exception as e:
         print(traceback.format_exc())
     
-    adc.stop()
+    # adc.stop()
     
