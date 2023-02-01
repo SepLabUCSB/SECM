@@ -298,7 +298,7 @@ class GUI():
     # save current file to disk
     def save(self):
         if self.master.expt:
-            if self.master.expt.path == 'temp.json':
+            if self.master.expt.path == 'temp.secmdata':
                 return self.saveAs()
             self.master.expt.save()
     
@@ -306,7 +306,7 @@ class GUI():
     def saveAs(self):
         if self.master.expt:
             f = filedialog.asksaveasfilename(
-                defaultextension='.json', initialdir='D:\SECM\Data')
+                defaultextension='.secmdata', initialdir='D:\SECM\Data')
             if not f: return
             self.master.expt.save(f)
     

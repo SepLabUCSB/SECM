@@ -86,7 +86,6 @@ class Plotter():
     
     def load_from_expt(self, expt):
         self.data1 = expt.get_heatmap_data()
-        print(self.data1)
         xlim = (0, expt.length)
         ylim = (0, expt.length)
         self.set_axlim('fig1', xlim, ylim)
