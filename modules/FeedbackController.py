@@ -2,7 +2,7 @@ import numpy as np
 import time
 import datetime
 from utils.utils import run
-from modules.DataStorage import Experiment, DataPoint
+from modules.DataStorage import Experiment, SinglePoint, CVDataPoint
 
 
 def get_xy_coords(length, n_points):
@@ -16,20 +16,20 @@ def get_xy_coords(length, n_points):
         
         reverse = False
         i, j = 0, 0 # i -> x, j -> y
-        for x in coords:
+        for y in reversed(coords):
             if reverse:
-                for j, y in reversed(list(enumerate(coords))):
+                for j, x in reversed(list(enumerate(coords))):
                     points.append((x,y))
                     order.append((i,j))
                 reverse = False
                 i += 1
             else:
-                for j, y in enumerate(coords):
+                for j, x in enumerate(coords):
                     points.append((x,y))
                     order.append((i,j))
                 reverse = True
                 i += 1
-                
+                          
         return points, order
 
 
@@ -55,10 +55,10 @@ class FeedbackController():
         current = np.random.rand()
         return current
     
-    def CV(self):
+    def CV(self, i):
         voltage = np.linspace(0, 0.5, 50)
         max_I = 100*np.random.rand()
-        current = np.linspace(0, max_I, 50)
+        current = np.linspace(0, i, 50)
         return voltage, current
     
     def hopping_mode(self, params, fig):
@@ -81,7 +81,7 @@ class FeedbackController():
         expt = Experiment(data = gridpts, length = length)
         expt.set_scale(length)
         for i, (x, y) in enumerate(points):
-            data = DataPoint(loc = (x,y,0), data = 0.0)
+            data = SinglePoint(loc = (x,y,0), data = 0)
             grid_i, grid_j = order[i]
             expt.set_datapoint( (grid_i, grid_j), data)
                 
@@ -90,7 +90,8 @@ class FeedbackController():
                                       xlim=(0,length),
                                       ylim=(0,length)
                                       )
-
+        
+        
         for i, (x, y) in enumerate(points):
             if self.master.ABORT:
                 self.master.make_ready()
@@ -99,9 +100,9 @@ class FeedbackController():
             
             # TODO: run variable echem experiment(s) at each pt
             # I = self.approach_curve(0)
-            voltage, current = self.CV()
+            voltage, current = self.CV(i)
             
-            data = DataPoint(
+            data = CVDataPoint(
                     loc = (x,y,z),
                     data = [
                         np.linspace(0,1,len(voltage)),
@@ -109,7 +110,8 @@ class FeedbackController():
                         current
                         ]
                     )
-                        
+            
+            grid_i, grid_j = order[i]            
             expt.set_datapoint( (grid_i, grid_j), data)
             
             # Send data for plotting

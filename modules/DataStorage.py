@@ -48,7 +48,13 @@ class Experiment:
             [d.get_val() for d in row]
             for row in self.data]         
             )
-        print(gridpts)
+        return gridpts
+    
+    def get_loc_data(self):
+        gridpts = np.array([
+            [(int(d.loc[0]), int(d.loc[1])) for d in row]
+            for row in self.data]         
+            )
         return gridpts
     
     
@@ -92,6 +98,22 @@ class DataPoint:
         self.data = data
         
     def get_val(self, valtype='max', valarg=None):
+        # Overwrite in subclasses
+        return self.data
+    
+    def get_data(self):
+        return [0], [0]
+
+        
+
+class SinglePoint(DataPoint):
+    def get_val(self):
+        return self.data
+
+
+
+class CVDataPoint(DataPoint):
+    def get_val(self, valtype='max', valarg=None):
         '''
         valtype: str, defines what to return
             'max': max I
@@ -99,11 +121,12 @@ class DataPoint:
             'val_at': I at valarg voltage
             etc
         '''
-        
-        if type(self.data) == float:
-            return self.data
-        elif valtype=='max':
+        if valtype=='max':
             return max(self.data[2])
+    
+    def get_data(self):
+        return self.data[1], self.data[2]
+    
     
 
 

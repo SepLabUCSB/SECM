@@ -22,6 +22,8 @@ def get_plotlim(xdata, ydata):
       max(ydata) + 0.05*abs(max(ydata))
       )
      )
+    if len(xdata) == 1:
+        return ((0,0.1), (0,0.1))
     return lim
 
 
@@ -98,8 +100,7 @@ class Plotter():
             closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
             self.stop_polling_ADC()
             # TODO: support different plots besides hardcoded CV
-            xdata = closest_datapoint.data[1]
-            ydata = closest_datapoint.data[2]
+            xdata, ydata = closest_datapoint.get_data()
             self.set_static_fig2_data(xdata, ydata)
         return
      
