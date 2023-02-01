@@ -1,14 +1,18 @@
 from dataclasses import dataclass
 from datetime import datetime
 import json
+import pickle
 import numpy as np
 
 
+# TODO: make DataPoint master class with subclasses for different 
+#       experiments (i.e. CV, CA, single point) that have different
+#       properties
 
 
 class Experiment:
     
-    def __init__(self, data, length=10, exp_type='', path='temp.json'):
+    def __init__(self, data, length=10, exp_type='', path='temp.secmdata'):
         self.timestamp  = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         self.exp_type   = ''
         self.path       = path
@@ -21,16 +25,11 @@ class Experiment:
     def set_exp_type(self, exp_type):
         self.exp_type = exp_type
     
+    
     def set_scale(self, length):
         self.length = length
     
-    # def append(self, loc, data):
-    #     self.append_datapoint( DataPoint(loc, data) )
-    
-    
-    # def append_datapoint(self, point):
-    #     self.datapoints.append(point)
-    
+        
     def set_datapoint(self, grid_ids, point):
         i, j = grid_ids[0], grid_ids[1]
         self.data[i][j] = point
@@ -63,11 +62,12 @@ class Experiment:
     def save(self, path=None):
         if path: 
             self.path = path
-            
-        d = self.get_data()
+        
+        # d = self.get_data()
         
         with open(self.path, 'w') as f:
-            json.dump(d, f)
+            # json.dump(d, f)
+            pickle.dump(self, f)
             
 
     
@@ -100,8 +100,10 @@ class DataPoint:
 
 def load_from_file(path):
     with open(path, 'r') as f:
-        d = json.load(f)
-    return Experiment(data=d['data'], length=d['length'])
+        expt = pickle.load(path)
+        return expt
+    #     d = json.load(f)
+    # return Experiment(data=d['data'], length=d['length'])
 
 
 
