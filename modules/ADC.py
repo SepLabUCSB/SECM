@@ -30,7 +30,8 @@ class ADC():
             self.master = master
             self.master.register(self)
         self.willStop = False
-        # self.port = serial.Serial(port = SER_PORT, timeout=0.5)
+        if not self.master.TEST_MODE:
+            self.port = serial.Serial(port = SER_PORT, timeout=0.5)
         self.pollingdata = [[0],]
     
     def stop(self):

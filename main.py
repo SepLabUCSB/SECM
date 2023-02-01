@@ -70,6 +70,7 @@ class MasterModule():
         self.willStop   = False
         self.STOP       = False
         self.ABORT      = False
+        self.TEST_MODE  = False
         
         self.modules    = [self]
         
@@ -400,5 +401,6 @@ if __name__ == '__main__':
     except Exception as e:
         print(traceback.format_exc())
     
-    # adc.stop()
+    if not master.TEST_MODE:
+        adc.stop()
     
