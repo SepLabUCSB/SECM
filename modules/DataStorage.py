@@ -43,6 +43,15 @@ class Experiment:
             'timestamp':self.timestamp,
             }
     
+    def get_heatmap_data(self):
+        gridpts = np.array([
+            [d.get_val() for d in row]
+            for row in self.data]         
+            )
+        print(gridpts)
+        return gridpts
+    
+    
     def get_nearest_datapoint(self, x, y):
         # Returns DataPoint object with location nearest to the 
         # requested (x, y) coordinates
@@ -65,7 +74,7 @@ class Experiment:
         
         # d = self.get_data()
         
-        with open(self.path, 'w') as f:
+        with open(self.path, 'wb') as f:
             # json.dump(d, f)
             pickle.dump(self, f)
             
@@ -90,6 +99,7 @@ class DataPoint:
             'val_at': I at valarg voltage
             etc
         '''
+        
         if type(self.data) == float:
             return self.data
         elif valtype=='max':
@@ -99,8 +109,9 @@ class DataPoint:
 
 
 def load_from_file(path):
-    with open(path, 'r') as f:
-        expt = pickle.load(path)
+    with open(path, 'rb') as f:
+        expt = pickle.load(f)
+        print(expt.get_heatmap_data())
         return expt
     #     d = json.load(f)
     # return Experiment(data=d['data'], length=d['length'])

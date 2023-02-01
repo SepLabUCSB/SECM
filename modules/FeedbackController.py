@@ -73,19 +73,23 @@ class FeedbackController():
         
         points, order = get_xy_coords(length, n_pts)
         
+        # Initialize data storage 
         gridpts = np.array([
             np.array([0 for _ in range(n_pts)]) for _ in range(n_pts)
             ], dtype=np.float32)
         
+        expt = Experiment(data = gridpts, length = length)
+        expt.set_scale(length)
+        for i, (x, y) in enumerate(points):
+            data = DataPoint(loc = (x,y,0), data = 0.0)
+            grid_i, grid_j = order[i]
+            expt.set_datapoint( (grid_i, grid_j), data)
+                
+        self.master.set_expt(expt)
         self.master.Plotter.set_axlim('fig1',
                                       xlim=(0,length),
                                       ylim=(0,length)
                                       )
-        
-        # Initialize data storage
-        expt = Experiment(data = gridpts, length = length)
-        expt.set_scale(length)
-        self.master.set_expt(expt)
 
         for i, (x, y) in enumerate(points):
             if self.master.ABORT:
@@ -105,21 +109,11 @@ class FeedbackController():
                         current
                         ]
                     )
-            
-            grid_i, grid_j = order[i]
-            
-            # I = i
-            # gridpts[grid_i][grid_j] = I
-            # expt.set_datapoint( (grid_i, grid_j), I)
-            
-            
+                        
             expt.set_datapoint( (grid_i, grid_j), data)
-            gridpts[grid_i][grid_j] = data.get_val()
             
             # Send data for plotting
-            self.master.Plotter.data1 = gridpts
-            
-            
+            self.master.Plotter.data1 = expt.get_heatmap_data()
             
             time.sleep(0.01)
         

@@ -17,6 +17,8 @@ from utils.utils import run
 
 matplotlib.use('TkAgg')
 plt.style.use('default')
+
+TEST_MODE = True
     
 '''
 TODO:
@@ -66,11 +68,11 @@ gl_st = time.time()
 
 class MasterModule():
     
-    def __init__(self):
+    def __init__(self, TEST_MODE):
         self.willStop   = False
         self.STOP       = False
         self.ABORT      = False
-        self.TEST_MODE  = False
+        self.TEST_MODE  = TEST_MODE
         
         self.modules    = [self]
         
@@ -382,7 +384,7 @@ class GUI():
 
 
 if __name__ == '__main__':
-    master = MasterModule()
+    master = MasterModule(TEST_MODE = TEST_MODE)
     reader = HekaReader(master)
     writer = HekaWriter(master)
     adc    = ADC(master)
