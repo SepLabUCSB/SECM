@@ -28,12 +28,30 @@ class ADC():
         if master:
             self.master = master
             self.master.register(self)
-        self.willStop = False
+        self.willStop   = False
+        self._is_polling  = False
+        self._STOP_POLLING = False
+        
         if not self.master.TEST_MODE:
             self.port = serial.Serial(port = SER_PORT, timeout=0.5)
             self.setup(n_channels=2)
+            
         self.pollingcount = 0
         self.pollingdata  = [[0],]
+    
+    
+    def polling_on(self):
+        self._is_polling = True
+        
+    def polling_off(self):
+        self._is_polling = False
+        
+    def STOP_POLLING(self):
+        self._STOP_POLLING = True
+    
+    def isPolling(self):
+        return self._is_polling
+    
     
     def stop(self):
         try:
@@ -43,7 +61,8 @@ class ADC():
         time.sleep(1)
         self.port.close()
         return
-        
+       
+    
     def setup(self, n_channels=1, srate=1000, dec=1, deca=1, ps=6):
         # TODO: input checks
         self.number_of_channels = n_channels
@@ -67,7 +86,8 @@ class ADC():
     
     
     def polling(self, timeout=2):
-        # self.setup(n_channels=2)
+        if self.isPolling(): return
+        
         numofbyteperscan = 2**(self.ps + 4)
         idxs = []
         data = [ [] for _ in range(self.number_of_channels)]
@@ -77,13 +97,16 @@ class ADC():
         self.pollingcount += 1
         self.port.reset_input_buffer()
         self.port.write(b"start\r")
+        self.polling_on()
         
         st = time.time()
         idx = 0
         
         while True:
             if time.time() - st > timeout:
-                # print('stopping polling')
+                break
+            if self._STOP_POLLING:
+                self._STOP_POLLING = False
                 break
             if self.master.ABORT:
                 # print('aborting polling')
@@ -113,57 +136,11 @@ class ADC():
             self.master.Plotter.poll_ADC()
         
         self.port.write(b"stop\r")
+        self.polling_off()
         
         return idxs, t, data
-    
-    
-    def plotter(self):
-        fig, ax = plt.subplots()
-        ln, = ax.plot([], [])
-        ln2, = ax.plot([],[])
-        fig.canvas.draw()
-        bg = fig.canvas.copy_from_bbox(ax.bbox)
-        ax.draw_artist(ln)
-        ax.draw_artist(ln2)
-        ax.set_xlim(-0.1, 2.1)
-        ax.set_ylim(-0.7,0.7)
-        fig.canvas.blit(ax.bbox)
+      
 
-        run(self.polling)
-        st = time.time()
-        plotted_idxs = [-1]
-        plot_ts = []
-        plot_ch1data = []
-        plot_ch2data = []
-        
-        while time.time() - st < 3:
-            last_idx = max(plotted_idxs)
-            try:
-                idxs, ts, ch1data, ch2data = self.pollingdata
-            
-                startpoint = min([i for i, val in enumerate(idxs)
-                                  if val > last_idx])
-            except:
-                continue
-            plotted_idxs += idxs[startpoint:]
-            plot_ts += ts[startpoint:]
-            plot_ch1data += ch1data[startpoint:]
-            plot_ch2data += ch2data[startpoint:]
-            ln.set_data(plot_ts, plot_ch1data)
-            # ln.set_data(plot_ch1data, plot_ch2data)
-            ln2.set_data(plot_ts, plot_ch2data)
-            ax.draw_artist(ln)
-            ax.draw_artist(ln2)
-            fig.canvas.blit(ax.bbox)
-            fig.canvas.draw_idle()
-            plt.pause(0.1)
-            
-            
-            
-        
-    
-    
-    
     def record(self, timeout=2):
         # Record for a set amount of time
         numofbyteperscan = 2**(self.ps + 4)

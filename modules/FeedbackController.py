@@ -1,36 +1,35 @@
 import numpy as np
 import time
-import datetime
+from io import StringIO
+import os
 from utils.utils import run
-from modules.DataStorage import Experiment, SinglePoint, CVDataPoint
+from modules.DataStorage import Experiment, CVDataPoint
 
 
-def get_xy_coords(length, n_points):
-        # Generate ordered list of xy coordinates for a scan
-        # ----->
-        # <-----
-        # ----->
-        points = []
-        order  = []
-        coords = np.linspace(0, length, n_points)
-        
-        reverse = False
-        i, j = 0, 0 # i -> x, j -> y
-        for y in reversed(coords):
-            if reverse:
-                for j, x in reversed(list(enumerate(coords))):
-                    points.append((x,y))
-                    order.append((i,j))
-                reverse = False
-                i += 1
-            else:
-                for j, x in enumerate(coords):
-                    points.append((x,y))
-                    order.append((i,j))
-                reverse = True
-                i += 1
-                          
-        return points, order
+
+
+def read_heka_data(file):
+    # Use StringIO object to parse through file
+    # Convert only floats to np arrays
+    
+    def isFloat(x):
+        try: 
+            float(x)
+            return True
+        except: 
+            return False
+    
+    s = StringIO()
+    with open(file, 'r') as f:
+        for line in f:
+            if isFloat(line.split(',')[0]):
+                # Check for index number
+                s.write(line)
+    s.seek(0)
+    array = np.genfromtxt(s, delimiter=',')
+    array = array.T
+    return array
+    
 
 
 
@@ -49,19 +48,30 @@ class FeedbackController():
 
     
 
-    def approach_curve(self, i_cutoff):
+    def do_approach_curve(self, i_cutoff):
         
         # current = self.ADC.get_current()
         current = np.random.rand()
         return current
     
-    def CV(self, i):
+    def fake_CV(self, i):
         voltage = np.linspace(0, 0.5, 50)
         max_I = 100*np.random.rand()
         current = np.linspace(0, i, 50)
         return voltage, current
     
-    def hopping_mode(self, params, fig):
+    def run_CV(self, save_path, name):
+        self.master.HekaWriter.run_CV_loop(save_path=save_path,
+                                           name=name)
+        output = read_heka_data(
+                                os.path.join(save_path, f'{name}.asc')
+                                )
+        _, t, i, _, v = output
+        return v, i
+        
+    
+    
+    def hopping_mode(self, params, expt_type='CV'):
         length = params['size'].get('1.0', 'end')
         height = params['Z'].get('1.0', 'end')
         n_pts  = params['n_pts'].get('1.0', 'end')
@@ -71,20 +81,20 @@ class FeedbackController():
         z      = float(height)
         n_pts  = int(n_pts)
         
-        points, order = get_xy_coords(length, n_pts)
+        
+        # Setup potentiostat for experiment
+        if expt_type == 'CV':
+            self.master.GUI.set_amplifier()
+            CV_vals = self.master.GUI.get_CV_params()
+            self.master.HekaWriter.setup_CV(*CV_vals)
+        
         
         # Initialize data storage 
-        gridpts = np.array([
-            np.array([0 for _ in range(n_pts)]) for _ in range(n_pts)
-            ], dtype=np.float32)
+        expt = Experiment(length = length,
+                          n_pts  = n_pts,
+                          path='D:/SECM/test/')
+        points, order = expt.get_xy_coords()     
         
-        expt = Experiment(data = gridpts, length = length)
-        expt.set_scale(length)
-        for i, (x, y) in enumerate(points):
-            data = SinglePoint(loc = (x,y,0), data = 0)
-            grid_i, grid_j = order[i]
-            expt.set_datapoint( (grid_i, grid_j), data)
-                
         self.master.set_expt(expt)
         self.master.Plotter.set_axlim('fig1',
                                       xlim=(0,length),
@@ -95,12 +105,12 @@ class FeedbackController():
         for i, (x, y) in enumerate(points):
             if self.master.ABORT:
                 self.master.make_ready()
-                break
+                return
             self.Piezo.goto(x, y, z)
             
             # TODO: run variable echem experiment(s) at each pt
             # I = self.approach_curve(0)
-            voltage, current = self.CV(i)
+            voltage, current = self.run_CV(expt.path, i)
             
             data = CVDataPoint(
                     loc = (x,y,z),

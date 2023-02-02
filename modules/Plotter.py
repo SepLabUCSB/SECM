@@ -118,8 +118,9 @@ class Plotter():
         # Called every 10 ms by TK mainloop.
         # Check if data has updated. If so, plot it to
         # the appropriate figure.
-        # self.data2poll = self.master.ADC.pollingdata
+        
         self.data2poll = self.master.ADC.pollingdata
+        # self.data1 = self.master.expt.get_heatmap_data()
         if checksum(self.data1) != self.last_data1checksum:
             self.update_fig1()
         
@@ -191,7 +192,9 @@ class Plotter():
         
         if self.adc_polling:
             # Real time plot - get new data from ADC
-            idxs, ts, ch1, ch2 = self.master.ADC.pollingdata.copy()
+            dat = self.master.ADC.pollingdata.copy()
+            if len(dat) != 4: return
+            idxs, ts, ch1, ch2 = dat
             self.last_data2checksum = checksum([idxs, ts])
             
             # local copy of data already on plot

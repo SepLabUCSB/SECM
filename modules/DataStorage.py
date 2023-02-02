@@ -1,25 +1,72 @@
-from dataclasses import dataclass
 from datetime import datetime
-import json
+import os
 import pickle
 import numpy as np
 
 
-# TODO: make DataPoint master class with subclasses for different 
-#       experiments (i.e. CV, CA, single point) that have different
-#       properties
+def get_xy_coords(length, n_points):
+        # Generate ordered list of xy coordinates for a scan
+        # ----->
+        # <-----
+        # ----->
+        points = []
+        order  = []
+        coords = np.linspace(0, length, n_points)
+        
+        reverse = False
+        i, j = 0, 0 # i -> x, j -> y
+        for y in reversed(coords):
+            if reverse:
+                for j, x in reversed(list(enumerate(coords))):
+                    points.append((x,y))
+                    order.append((i,j))
+                reverse = False
+                i += 1
+            else:
+                for j, x in enumerate(coords):
+                    points.append((x,y))
+                    order.append((i,j))
+                reverse = True
+                i += 1
+                          
+        return points, order
 
 
 class Experiment:
     
-    def __init__(self, data, length=10, exp_type='', path='temp.secmdata'):
+    def __init__(self, length=10, n_pts=10, exp_type='', 
+                 path='D:/SECM/temp.secmdata'):
         self.timestamp  = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-        self.exp_type   = ''
         self.path       = path
+        self.basepath   = '/'.join(path.split('/')[:-1])
+        os.makedirs(self.basepath, exist_ok=True)
         
-        self.data   = np.array(data, dtype=object)
-        self.length = length # scale of SECM grid in um
+        # Set blank SECM grid data
+        self.set_scale(length)
+        self.set_exp_type(exp_type)
+        self.setup_blank(length, n_pts)
+    
+    
+    def setup_blank(self, length, n_pts):
+        points, order = get_xy_coords(length, n_pts)
         
+        gridpts = np.array([
+            np.array([0 for _ in range(n_pts)]) for _ in range(n_pts)
+            ], dtype=object)
+        
+        self.points = points
+        self.order  = order
+        self.data   = gridpts
+        
+        for i, (x, y) in enumerate(points):
+            data = SinglePoint(loc = (x,y,0), data = 0)
+            grid_i, grid_j = order[i]
+            self.set_datapoint( (grid_i, grid_j), data)
+        return
+    
+    
+    def get_xy_coords(self):
+        return self.points, self.order
     
     
     def set_exp_type(self, exp_type):
@@ -75,12 +122,13 @@ class Experiment:
     
     
     def save(self, path=None):
-        if path: 
+        if not path:
             self.path = path
         
-        # d = self.get_data()
-        
-        with open(self.path, 'wb') as f:
+        if not path.endswith('.secmdata'):
+            path += '.secmdata'
+                
+        with open(path, 'wb') as f:
             # json.dump(d, f)
             pickle.dump(self, f)
             

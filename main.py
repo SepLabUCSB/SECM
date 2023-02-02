@@ -18,7 +18,7 @@ from utils.utils import run
 matplotlib.use('TkAgg')
 plt.style.use('default')
 
-TEST_MODE = True
+TEST_MODE = False
     
 '''
 TODO:
@@ -39,7 +39,6 @@ TODO:
     
     
     HEKA control
-    - create separate SECM_ pgf, analysis, etc files
     - init to known state
     - store current amplifier state
     - amplifier controls
@@ -76,26 +75,32 @@ class MasterModule():
         
         self.modules    = [self]
         
-        self.expt = None
+        self.expt = Experiment()
+        
         
     def register(self, module):
         # register a submodule to master
         setattr(self, module.__class__.__name__, module)
         self.modules.append(getattr(self, module.__class__.__name__))
     
+    
+    def set_expt(self, expt):
+        self.expt = expt
+    
+    
     def run(self):
+        # master main loop
         while True:
-            if time.time() - gl_st > 60: 
-                break
-            
             for module in self.modules:
                 if module.willStop:
                     # STOP flag stops everything
                     self.STOP = True
                     self.abort()
                     print('master stopping')
-                    return self.endState()
-            time.sleep(0.5)
+                    self.endState()
+                    return 
+            time.sleep(0.1)
+    
     
     def abort(self):
         # general callback for aborting an operation
@@ -103,7 +108,9 @@ class MasterModule():
         # aborting process
         self.ABORT = True
     
+    
     def make_ready(self):
+        time.sleep(1) # wait for other threads to abort
         self.ABORT = False
         
     
@@ -113,8 +120,7 @@ class MasterModule():
                 module.stop()
         return 
     
-    def set_expt(self, expt):
-        self.expt = expt
+    
             
 
 
@@ -331,11 +337,8 @@ class GUI():
         
         self.params['amp'] = new_params
         return
-        
     
-    def run_CV(self):
-        self.set_amplifier()
-        #unpack params
+    def get_CV_params(self):
         cv_params = self.params['CV'].copy()
         E0 = cv_params['E0'].get('1.0', 'end')
         E1 = cv_params['E1'].get('1.0', 'end')
@@ -348,6 +351,12 @@ class GUI():
             E0, E1, E2, E3, v, t0 = [float(val) for val in vals]
         except:
             print('invalid CV inputs')
+            return 0,0,0,0,0,0
+        return E0, E1, E2, E3, v, t0
+    
+    def run_CV(self):
+        self.set_amplifier()
+        E0, E1, E2, E3, v, t0 = self.get_CV_params()
         if v > 0.1:
             print('max scan rate 100mV/s - gotta fix')
             return
@@ -366,7 +375,7 @@ class GUI():
     
     def run_hopping(self):
         func = partial(self.master.FeedbackController.hopping_mode,
-                        self.params['hopping'], self.topfig)
+                        self.params['hopping'])
         run(func)
         
     

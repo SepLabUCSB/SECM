@@ -1,6 +1,8 @@
 import time
 import os
 import shutil
+from utils.utils import run
+from functools import partial
 
 
 input_file  = r'C:/ProgramData/HEKA/com/E9Batch.In'
@@ -248,20 +250,37 @@ class HekaWriter:
         self.running()
         self.run_CV()
         st = time.time()
+        
+        # Start ADC polling
+        # self.master.ADC.polling(timeout = self.CV_duration)
+        run(partial(self.master.ADC.polling, self.CV_duration))
+        
         while time.time() - st < self.CV_duration + 3:
+            
             if self.master.ABORT:
-                self.master.make_ready()
                 self.abort()
+                self.master.ADC.STOP_POLLING()
+                path = self.save_last_experiment(save_path, name)
+                self.idle()
+                self.master.make_ready()
+                return path
+            
             self.send_command('Query')
+            
             try:
                 if self.master.HekaReader.last[1] == 'Query_Idle':
-                    break
+                    break 
             except:
                 pass
+            
             time.sleep(0.5)
+            
         if not self.master.HekaReader.last[1] == 'Query_Idle':
             print('CV failed!')
             return
+        
+        self.master.ADC.STOP_POLLING()
+        
         path = self.save_last_experiment(path=save_path, name=name)
         self.idle()
         return path
