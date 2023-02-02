@@ -193,7 +193,9 @@ class Plotter():
         if self.adc_polling:
             # Real time plot - get new data from ADC
             dat = self.master.ADC.pollingdata.copy()
-            if len(dat) != 4: return
+            if len(dat) != 4: 
+                print(dat)
+                return
             idxs, ts, ch1, ch2 = dat
             self.last_data2checksum = checksum([idxs, ts])
             

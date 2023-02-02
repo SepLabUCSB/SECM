@@ -41,7 +41,7 @@ def make_CV_window(gui, master_frame):
     
     t0_field = Text(frame, height=1, width=5)
     t0_field.grid(column=2, row=2, sticky=(E,W))
-    t0_field.insert('1.0', '5')
+    t0_field.insert('1.0', '0.2')
     t0_field.bind('<Tab>', focus_next_widget)
     
     E1_field = Text(frame, height=1, width=5)
@@ -51,7 +51,7 @@ def make_CV_window(gui, master_frame):
     
     E2_field = Text(frame, height=1, width=5)
     E2_field.grid(column=2, row=4, sticky=(E,W))
-    E2_field.insert('1.0', '-0.5')
+    E2_field.insert('1.0', '0')
     E2_field.bind('<Tab>', focus_next_widget)
     
     Ef_field = Text(frame, height=1, width=5)

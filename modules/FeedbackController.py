@@ -104,7 +104,6 @@ class FeedbackController():
         
         for i, (x, y) in enumerate(points):
             if self.master.ABORT:
-                self.master.make_ready()
                 return
             self.Piezo.goto(x, y, z)
             

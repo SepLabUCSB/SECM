@@ -33,22 +33,16 @@ TODO:
     
     Logging
     
-    File system
-    - saving protocol
-    - upload protocol
-    
     
     HEKA control
     - init to known state
     - store current amplifier state
-    - amplifier controls
     - implement other echem funcs
     
     XYZ control
     - create test module
     
     SECM
-    - make figure
     - controller
         - point and click
         - scanning protocols
@@ -336,6 +330,7 @@ class GUI():
             self.master.HekaWriter.macro(cmd)
         
         self.params['amp'] = new_params
+        self.master.make_ready()
         return
     
     def get_CV_params(self):
@@ -362,6 +357,7 @@ class GUI():
             return
         self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
         path = self.master.HekaWriter.run_CV_loop()
+        self.master.make_ready()
         return path
     
     

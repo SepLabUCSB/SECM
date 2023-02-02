@@ -40,16 +40,20 @@ class ADC():
         self.pollingdata  = [[0],]
     
     
-    def polling_on(self):
-        self._is_polling = True
-        
-    def polling_off(self):
-        self._is_polling = False
-        
-    def STOP_POLLING(self):
+    def STOP_POLLING(self): #Command
         self._STOP_POLLING = True
     
-    def isPolling(self):
+    
+    def polling_on(self): # Set flags
+        self._is_polling   = True
+        self._STOP_POLLING = False
+        
+        
+    def polling_off(self): # Set flag
+        self._is_polling = False
+    
+    
+    def isPolling(self): # Check flag
         return self._is_polling
     
     
@@ -87,13 +91,12 @@ class ADC():
     
     def polling(self, timeout=2):
         if self.isPolling(): return
-        
         numofbyteperscan = 2**(self.ps + 4)
         idxs = []
         data = [ [] for _ in range(self.number_of_channels)]
         t    = []
         
-        self.pollingdata = [0]
+        self.pollingdata = [idxs, t, *data]
         self.pollingcount += 1
         self.port.reset_input_buffer()
         self.port.write(b"start\r")
@@ -109,8 +112,6 @@ class ADC():
                 self._STOP_POLLING = False
                 break
             if self.master.ABORT:
-                # print('aborting polling')
-                self.master.make_ready()
                 break
             i = self.port.in_waiting
             if (i//numofbyteperscan) > 0:

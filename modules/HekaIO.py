@@ -262,7 +262,6 @@ class HekaWriter:
                 self.master.ADC.STOP_POLLING()
                 path = self.save_last_experiment(save_path, name)
                 self.idle()
-                self.master.make_ready()
                 return path
             
             self.send_command('Query')
@@ -328,25 +327,7 @@ def generate_CV_params(E0, E1, E2, E3, scan_rate, quiet_time):
     
 
 
-if __name__ == '__main__':
-    master = master()
-            
-    writer = HekaWriter(master, input_file)
-    reader = HekaReader(master, output_file)
-    
-    
-    # timeout = 5
-    # master_thread = threading.Thread(target=master.run)
-    # writer_thread = threading.Thread(target=writer.run_CV_loop)
-    # reader_thread = threading.Thread(target=reader.read_stream)
-    
-    # master_thread.start()
-    # writer_thread.start()
-    # reader_thread.start()
-    
-    # master_thread.join()
-    # writer_thread.join()
-    # reader_thread.join()
+
 
 
     
