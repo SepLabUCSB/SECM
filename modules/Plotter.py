@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 import time
 import numpy as np
+from scipy.signal import savgol_filter
 
 
 def checksum(data):
@@ -25,6 +26,21 @@ def get_plotlim(xdata, ydata):
     if len(xdata) == 1:
         return ((0,0.1), (0,0.1))
     return lim
+
+def get_axval_axlabels(expt_type):
+    if expt_type == 'CV':
+        xval = 'ch1'
+        yval = 'ch2'
+        yaxlabel='I'
+        xaxlabel='V'
+            
+    elif expt_type == 'CA':
+        xval = 't'
+        yval = 'ch2'
+        yaxlabel='I'
+        xaxlabel='t'
+    
+    return xval, yval, xaxlabel, yaxlabel
 
 
 class Plotter():
@@ -157,6 +173,11 @@ class Plotter():
         self.set_axlim('fig2',
                        *get_plotlim(xdata, ydata)
                        )
+        _,_, xaxlabel, yaxlabel = get_axval_axlabels(
+                                        self.master.expt.expt_type
+                                            )
+        self.ax2.set_xlabel(xaxlabel)
+        self.ax2.set_ylabel(yaxlabel)
         self.fig2.canvas.draw()
         plt.pause(0.001)
         return
@@ -216,6 +237,11 @@ class Plotter():
                 return
             idx += idxs[startpoint:]
             
+            # Determine what to plot based on exp_type
+            xval, yval, xaxlabel, yaxlabel = get_axval_axlabels(
+                                            self.master.expt.expt_type
+                                            )
+            
             # str -> array lookup table
             d = {'t': ts,
                  'ch1': ch1,
@@ -227,17 +253,23 @@ class Plotter():
             new_y = d[yval][startpoint:]
             new_y2 = ch2[startpoint:]
             
-            x += new_x
-            y += new_y
+            
+            x  += new_x
+            y  += new_y
             y2 += new_y2
-         
-            self.ln.set_data(x, y)
+            
+            # self.ln.set_data(x, y)
+            self.ln.set_data(savgol_filter(x, 21, 1), 
+                              savgol_filter(y, 21, 1))
             # self.ln2.set_data(x, y2)
             self.set_axlim('fig2', 
                            *get_plotlim(x, y)
                            )
+            # self.ax2.set_xlabel(xaxlabel)
+            # self.ax2.set_ylabel(yaxlabel)
             self.ax2.draw_artist(self.ln)
             self.ax2.draw_artist(self.ln2)
+            self.fig2.tight_layout()
             self.fig2.canvas.blit(self.ax2.bbox)
             self.fig2.canvas.draw_idle()
             self.data2plot = [idx, x, y, y2]

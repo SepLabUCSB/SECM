@@ -84,15 +84,18 @@ class FeedbackController():
         
         # Setup potentiostat for experiment
         if expt_type == 'CV':
-            self.master.GUI.set_amplifier()
-            CV_vals = self.master.GUI.get_CV_params()
-            self.master.HekaWriter.setup_CV(*CV_vals)
+            
+            if not self.master.TEST_MODE:
+                self.master.GUI.set_amplifier()
+                CV_vals = self.master.GUI.get_CV_params()
+                self.master.HekaWriter.setup_CV(*CV_vals)
         
         
         # Initialize data storage 
-        expt = Experiment(length = length,
-                          n_pts  = n_pts,
-                          path='D:/SECM/test/')
+        expt = Experiment(length    = length,
+                          n_pts     = n_pts,
+                          path      ='D:/SECM/test/',
+                          expt_type = expt_type)
         points, order = expt.get_xy_coords()     
         
         self.master.set_expt(expt)
@@ -108,8 +111,10 @@ class FeedbackController():
             self.Piezo.goto(x, y, z)
             
             # TODO: run variable echem experiment(s) at each pt
-            # I = self.approach_curve(0)
-            voltage, current = self.run_CV(expt.path, i)
+            if self.master.TEST_MODE:
+                voltage, current = self.fake_CV(i)
+            else:
+                voltage, current = self.run_CV(expt.path, i)
             
             data = CVDataPoint(
                     loc = (x,y,z),

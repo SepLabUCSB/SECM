@@ -34,7 +34,7 @@ def get_xy_coords(length, n_points):
 
 class Experiment:
     
-    def __init__(self, length=10, n_pts=10, exp_type='', 
+    def __init__(self, length=10, n_pts=10, expt_type='', 
                  path='D:/SECM/temp.secmdata'):
         self.timestamp  = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         self.path       = path
@@ -43,7 +43,7 @@ class Experiment:
         
         # Set blank SECM grid data
         self.set_scale(length)
-        self.set_exp_type(exp_type)
+        self.set_type(expt_type)
         self.setup_blank(length, n_pts)
     
     
@@ -69,8 +69,8 @@ class Experiment:
         return self.points, self.order
     
     
-    def set_exp_type(self, exp_type):
-        self.exp_type = exp_type
+    def set_type(self, expt_type):
+        self.expt_type = expt_type
     
     
     def set_scale(self, length):
@@ -106,14 +106,16 @@ class Experiment:
     
     
     def get_nearest_datapoint(self, x, y):
-        # Returns DataPoint object with location nearest to the 
-        # requested (x, y) coordinates
+        '''
+        Returns DataPoint object with location nearest to the 
+        requested (x, y) coordinates
+        '''
         min_dist = 1e10
         closest  = None
         for datapoint in self.data.flatten():
             x0, y0, z0 = datapoint.loc
             distance = np.sqrt(
-                               (x - x0)**2 + (y - y0)**2 
+                                (x - x0)**2 + (y - y0)**2 
                                 )
             if distance < min_dist:
                 min_dist = distance

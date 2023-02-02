@@ -18,7 +18,7 @@ from utils.utils import run
 matplotlib.use('TkAgg')
 plt.style.use('default')
 
-TEST_MODE = False
+TEST_MODE = True
     
 '''
 TODO:
@@ -159,14 +159,20 @@ class GUI():
         rightpanel.grid(row=1, column=1)
         
         
-        tabControl = Notebook(leftpanel)
+        # tabControl = Notebook(leftpanel)
         
-        secm_frame  = Frame(tabControl)
-        pstat_frame = Frame(tabControl)
+        # secm_frame  = Frame(tabControl)
+        # pstat_frame = Frame(tabControl)
         
-        tabControl.add(pstat_frame, text ='Potentiostat Control')
-        tabControl.add(secm_frame, text ='SECM Control')
-        tabControl.grid(row=0, column=0, sticky=(N))
+        pstat_frame = Frame(leftpanel)
+        pstat_frame.grid(row=0, column=0, sticky=(N,W,E))
+        secm_frame = Frame(leftpanel)
+        secm_frame.grid(row=1, column=0, sticky=(N,W,E))
+        
+        
+        # tabControl.add(pstat_frame, text ='Potentiostat Control')
+        # tabControl.add(secm_frame, text ='SECM Control')
+        # tabControl.grid(row=0, column=0, sticky=(N))
            
         ######################################
         #####                            #####
