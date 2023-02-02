@@ -23,7 +23,6 @@ class ADC():
     https://github.com/dataq-instruments/Simple-Python-Examples/blob/master/simpletest_binary.py
     '''
     
-    # TODO: add buffer of previous x seconds of currents data
     
     def __init__(self, master=None, SER_PORT = CONST_SER_PORT):
         if master:
@@ -32,7 +31,9 @@ class ADC():
         self.willStop = False
         if not self.master.TEST_MODE:
             self.port = serial.Serial(port = SER_PORT, timeout=0.5)
-        self.pollingdata = [[0],]
+            self.setup(n_channels=2)
+        self.pollingcount = 0
+        self.pollingdata  = [[0],]
     
     def stop(self):
         try:
@@ -66,32 +67,31 @@ class ADC():
     
     
     def polling(self, timeout=2):
-        self.setup(n_channels=2)
+        # self.setup(n_channels=2)
         numofbyteperscan = 2**(self.ps + 4)
         idxs = []
         data = [ [] for _ in range(self.number_of_channels)]
         t    = []
         
         self.pollingdata = [0]
+        self.pollingcount += 1
         self.port.reset_input_buffer()
         self.port.write(b"start\r")
         
         st = time.time()
         idx = 0
-        self.master.Plotter.reinit_fig2()
-        self.master.Plotter.poll_ADC()
+        
         while True:
             if time.time() - st > timeout:
-                print('stopping polling')
+                # print('stopping polling')
                 break
             if self.master.ABORT:
-                print('aborting polling')
+                # print('aborting polling')
                 self.master.make_ready()
                 break
             i = self.port.in_waiting
             if (i//numofbyteperscan) > 0:
                 response = self.port.read(i - i%numofbyteperscan)
-       
                 for x in range(0, self.number_of_channels):
                     adc=response[x*2]+response[x*2+1]*256
                     if adc>32767:
@@ -107,9 +107,12 @@ class ADC():
                     t = t[-100:] 
                     idxs = idxs[-100:]
                     data = [
-                        data[i][-100:] for i in range(len(data))
+                        l[-100:] for l in data
                         ]
                 self.pollingdata = [idxs, t, *data]
+            self.master.Plotter.poll_ADC()
+        
+        self.port.write(b"stop\r")
         
         return idxs, t, data
     

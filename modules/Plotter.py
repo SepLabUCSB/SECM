@@ -10,7 +10,7 @@ def checksum(data):
     if type(data) == list:
         # CV curve type data
         # From polling ADC, of form [ [idxs], [times], [*data] ]
-        return sum(data[0])
+        return np.array(data).flatten().sum()
 
 
 def get_plotlim(xdata, ydata):
@@ -35,6 +35,7 @@ class Plotter():
         self.willStop = False
         
         self.adc_polling = True
+        self.adc_polling_count = 0
         
         self.fig1 = fig1
         self.fig2 = fig2
@@ -43,7 +44,7 @@ class Plotter():
         
         self.data1 = np.array([0,])
         self.data2poll = self.master.ADC.pollingdata
-        self.data2plot = [ [0,], [], [] ] #idx, x, y
+        self.data2plot = [ [0], [0], [0], [0] ] #idx, x, y, y2
         
         self.last_data1checksum = checksum(self.data1)
         self.last_data2checksum = checksum(self.data2plot)
@@ -69,6 +70,7 @@ class Plotter():
         
         # Initialize echem fig
         self.ln, = self.ax2.plot([], [])
+        self.ln2, = self.ax2.plot([], [])
         self.ax2.set_xlim(-0., 2.1)
         self.ax2.set_xlabel('')
         self.ax2.set_ylabel('')
@@ -161,7 +163,10 @@ class Plotter():
     
     def reinit_fig2(self):
         # Redraw blank fig2 before polling ADC
+        self.data2plot = [ [0], [0], [0], [0] ]
+        self.ax2.cla()
         self.ln, = self.ax2.plot([], [])
+        self.ln2, = self.ax2.plot([], [])
         self.ax2.set_xlim(-0., 2.1)
         self.ax2.set_xlabel('')
         self.ax2.set_ylabel('')
@@ -179,18 +184,31 @@ class Plotter():
         yval: 'ch1', 'ch2'
         '''
         
+        if self.master.ADC.pollingcount != self.adc_polling_count:
+            # Check if new polling has started
+            self.adc_polling_count = self.master.ADC.pollingcount
+            self.reinit_fig2()
+        
         if self.adc_polling:
             # Real time plot - get new data from ADC
             idxs, ts, ch1, ch2 = self.master.ADC.pollingdata.copy()
             self.last_data2checksum = checksum([idxs, ts])
             
             # local copy of data already on plot
-            idx, x, y = self.data2plot.copy()
+            idx, x, y, y2 = self.data2plot.copy()
             last_idx = idx[-1]
+            if len(idx) < 5:
+                # New plot
+                idx, x, y, y2 = [], [], [], []
+                last_idx = -1
+            
             
             # Find new points to plot
-            startpoint = min([i for i, val in enumerate(idxs)
-                              if val > last_idx])
+            try:
+                startpoint = min([i for i, val in enumerate(idxs)
+                                  if val > last_idx])
+            except ValueError:
+                return
             idx += idxs[startpoint:]
             
             # str -> array lookup table
@@ -202,20 +220,23 @@ class Plotter():
             # Set new data and draw
             new_x = d[xval][startpoint:]
             new_y = d[yval][startpoint:]
+            new_y2 = ch2[startpoint:]
             
             x += new_x
             y += new_y
-        
-                
-        self.ln.set_data(x, y)
-        self.set_axlim('fig2', 
-                       *get_plotlim(x, y)
-                       )
-        self.ax2.draw_artist(self.ln)
-        self.fig2.canvas.blit(self.ax2.bbox)
-        self.fig2.canvas.draw_idle()
-        self.data2plot = [idx, x, y]
-        plt.pause(0.001)
+            y2 += new_y2
+         
+            self.ln.set_data(x, y)
+            # self.ln2.set_data(x, y2)
+            self.set_axlim('fig2', 
+                           *get_plotlim(x, y)
+                           )
+            self.ax2.draw_artist(self.ln)
+            self.ax2.draw_artist(self.ln2)
+            self.fig2.canvas.blit(self.ax2.bbox)
+            self.fig2.canvas.draw_idle()
+            self.data2plot = [idx, x, y, y2]
+            plt.pause(0.001)
     
     
     def set_axlim(self, fig, xlim, ylim):
