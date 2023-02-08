@@ -36,6 +36,8 @@ class Experiment:
     
     def __init__(self, length=10, n_pts=10, expt_type='', 
                  path='D:/SECM/temp.secmdata'):
+        if not os.path.exists(path.split('/')[0]):
+            path = 'temp/temp.secmdata'
         self.timestamp  = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
         self.path       = path
         self.basepath   = '/'.join(path.split('/')[:-1])
@@ -125,7 +127,7 @@ class Experiment:
     
     def save(self, path=None):
         if not path:
-            self.path = path
+            path = self.path
         
         if not path.endswith('.secmdata'):
             path += '.secmdata'
@@ -133,6 +135,7 @@ class Experiment:
         with open(path, 'wb') as f:
             # json.dump(d, f)
             pickle.dump(self, f)
+        print(f'Saved as {path}')
             
 
     

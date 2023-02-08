@@ -12,13 +12,17 @@ from modules.Piezo import Piezo
 from modules.FeedbackController import FeedbackController
 from modules.Plotter import Plotter
 from modules.DataStorage import Experiment, load_from_file
-from gui import *
 from utils.utils import run
+import gui
+from gui import *
+
 
 matplotlib.use('TkAgg')
 plt.style.use('default')
 
 TEST_MODE = True
+
+
     
 '''
 TODO:
@@ -62,6 +66,7 @@ gl_st = time.time()
 class MasterModule():
     
     def __init__(self, TEST_MODE):
+        # TEST_MODE: bool, True = record fake data
         self.willStop   = False
         self.STOP       = False
         self.ABORT      = False
@@ -184,8 +189,10 @@ class GUI():
         topfigframe = Frame(rightpanel)
         topfigframe.grid(row=0, column=1)
         topfigframe.pack_propagate(0)
+        
         Separator(rightpanel, 
                   orient='horizontal').grid(row=1, column=1, sticky=(W,E))
+        
         botfigframe = Frame(rightpanel)
         botfigframe.grid(row=2, column=1)
         botfigframe.pack_propagate(0)
@@ -197,13 +204,44 @@ class GUI():
         self.topfig.add_subplot(111)
         self.botfig.add_subplot(111)
         
+        
+        
+        Label(topfigframe, text='Display: ').grid(column=0, row=0, 
+                                                  sticky=(W,E))
+        heatmapOptions = [
+            'Max. current',
+            'Current @ ... (V)',
+            'Z height',
+            'Avg. current'
+            ]
+        self.heatmapselection = StringVar(topfigframe)
+        OptionMenu(topfigframe, self.heatmapselection, 
+                   heatmapOptions[0], *heatmapOptions).grid(column=1, 
+                                                            row=0, 
+                                                            sticky=(W,E))
+        self.HeatMapDisplayParam = Text(topfigframe, height=1, width=5)
+        self.HeatMapDisplayParam.insert('1.0', '')
+        self.HeatMapDisplayParam.grid(column=2, row=0, sticky=(W,E))
+        
         FigureCanvasTkAgg(self.topfig, master=topfigframe
                           ).get_tk_widget().grid(
-                                              row=0, column=0)
+                                              row=1, column=0,
+                                              columnspan=10)
         
+        option11 = StringVar(botfigframe)
+        OptionMenu(botfigframe, option11, 'Option 1', 
+                   *['Option 1', '']).grid(column=0, row=0, sticky=(W,E))
+        option12 = StringVar(botfigframe)
+        OptionMenu(botfigframe, option12, 'Option 2', 
+                   *['Option 2', '']).grid(column=1, row=0, sticky=(W,E))
+        option13 = StringVar(botfigframe)
+        OptionMenu(botfigframe, option13, 'Option 3', 
+                   *['Option 3', '']).grid(column=2, row=0, sticky=(W,E))                      
+                              
         FigureCanvasTkAgg(self.botfig, master=botfigframe
                           ).get_tk_widget().grid(
-                                              row=0, column=0)                       
+                                              row=1, column=0,
+                                              columnspan=10)                       
         
         
         
