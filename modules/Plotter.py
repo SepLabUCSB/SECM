@@ -28,6 +28,10 @@ def get_plotlim(xdata, ydata):
     return lim
 
 def get_axval_axlabels(expt_type):
+    #TODO: fix this or make sure it never happens
+    if expt_type == '':
+        expt_type = 'CA'
+        
     if expt_type == 'CV':
         xval = 'ch1'
         yval = 'ch2'
@@ -77,7 +81,6 @@ class Plotter():
         self.fig1.tight_layout()
         self.ax1bg = self.fig1.canvas.copy_from_bbox(self.ax1.bbox)
         self.ax1.draw_artist(self.image1)
-        self.fig1.canvas.blit(self.ax1.bbox)
         plt.pause(0.001)
         
         self.cid1 = self.fig1.canvas.mpl_connect('button_press_event',
@@ -94,7 +97,6 @@ class Plotter():
         self.fig2.tight_layout()
         self.ax2bg = self.fig2.canvas.copy_from_bbox(self.ax2.bbox)
         self.ax2.draw_artist(self.ln)
-        self.fig2.canvas.blit(self.ax2.bbox)
         plt.pause(0.001)
         
         self.cid2 = self.fig2.canvas.mpl_connect('button_press_event',
@@ -143,7 +145,7 @@ class Plotter():
         if checksum(self.data2poll) != self.last_data2checksum:
             self.update_fig2()        
         
-        self.master.GUI.root.after(10, self.update_figs)
+        self.master.GUI.root.after(100, self.update_figs)
         return
         
     
@@ -161,7 +163,7 @@ class Plotter():
         bottom, top = self.ax1lim[1][0], self.ax1lim[1][1]
         self.image1.set_extent((left, right, bottom, top))
         self.ax1.draw_artist(self.image1)
-        self.fig1.canvas.blit(self.fig1.bbox)
+        # self.fig1.canvas.blit(self.fig1.bbox)
         self.fig1.canvas.draw_idle()
         self.last_data1checksum = checksum(self.data1)
         plt.pause(0.001)
@@ -196,11 +198,12 @@ class Plotter():
         self.fig2.tight_layout()
         self.ax2bg = self.fig2.canvas.copy_from_bbox(self.ax2.bbox)
         self.ax2.draw_artist(self.ln)
-        self.fig2.canvas.blit(self.ax2.bbox)
+        # self.fig2.canvas.blit(self.ax2.bbox)
         plt.pause(0.001)
     
     
-    def update_fig2(self, xval='t', yval='ch1'):
+    def update_fig2(self, xval='t', yval='ch1', 
+                    undersample_freq=10):
         '''
         xval: 't', 'ch1', 'ch2'
         yval: 'ch1', 'ch2'
@@ -253,24 +256,32 @@ class Plotter():
             new_y = d[yval][startpoint:]
             new_y2 = ch2[startpoint:]
             
-            
             x  += new_x
             y  += new_y
             y2 += new_y2
             
-            # self.ln.set_data(x, y)
-            self.ln.set_data(savgol_filter(x, 21, 1), 
-                              savgol_filter(y, 21, 1))
-            # self.ln2.set_data(x, y2)
+            # Do undersampling   
+            data_freq = 1/np.mean(np.diff(ts))
+            desired_freq = undersample_freq
+            undersample_factor = int(data_freq//desired_freq)
+                        
+            def average(arr, n):
+                if n < 2:
+                    return arr
+                # Undersample arr by averaging over n pts
+                end =  n * int(len(arr)/n)
+                return np.mean(arr[:end].reshape(-1, n), 1)
+            
+            plotx = average(np.array(x), undersample_factor)
+            ploty = average(np.array(y), undersample_factor)
+            
+            self.ln.set_data(plotx, ploty)
             self.set_axlim('fig2', 
-                           *get_plotlim(x, y)
+                           *get_plotlim(plotx, ploty)
                            )
-            # self.ax2.set_xlabel(xaxlabel)
-            # self.ax2.set_ylabel(yaxlabel)
             self.ax2.draw_artist(self.ln)
-            self.ax2.draw_artist(self.ln2)
+            # self.ax2.draw_artist(self.ln2)
             self.fig2.tight_layout()
-            self.fig2.canvas.blit(self.ax2.bbox)
             self.fig2.canvas.draw_idle()
             self.data2plot = [idx, x, y, y2]
             plt.pause(0.001)

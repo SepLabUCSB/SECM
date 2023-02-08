@@ -1,5 +1,6 @@
 import time
 import os
+import psutil
 import shutil
 from utils.utils import run
 from functools import partial
@@ -30,6 +31,13 @@ class HekaReader:
         if os.path.exists(self.file):
             with open(self.file, 'w') as f: 
                 f.close()
+    
+    def PatchmasterRunning(self):
+        # Checks if PATCHMASTER is currently running
+        for p in psutil.process_iter():
+            if 'PatchMaster.exe' in p.name():
+                return True
+        return False
         
     
     def test_read(self, timeout=60):
@@ -40,9 +48,6 @@ class HekaReader:
                 break
             if self.master.STOP:
                 print('reader got stop command')
-                break
-            if time.time() - st > timeout:
-                print('reader timeout')
                 break
         self.willStop = True
     
@@ -183,8 +188,12 @@ class HekaWriter:
             copy_path = os.path.join(folder_path, SeriesTime +f'-{name}.asc')
             path = copy_path
         
-        shutil.copy2(savepath, path)
-        print(f'Saved to {path}')
+        try:
+            shutil.copy2(savepath, path)
+            print(f'Saved to {path}')
+        except Exception as e:
+            print(f'Saving error: {e}')
+            pass
         return path
     
      

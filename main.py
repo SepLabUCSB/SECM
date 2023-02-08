@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter.ttk import *
 import time
 import traceback
+import tracemalloc
 from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -20,7 +21,7 @@ from gui import *
 matplotlib.use('TkAgg')
 plt.style.use('default')
 
-TEST_MODE = True
+TEST_MODE = False
 
 
     
@@ -35,7 +36,7 @@ TODO:
     
     Lock thread - i.e. make only one button call an object at a time
     
-    Logging
+    Make logger!
     
     
     HEKA control
@@ -99,7 +100,7 @@ class MasterModule():
                     self.endState()
                     return 
             time.sleep(0.1)
-    
+        
     
     def abort(self):
         # general callback for aborting an operation
@@ -118,6 +119,30 @@ class MasterModule():
             if hasattr(module, 'stop'):
                 module.stop()
         return 
+    
+    def malloc_snapshot(self):
+        # Used for checking for memory leaks
+        snapshot = tracemalloc.take_snapshot()
+        top_stats = snapshot.statistics('lineno')
+
+        print("[ Top 5 ]")
+        for stat in top_stats[:5]:
+            print(stat)
+        
+        # if hasattr(self, 'last_snapshot'):
+        #     top_stats = snapshot.compare_to(self.last_snapshot, 'lineno')
+        #     print('[ Top 5 Differences ]')
+        #     for stat in top_stats[:5]:
+        #         print(stat)
+        print('\n\n\n')
+        
+        
+        # Save snapshot and schedule next one
+        self.last_snapshot = snapshot
+        self.GUI.root.after(5000, self.malloc_snapshot)
+        return
+        
+        
     
     
             
@@ -198,8 +223,8 @@ class GUI():
         botfigframe.pack_propagate(0)
         
         
-        self.topfig = plt.Figure(figsize=(3,3), dpi=100)
-        self.botfig = plt.Figure(figsize=(3,3), dpi=100)
+        self.topfig = plt.Figure(figsize=(3,3), dpi=75)
+        self.botfig = plt.Figure(figsize=(3,3), dpi=75)
         
         self.topfig.add_subplot(111)
         self.botfig.add_subplot(111)
@@ -433,6 +458,7 @@ class GUI():
 
 
 if __name__ == '__main__':
+    tracemalloc.start()
     master = MasterModule(TEST_MODE = TEST_MODE)
     reader = HekaReader(master)
     writer = HekaWriter(master)
@@ -446,6 +472,7 @@ if __name__ == '__main__':
         gui = GUI(root, master)
         
         root.after(1000, master.Plotter.update_figs)
+        # root.after(1000, master.malloc_snapshot)
         root.mainloop()
         root.quit()
         gui.willStop = True
@@ -454,4 +481,6 @@ if __name__ == '__main__':
     
     if not master.TEST_MODE:
         adc.stop()
+        print('stopped ADC')
+    
     

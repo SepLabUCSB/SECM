@@ -136,6 +136,11 @@ class ADC():
                 self.pollingdata = [idxs, t, *data]
             self.master.Plotter.poll_ADC()
         
+        
+        freq = self.pollingdata[0][-1]/(self.pollingdata[1][-1])
+        
+        print(f'Sampling frequency: {freq:0.2f} Hz')
+        
         self.port.write(b"stop\r")
         self.polling_off()
         
