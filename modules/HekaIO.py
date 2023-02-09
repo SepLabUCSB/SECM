@@ -245,11 +245,13 @@ class HekaWriter:
     def run_CV(self, mode='normal'):
         # TODO: implement high sampling rate CV
         cmds = {
-                'normal': '_CV',        # 10 Hz sampling  
-                'fast':   '_CV-fast',   # 1 kHz sampling
-                'hispeed':'_CV-hispeed' # 10 kHz sampling
+                'normal': '_CV-10Hz', 
+                '100Hz' : '_CV-100Hz',
+                '1kHz'  : '_CV-1kHz',
+                '10kHz' : '_CV-10kHz',
                 }
-        self.send_command('ExecuteSequence _CV')
+        cmd = cmds[mode]
+        self.send_command(f'ExecuteSequence {cmd}')
     
         
     def run_CV_loop(self, save_path=None, name=''):
@@ -261,7 +263,6 @@ class HekaWriter:
         st = time.time()
         
         # Start ADC polling
-        # self.master.ADC.polling(timeout = self.CV_duration)
         run(
             partial(self.master.ADC.polling, 
                     timeout = self.CV_duration)
