@@ -86,7 +86,7 @@ def make_CV_window(gui, master_frame):
            partial(run, gui.master.abort)).grid(column=2, row=9)
     
     Button(frame, text='Test', command= 
-           partial(run, gui.master.ADC.polling)
+           partial(run, gui.master.HekaWriter.isDataFile)
            ).grid(column=2, row=10)
     
     

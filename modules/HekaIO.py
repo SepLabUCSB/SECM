@@ -143,7 +143,17 @@ class HekaWriter:
         self.macro('N Stop 1')
         time.sleep(0.1)
         self.macro('N Store 1')
-                   
+    
+    def isDataFile(self):
+        # Query PATCHMASTER to check whether a DataFile is currently
+        # open to save to
+        self.send_command('GetParameters DataFile')
+        response = self.master.HekaReader.last[1]
+        if response.split(' ')[-1] == '""':
+            return False
+        return True
+        
+               
     
     def save_last_experiment(self, path=None, name=''):
         # There is a bug in PATCHMASTER which does not allow the
@@ -258,6 +268,11 @@ class HekaWriter:
         if self.isRunning():
             print('already running')
             return
+        
+        if not self.isDataFile():
+            print('Open a DataFile in PATCHMASTER before recording!')
+            return
+    
         self.running()
         self.run_CV()
         st = time.time()
