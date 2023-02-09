@@ -137,7 +137,7 @@ class ADC():
                 self.pollingdata = [idxs, t, *data]
             # self.master.Plotter.update_fig2
         
-        
+        # TODO: aborting in between scans causes an error here
         freq = self.pollingdata[0][-1]/(self.pollingdata[1][-1])
         
         print(f'Sampling frequency: {freq:0.2f} Hz')
