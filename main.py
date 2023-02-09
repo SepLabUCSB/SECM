@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter.ttk import *
+from tkinter import filedialog
 import time
 import traceback
 import tracemalloc
@@ -263,7 +264,7 @@ class GUI():
         Label(botfigframe, text='Show: ').grid(column=0, row=0, sticky=(W,E))
         self.fig2selection = StringVar(botfigframe)
         OptionMenu(botfigframe, self.fig2selection, fig2Options[2], 
-                   *fig2Options).grid(column=1, row=0, sticky=(W,E))
+                   *fig2Options, command=self.fig_opt_changed).grid(column=1, row=0, sticky=(W,E))
         option13 = StringVar(botfigframe)
         OptionMenu(botfigframe, option13, 'Option 3', 
                    *['Option 3', '']).grid(column=2, row=0, sticky=(W,E))                      
@@ -343,7 +344,6 @@ class GUI():
         # Always-running functions
         masterthread    = run(self.master.run)
         readerthread    = run(self.master.HekaReader.read_stream)
-        # plotterthread   = run(self.master.Plotter.run)
     
         self.threads = [masterthread, readerthread]
         return
@@ -364,6 +364,8 @@ class GUI():
     # load previous data
     def openFile(self):
         f = filedialog.askopenfilename(initialdir='D:\SECM\Data')
+        if not f.endswith('.secmdata'):
+            return
         expt = load_from_file(f)
         self.master.set_expt(expt)
         self.master.Plotter.load_from_expt(expt)
@@ -388,6 +390,12 @@ class GUI():
     def Quit(self):
         self.root.destroy()
     
+    
+    # Selected new view for fig2
+    def fig_opt_changed(self, _):
+        self.master.Plotter._update_fig2(
+            *self.master.Plotter.data2
+            )
     
     
     ########## ELECTROCHEMISTRY CALLBACKS ###########

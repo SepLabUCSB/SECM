@@ -187,7 +187,6 @@ class CVDataPoint(DataPoint):
 def load_from_file(path):
     with open(path, 'rb') as f:
         expt = pickle.load(f)
-        print(expt.get_heatmap_data())
         return expt
     #     d = json.load(f)
     # return Experiment(data=d['data'], length=d['length'])
