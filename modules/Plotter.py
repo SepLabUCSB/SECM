@@ -27,21 +27,28 @@ def get_plotlim(xdata, ydata):
         return ((0,0.1), (0,0.1))
     return lim
 
+
 def get_axval_axlabels(expt_type):
     #TODO: fix this or make sure it never happens
     if expt_type == '':
         expt_type = 'CA'
         
-    if expt_type == 'CV':
+    if (expt_type == 'CV' or expt_type == 'I vs V'):
         xval = 'ch1'
         yval = 'ch2'
         yaxlabel='I'
         xaxlabel='V'
             
-    elif expt_type == 'CA':
+    elif (expt_type == 'CA' or expt_type == 'I vs t'):
         xval = 't'
         yval = 'ch2'
         yaxlabel='I'
+        xaxlabel='t'
+    
+    elif (expt_type == 'V vs t'):
+        xval = 't'
+        yval = 'ch1'
+        yaxlabel='V'
         xaxlabel='t'
     
     return xval, yval, xaxlabel, yaxlabel
@@ -64,6 +71,7 @@ class Plotter():
         
         self.data1 = np.array([0,])
         self.data2poll = self.master.ADC.pollingdata
+        self.data2_all  = [ [-1], [], [], [] ] #keep track of all fig2 data for later replotting
         self.data2plot = [ [0], [0], [0], [0] ] #idx, x, y, y2
         
         self.last_data1checksum = checksum(self.data1)
@@ -117,19 +125,14 @@ class Plotter():
         if event.inaxes == self.ax1:
             x, y = event.xdata, event.ydata
             closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
-            self.stop_polling_ADC()
             # TODO: support different plots besides hardcoded CV
-            xdata, ydata = closest_datapoint.get_data()
-            self.set_static_fig2_data(xdata, ydata)
+            self.update_fig2data(closest_datapoint.get_data())
         return
      
-        
-    def poll_ADC(self):
-        self.adc_polling = True
-        
-        
-    def stop_polling_ADC(self):
-        self.adc_polling = False
+    
+    def isADCpolling(self):
+        self.adc_polling = self.master.ADC.isPolling()
+        return self.adc_polling
         
    
     def update_figs(self, **kwargs):
@@ -168,25 +171,11 @@ class Plotter():
         self.last_data1checksum = checksum(self.data1)
         plt.pause(0.001)
     
-    
-    def set_static_fig2_data(self, xdata, ydata):
-        self.ax2.cla()
-        self.ax2.plot(xdata, ydata)
-        self.set_axlim('fig2',
-                       *get_plotlim(xdata, ydata)
-                       )
-        _,_, xaxlabel, yaxlabel = get_axval_axlabels(
-                                        self.master.expt.expt_type
-                                            )
-        self.ax2.set_xlabel(xaxlabel)
-        self.ax2.set_ylabel(yaxlabel)
-        self.fig2.canvas.draw()
-        plt.pause(0.001)
-        return
-    
+        
     
     def reinit_fig2(self):
         # Redraw blank fig2 before polling ADC
+        self.data2_all  = [ [-1], [], [], [] ]
         self.data2plot = [ [0], [0], [0], [0] ]
         self.ax2.cla()
         self.ln, = self.ax2.plot([], [])
@@ -202,65 +191,72 @@ class Plotter():
         plt.pause(0.001)
     
     
-    def update_fig2(self, xval='t', yval='ch1', 
-                    undersample_freq=10):
-        '''
-        xval: 't', 'ch1', 'ch2'
-        yval: 'ch1', 'ch2'
-        '''
+    def update_fig2data(self, data=None):
+        if type(data) != type(None):
+            # Passed previously recorded data
+            ts, v, i = data
+            idxs = [i for i, _ in enumerate(ts)]
+            self.lastdata2checksum = checksum([idxs, ts])
+            self.data2_all = [idxs, ts, v, i]
+            self._update_fig2(idxs, ts, v, i)
+            return self.data2_all
+         
+        # Updating with new data    
+        dat = self.master.ADC.pollingdata.copy()
+        if len(dat) != 4: 
+            print(dat)
+            return
+        idxs, ts, ch1, ch2 = dat
+        if idxs[-1] < self.data2_all[0][-1]:
+            # Reset figure
+            self.reinit_fig2()
+            
+        self.lastdata2checksum = checksum([idxs, ts])
         
+        # Determine new points to add
+        old_idx = self.data2_all[0].copy()
+        startpoint = min([i for i, val in enumerate(idxs)
+                                  if val > old_idx[-1]])
+        
+        for i, (l, new_l) in enumerate(zip(self.data2_all, dat)):
+            self.data2_all[i] += new_l[startpoint:]
+        
+        return self.data2_all
+    
+
+
+    def update_fig2(self, undersample_freq=10):
+        # Called by ADC polling
         if self.master.ADC.pollingcount != self.adc_polling_count:
             # Check if new polling has started
             self.adc_polling_count = self.master.ADC.pollingcount
             self.reinit_fig2()
         
-        if self.adc_polling:
-            # Real time plot - get new data from ADC
-            dat = self.master.ADC.pollingdata.copy()
-            if len(dat) != 4: 
-                print(dat)
-                return
-            idxs, ts, ch1, ch2 = dat
-            self.last_data2checksum = checksum([idxs, ts])
-            
-            # local copy of data already on plot
-            idx, x, y, y2 = self.data2plot.copy()
-            last_idx = idx[-1]
-            if len(idx) < 5:
-                # New plot
-                idx, x, y, y2 = [], [], [], []
-                last_idx = -1
-            
-            
-            # Find new points to plot
+        if self.isADCpolling():
             try:
-                startpoint = min([i for i, val in enumerate(idxs)
-                                  if val > last_idx])
-            except ValueError:
+                idxs, ts, ch1, ch2 = self.update_fig2data()
+            except Exception as e:
+                print(f'Error in Plotter.update_fig2data(): {e}')
                 return
-            idx += idxs[startpoint:]
             
-            # Determine what to plot based on exp_type
+            self._update_fig2(idxs, ts, ch1, ch2, undersample_freq)
+            
+    
+    
+    def _update_fig2(self, idxs, ts, ch1, ch2, undersample_freq=10):
+
             xval, yval, xaxlabel, yaxlabel = get_axval_axlabels(
-                                            self.master.expt.expt_type
+                                            self.master.GUI.fig2selection.get()
                                             )
             
-            # str -> array lookup table
             d = {'t': ts,
                  'ch1': ch1,
                  'ch2': ch2
                  }
             
-            # Set new data and draw
-            new_x = d[xval][startpoint:]
-            new_y = d[yval][startpoint:]
-            new_y2 = ch2[startpoint:]
+            x = d[xval]
+            y = d[yval]
             
-            x  += new_x
-            y  += new_y
-            y2 += new_y2
-            
-            # Do undersampling   
             data_freq = 1/np.mean(np.diff(ts))
             desired_freq = undersample_freq
             undersample_factor = int(data_freq//desired_freq)
@@ -283,8 +279,11 @@ class Plotter():
             # self.ax2.draw_artist(self.ln2)
             self.fig2.tight_layout()
             self.fig2.canvas.draw_idle()
-            self.data2plot = [idx, x, y, y2]
+            # self.data2plot = [idx, x, y, y2]
             plt.pause(0.001)
+            
+            
+   
     
     
     def set_axlim(self, fig, xlim, ylim):

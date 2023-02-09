@@ -253,12 +253,17 @@ class GUI():
                                               row=1, column=0,
                                               columnspan=10)
         
-        option11 = StringVar(botfigframe)
-        OptionMenu(botfigframe, option11, 'Option 1', 
-                   *['Option 1', '']).grid(column=0, row=0, sticky=(W,E))
-        option12 = StringVar(botfigframe)
-        OptionMenu(botfigframe, option12, 'Option 2', 
-                   *['Option 2', '']).grid(column=1, row=0, sticky=(W,E))
+        
+        fig2Options = [
+             'V vs t',
+             'I vs t',
+             'I vs V',
+             ]
+                              
+        Label(botfigframe, text='Show: ').grid(column=0, row=0, sticky=(W,E))
+        self.fig2selection = StringVar(botfigframe)
+        OptionMenu(botfigframe, self.fig2selection, fig2Options[2], 
+                   *fig2Options).grid(column=1, row=0, sticky=(W,E))
         option13 = StringVar(botfigframe)
         OptionMenu(botfigframe, option13, 'Option 3', 
                    *['Option 3', '']).grid(column=2, row=0, sticky=(W,E))                      

@@ -107,6 +107,7 @@ class ADC():
         
         while True:
             if time.time() - st > timeout:
+                # print('ADC timeout')
                 break
             if self._STOP_POLLING:
                 self._STOP_POLLING = False
@@ -134,7 +135,7 @@ class ADC():
                         l[-100:] for l in data
                         ]
                 self.pollingdata = [idxs, t, *data]
-            self.master.Plotter.poll_ADC()
+            # self.master.Plotter.update_fig2
         
         
         freq = self.pollingdata[0][-1]/(self.pollingdata[1][-1])

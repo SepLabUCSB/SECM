@@ -155,7 +155,7 @@ class DataPoint:
         return self.data
     
     def get_data(self):
-        return [0], [0]
+        return [0], [0], [0]
 
         
 
@@ -178,7 +178,7 @@ class CVDataPoint(DataPoint):
             return max(self.data[2])
     
     def get_data(self):
-        return self.data[1], self.data[2]
+        return self.data
     
     
 

@@ -262,7 +262,10 @@ class HekaWriter:
         
         # Start ADC polling
         # self.master.ADC.polling(timeout = self.CV_duration)
-        run(partial(self.master.ADC.polling, self.CV_duration))
+        run(
+            partial(self.master.ADC.polling, 
+                    timeout = self.CV_duration)
+            )
         
         while time.time() - st < self.CV_duration + 3:
             
