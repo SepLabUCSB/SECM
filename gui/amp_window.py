@@ -85,7 +85,7 @@ def make_amp_window(gui, master_frame):
                                      sticky=(E,W))
     
     elecmode = StringVar(frame)
-    OptionMenu(frame, elecmode, elecmodes[1],
+    OptionMenu(frame, elecmode, elecmodes[0],
                *elecmodes).grid(column=2, row=6, 
                                      sticky=(E,W))
     

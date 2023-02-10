@@ -31,6 +31,25 @@ def get_plotlim(xdata, ydata):
     return lim
 
 
+def get_clim(arr):
+    # Return minimum and maximum values of array 
+    # (plus some padding) which will be used to define
+    # min and max values on the heatmap color scale.
+    arr = [val for val in np.array(arr).flatten()
+           if val != 0]
+    avg = np.average(arr)
+    std = np.std(arr)
+    
+    if abs(std/avg) < 0.1:
+        std = 0.1*abs(avg)
+    
+    minval = avg - 2*std
+    maxval = avg + 2*std
+    
+    return minval, maxval
+
+
+
 def get_axval_axlabels(expt_type):
     #TODO: fix this or make sure it never happens
     if expt_type == '':
@@ -127,7 +146,8 @@ class Plotter():
         if event.inaxes == self.ax1:
             x, y = event.xdata, event.ydata
             closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
-            self.update_fig2data(closest_datapoint.get_data())
+            self.update_fig2data(closest_datapoint.get_data(),
+                                 sample_freq=10000)
         return
      
     
@@ -167,11 +187,8 @@ class Plotter():
         # Fig 1 - SECM heatmap
         arr = self.data1
         self.image1.set_data(arr)
-        minval = min(arr.flatten())
-        maxval = max(arr.flatten())
-        self.image1.set(clim=( minval - abs(0.1*minval), # Update color scale
-                          maxval + abs(0.1*maxval)) 
-                  ) 
+        minval, maxval = get_clim(arr)
+        self.image1.set(clim=( minval, maxval) )
         left, right = self.ax1lim[0][0], self.ax1lim[0][1]
         bottom, top = self.ax1lim[1][0], self.ax1lim[1][1]
         self.image1.set_extent((left, right, bottom, top))
@@ -201,7 +218,7 @@ class Plotter():
         plt.pause(0.001)
     
     
-    def update_fig2data(self, data=None):
+    def update_fig2data(self, data=None, sample_freq=10):
         # Called either by loading a previously recorded data point 
         # (passes data [ idxs, ts, ch1, ch2 ] to this func) or from 
         # new ADC polling data.
@@ -209,18 +226,23 @@ class Plotter():
         if type(data) != type(None):
             # Passed previously recorded data
             self.FIG2_FORCED = True
-            ts, v, i = data
-            idxs = [i for i, _ in enumerate(ts)]
+            if len(data) == 3:
+                ts, v, i = data
+                idxs = [i for i, _ in enumerate(ts)]
+            elif len(data) == 4:
+                idxs, ts, v, i = data
             self.lastdata2checksum = checksum(data)
             self.data2 = [idxs, ts, v, i]
-            self._update_fig2(idxs, ts, v, i)
-            return self.data2
+            self._update_fig2(idxs, ts, v, i, sample_freq = 1000)
+            return self.data2, 10000
         
         if self.FIG2_FORCED:
-            return self.data2
+            return self.data2, 10000
             
         # Updating with new data    
         dat = self.master.ADC.pollingdata.copy()
+        if type(dat) != list:
+            return [[-1], [], [], []], sample_freq
         idxs, ts, ch1, ch2 = dat
             
         self.lastdata2checksum = checksum(dat)
@@ -233,11 +255,11 @@ class Plotter():
         for i, (l, new_l) in enumerate(zip(self.data2, dat)):
             self.data2[i] += new_l[startpoint:]
         
-        return self.data2
+        return self.data2, sample_freq
     
 
 
-    def update_fig2(self, undersample_freq=10):
+    def update_fig2(self, sample_freq=10):
         # Called by ADC polling
         if self.master.ADC.pollingcount != self.adc_polling_count:
             # Check if new polling has started
@@ -245,12 +267,12 @@ class Plotter():
             self.reinit_fig2()
         
         if self.isADCpolling():
-            idxs, ts, ch1, ch2 = self.update_fig2data()            
-            self._update_fig2(idxs, ts, ch1, ch2, undersample_freq)
+            data, sample_freq = self.update_fig2data(sample_freq=sample_freq)            
+            self._update_fig2(*data, sample_freq)
             
     
     
-    def _update_fig2(self, idxs, ts, ch1, ch2, undersample_freq=10):
+    def _update_fig2(self, idxs, ts, ch1, ch2, sample_freq=10):
         # Function for redrawing fig 2 data
         
         # Determine what to plot based on user selection in GUI
@@ -278,10 +300,9 @@ class Plotter():
             end =  n * int(len(arr)/n)
             return np.mean(arr[:end].reshape(-1, n), 1)
         
-        if len(x) > undersample_freq:
+        if len(x) > sample_freq:
             data_freq = 1/np.mean(np.diff(ts))
-            desired_freq = undersample_freq
-            undersample_factor = int(data_freq//desired_freq)
+            undersample_factor = int(data_freq//sample_freq)
             
             plotx = average(np.array(x), undersample_factor)
             ploty = average(np.array(y), undersample_factor)

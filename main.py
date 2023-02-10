@@ -39,10 +39,12 @@ TODO:
     
     Make logger!
     
+    Save/ load settings file
+    
     
     HEKA control
     - init to known state
-    - store current amplifier state
+    - store current amplifier state for next time controller loads
     - implement other echem funcs
     
     XYZ control
@@ -393,8 +395,8 @@ class GUI():
     
     # Selected new view for fig2
     def fig_opt_changed(self, _):
-        self.master.Plotter._update_fig2(
-            *self.master.Plotter.data2
+        self.master.Plotter.update_fig2data(
+            data = self.master.Plotter.data2
             )
     
     
