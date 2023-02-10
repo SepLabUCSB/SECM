@@ -243,8 +243,16 @@ class Plotter():
         dat = self.master.ADC.pollingdata.copy()
         if type(dat) != list:
             return [[-1], [], [], []], sample_freq
+        
+        gain = 1e9 * self.master.GUI.amp_params['float_gain']
+        
         idxs, ts, ch1, ch2 = dat
-            
+        ch1 = [v/10 for v in ch1] # Analog voltage output gets 
+                                  # multiplied by 10
+        ch2 = [v/gain for v in ch2] # Convert V --> pA
+        
+        dat = idxs, ts, ch1, ch2
+        
         self.lastdata2checksum = checksum(dat)
         
         # Determine new points to add

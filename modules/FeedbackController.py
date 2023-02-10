@@ -25,10 +25,11 @@ def read_heka_data(file):
             if isFloat(line.split(',')[0]):
                 # Check for index number
                 s.write(line)
-    s.seek(0)
-    array = np.genfromtxt(s, delimiter=',')
-    array = array.T
-    return array
+    if s.getvalue() != '':
+        s.seek(0)
+        array = np.genfromtxt(s, delimiter=',')
+        array = array.T
+        return array
     
 
 
@@ -64,7 +65,7 @@ class FeedbackController():
         self.master.HekaWriter.run_CV_loop(save_path=save_path,
                                            name=name)
         output = read_heka_data(
-                                os.path.join(save_path, f'{name}.asc')
+                os.path.join(save_path, f'{name}.asc')
                                 )
         _, t, i, _, v = output
         return v, i

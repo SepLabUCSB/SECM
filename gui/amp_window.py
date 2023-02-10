@@ -123,7 +123,8 @@ def convert_to_index(amp_params):
                                amp_params['stimfilter'].get()),
               'E ElectrMode': where(elecmodes, 
                                amp_params['elecmode'].get()),
-              'E Gain': where(gains, amp_params['gain'].get())}
+              'E Gain': where(gains, amp_params['gain'].get()),
+              'float_gain': float(amp_params['gain'].get().split(' ')[0])}
     return params
 
 

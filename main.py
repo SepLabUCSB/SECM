@@ -405,8 +405,11 @@ class GUI():
     # Take parameters from CV window and send to HEKA    
     def set_amplifier(self):
         new_params = convert_to_index(self.amp_param_fields)
+        self.amp_params = new_params
         cmds = []
         for key, val in new_params.items():
+            if key == 'float_gain':
+                continue
             if val != self.params['amp'].get(key, None):
                 cmds.append(f'{key} {val}')
         
