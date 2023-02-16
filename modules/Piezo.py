@@ -1,8 +1,9 @@
 import numpy as np
+from utils.utils import Logger
 
 
 
-class Piezo():
+class Piezo(Logger):
     
     def __init__(self, master):
         self.master = master

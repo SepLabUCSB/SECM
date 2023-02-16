@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
-import time
 import numpy as np
-from scipy.signal import savgol_filter
+from utils.utils import Logger
 
 
 def checksum(data):
@@ -76,7 +75,7 @@ def get_axval_axlabels(expt_type):
     return xval, yval, xaxlabel, yaxlabel
 
 
-class Plotter():
+class Plotter(Logger):
     
     def __init__(self, master, fig1, fig2):
         self.master = master

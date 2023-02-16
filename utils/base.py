@@ -1,19 +1,7 @@
 import time
 import heapq
 
-class BaseClass():
-    # Base class for event handling modules
-    # All modules should be subclassed from this
-    
-    def __init__(self):
-        self.willStop = False
-        self.logger = Logger()
-        
-    def log(self, txt):
-        self.logger.log()
-        
-    def end(self):
-        self.willStop = True
+
 
 
 

@@ -1,4 +1,7 @@
 import threading
+import datetime
+import os
+import shutil
 
 def run(func, args=()):
     t = threading.Thread(target=func, args=args)
@@ -11,14 +14,36 @@ def focus_next_widget(event):
     return("break")
 
 
-class StoppableThread(threading.Thread):
+
+
+LOG_FILE = 'log/log.txt'
+if not os.path.exists(LOG_FILE):
+    with open(LOG_FILE, 'w') as f:
+        f.close()
+if os.path.getsize(LOG_FILE) > 60000: # ~1000 lines
+    shutil.copy2(LOG_FILE, 'log/old_log.txt')
+    with open(LOG_FILE, 'w') as f:
+        f.close()
     
-    def __init__(self,  *args, **kwargs):
-        super(StoppableThread, self).__init__(*args, **kwargs)
-        self._stop_event = threading.Event()
 
-    def stop(self):
-        self._stop_event.set()
 
-    def stopped(self):
-        return self._stop_event.is_set()
+class Logger():
+    '''
+    Base logging class. All submodules inherit this
+    '''
+    
+    LOG_FILE = LOG_FILE
+    MAX_SIZE = 1e6
+    
+        
+    
+    def log(self, string):
+        time   = datetime.datetime.now().strftime('%Y%m%d-%H:%M:%S.%f')
+        module = self.__class__.__name__[:12]
+        
+        print(f'{module.ljust(12)} | {string}')
+        msg = f'{time} | {module.ljust(12)} | {string}\n'
+        
+        with open(self.LOG_FILE, 'a') as f:
+            f.write(msg)
+        return

@@ -15,7 +15,7 @@ from modules.Piezo import Piezo
 from modules.FeedbackController import FeedbackController
 from modules.Plotter import Plotter
 from modules.DataStorage import Experiment, load_from_file
-from utils.utils import run
+from utils.utils import run, Logger
 import gui
 from gui import *
 
@@ -33,9 +33,7 @@ TODO:
     Lock thread - i.e. make only one button call an object at a time
     
     Make logger!
-    
-    Save/ load settings file
-    
+        
     
     HEKA control
     - init to known state
@@ -64,8 +62,19 @@ gl_st = time.time()
 
 SETTINGS_FILE = 'settings/DEFAULT.json'
 
-class MasterModule():
+class MasterModule(Logger):
+    '''
+    MasterModule controlls all submodules and lets them communicate with each other.
     
+    When a new module is initiated, it should must be passed a reference to 
+    MasterModule. The submodule sets self.master and passes itself to 
+    master.register(). Then, the submodule can be accessed by master or any
+    other module as master.submodule    
+    
+    Master also stores the current experiment and the global ABORT flag.
+    Submodules should check for master.ABORT to break out of loops.
+   
+    '''
     def __init__(self, TEST_MODE):
         # TEST_MODE: bool, True = record fake data
         self.willStop   = False
@@ -76,12 +85,16 @@ class MasterModule():
         self.modules    = [self]
         
         self.expt = Experiment()
+        self.log('')
+        self.log('')
+        self.log('========= Master Initialized =========')
         
         
     def register(self, module):
         # register a submodule to master
         setattr(self, module.__class__.__name__, module)
         self.modules.append(getattr(self, module.__class__.__name__))
+        self.log(f'Loaded {module.__class__.__name__}')
     
     
     def set_expt(self, expt):
@@ -96,7 +109,7 @@ class MasterModule():
                     # STOP flag stops everything
                     self.STOP = True
                     self.abort()
-                    print('master stopping')
+                    self.log('Stopping')
                     self.endState()
                     return 
             time.sleep(0.1)
@@ -150,12 +163,13 @@ class MasterModule():
 
 
 
-class GUI():
+class GUI(Logger):
     
     def __init__(self, root, master):
         self.master = master
         self.master.register(self)
         self.willStop = False
+        
         self.root = root
         self.params = {} # master dict to store all parameters
                 

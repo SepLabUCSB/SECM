@@ -3,6 +3,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 import threading
+from utils.utils import Logger
 
 CONST_SER_PORT = 'COM6'   #get the com port from device manger and enter it here
 
@@ -18,7 +19,7 @@ def run(func, args=()):
     t.start()
     return t
 
-class ADC():
+class ADC(Logger):
     '''
     https://github.com/dataq-instruments/Simple-Python-Examples/blob/master/simpletest_binary.py
     '''
@@ -64,6 +65,7 @@ class ADC():
             return
         time.sleep(1)
         self.port.close()
+        self.log('Serial port closed')
         return
        
     
@@ -86,6 +88,7 @@ class ADC():
             if i > 0:
                 response = self.port.read(i)
                 break
+        self.log('ADC setup complete')
         return
     
     
@@ -101,6 +104,7 @@ class ADC():
         self.port.reset_input_buffer()
         self.port.write(b"start\r")
         self.polling_on()
+        self.log('Starting polling')
         
         st = time.time()
         idx = 0
@@ -143,6 +147,7 @@ class ADC():
         
         self.port.write(b"stop\r")
         self.polling_off()
+        self.log('Ending polling')
         
         return idxs, t, data
       

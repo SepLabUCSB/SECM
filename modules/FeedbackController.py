@@ -2,7 +2,7 @@ import numpy as np
 import time
 from io import StringIO
 import os
-from utils.utils import run
+from utils.utils import run, Logger
 from modules.DataStorage import Experiment, CVDataPoint
 
 
@@ -35,7 +35,7 @@ def read_heka_data(file):
 
 
 
-class FeedbackController():
+class FeedbackController(Logger):
     
     def __init__(self, master):
         self.master = master
@@ -104,7 +104,7 @@ class FeedbackController():
                                       ylim=(0,length)
                                       )
         
-        
+        self.log(f'Starting hopping mode {expt_type} scan')
         for i, (x, y) in enumerate(points):
             if self.master.ABORT:
                 return

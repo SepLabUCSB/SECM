@@ -2,7 +2,7 @@ import time
 import os
 import psutil
 import shutil
-from utils.utils import run
+from utils.utils import run, Logger
 from functools import partial
 
 
@@ -20,7 +20,7 @@ gl_st = time.time()
         #####                            #####
         ######################################
         
-class HekaReader:
+class HekaReader(Logger):
     # Class for reading PATCHMASTER's responses in /E9Batch.Out
     def __init__(self, master, output_file=output_file):
         self.master = master
@@ -44,19 +44,16 @@ class HekaReader:
         st = time.time()
         while True:
             if time.time() - st > timeout:
-                print('reader timeout')
                 break
             if self.master.STOP:
-                print('reader got stop command')
                 break
         self.willStop = True
     
     
-    def read_stream(self, timeout=60):
+    def read_stream(self):
         st = time.time()
         while True:
             if self.master.STOP:
-                print('reader got stop command')
                 self.willStop = True
                 break
             
@@ -67,6 +64,7 @@ class HekaReader:
                 if (lines != self.last and lines != None):
                     # print(f'Response: {lines} {time.time() - gl_st:0.4f}')
                     self.last = lines
+        self.log(f'Stopped reading')
 
 
 
@@ -80,7 +78,7 @@ class HekaReader:
         #####                            #####
         ######################################
 
-class HekaWriter:
+class HekaWriter(Logger):
     # Class to control writing commands to PATCHMASTER
     # TODO: sometimes double sends commands
     def __init__(self, master, input_file=input_file):
@@ -156,10 +154,12 @@ class HekaWriter:
                
     
     def save_last_experiment(self, path=None, name=''):
-        # There is a bug in PATCHMASTER which does not allow the
-        # "Export" macro to accept a user-defined path. So, we
-        # save to the default path (which is the same as the 
-        # current DataFile path) and copy the file to the desired location
+        '''
+        There is a bug in PATCHMASTER which does not allow the
+        "Export" macro to accept a user-defined path. So, we
+        save to the default path (which is the same as the 
+        current DataFile path) and copy the file to the desired location
+        '''
         self.send_command('GetParameters DataFile')
         # while True:
         response = self.master.HekaReader.last[1]
@@ -175,6 +175,7 @@ class HekaWriter:
             response = self.master.HekaReader.last
             try:
                 if response[1].startswith('error'):
+                    self.log('File export error!')
                     print('file export error!')
                     return
                 if response[1].startswith('Reply_Export'):
@@ -200,10 +201,9 @@ class HekaWriter:
         
         try:
             shutil.copy2(savepath, path)
-            print(f'Saved to {path}')
+            self.log(f'Saved to {path}')
         except Exception as e:
-            print(f'Saving error: {e}')
-            pass
+            self.log(f'Saving error: {e}')
         return path
     
      
@@ -250,6 +250,7 @@ class HekaWriter:
         self.CV_params   = values
         self.CV_duration = duration
         self.idle()
+        self.log('Set CV parameters')
     
     
     def run_CV(self, mode='normal'):
@@ -266,7 +267,7 @@ class HekaWriter:
         
     def run_CV_loop(self, save_path=None, name=''):
         if self.isRunning():
-            print('already running')
+            self.log('Got new CV command, but already running!')
             return
         
         if not self.isDataFile():
@@ -303,6 +304,7 @@ class HekaWriter:
             time.sleep(0.5)
             
         if not self.master.HekaReader.last[1] == 'Query_Idle':
+            self.log('CV failed!')
             print('CV failed!')
             return
         
