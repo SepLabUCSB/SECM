@@ -341,7 +341,19 @@ class GUI():
     
         # Initialize plotter
         Plotter(self.master, self.topfig, self.botfig)
-    
+        
+        
+        # Collect all settings for saving/ loading
+        self.settings = {
+            'heatmapselection': self.heatmapselection,      # StringVar
+            'HeatMapDisplayParam': self.HeatMapDisplayParam, # Text
+            'fig2selection': self.fig2selection,            # StringVar
+            'params': {
+                'CV': self.params['CV'],            # dict
+                'amp': self.params['amp'],          # dict
+                'hopping': self.params['hopping']   # dict
+                },
+            }
     
         # Always-running functions
         masterthread    = run(self.master.run)
@@ -394,26 +406,14 @@ class GUI():
     
     
     def save_settings(self):
-        settings = {
-            'heatmapselection': self.heatmapselection,      # StringVar
-            'HeatMapDisplayParam': self.HeatMapDisplayParam, # Text
-            'fig2selection': self.fig2selection,            # StringVar
-            'params': {
-                'CV': self.params['CV'],            # dict
-                'amp': self.params['amp'],          # dict
-                'hopping': self.params['hopping']   # dict
-                },
-            }
-        
-        
+
         def convert_field(field):
             if isinstance(field, StringVar):
                 return field.get()
             elif isinstance(field, Text):
                 return field.get('1.0', 'end').rstrip('\n')
             return None
-        
-        
+
         def convert_all(d):
             # Recursively iterate through settings dict and sub-dicts
             for key, value in d.items():
@@ -423,17 +423,47 @@ class GUI():
                 d[key] = convert_field(value)
             return d
         
-        settings = convert_all(settings)
+        settings = convert_all(self.settings.copy())
         SETTINGS_FILE = filedialog.asksaveasfilename(initialdir='settings/',
                                                      defaultextension='.json')
         if not SETTINGS_FILE: return
         with open(SETTINGS_FILE, 'w') as f:
             json.dump(settings, f)
+        
+        return
           
     
     
     def load_settings(self):
-        pass
+        SETTINGS_FILE = filedialog.askopenfilename(initialdir='settings/')
+        if not SETTINGS_FILE: return
+        with open(SETTINGS_FILE, 'r') as f:
+            loaded = json.load(f)
+        
+        
+        def set_value(field, value):
+            if isinstance(field, StringVar):
+                field.set(value)
+            if isinstance(field, Text):
+                field.delete('1.0', 'end')
+                field.insert('1.0', value)
+
+        def set_all(settings_dict, loaded_dict):
+            # Recursively iterate through settings dict and sub-dicts
+            for key, field, value in zip(settings_dict.keys(), 
+                                         settings_dict.values(),
+                                         loaded_dict.values()):
+                if isinstance(value, dict):
+                    settings_dict[key] = set_all(settings_dict[key], value)
+                    continue
+                set_value(settings_dict[key], value)
+            return settings_dict
+        
+        set_all(self.settings, loaded)
+        
+        return
+        
+     
     
     
     # Selected new view for fig2
@@ -462,6 +492,7 @@ class GUI():
         self.params['amp'] = new_params
         self.master.make_ready()
         return
+    
     
     def get_CV_params(self):
         cv_params = self.params['CV'].copy()
