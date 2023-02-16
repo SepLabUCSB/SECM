@@ -21,7 +21,13 @@ gl_st = time.time()
         ######################################
         
 class HekaReader(Logger):
-    # Class for reading PATCHMASTER's responses in /E9Batch.Out
+    '''
+    Class for reading PATCHMASTER's responses in /E9Batch.Out
+    
+    The last response ss stored in HekaReader.last and should be checked
+    immediately after a command is sent, because it could get overwritten
+    by a subsequent message
+    '''
     def __init__(self, master, output_file=output_file):
         self.master = master
         self.master.register(self)
@@ -79,7 +85,16 @@ class HekaReader(Logger):
         ######################################
 
 class HekaWriter(Logger):
-    # Class to control writing commands to PATCHMASTER
+    '''
+    Class to control writing commands to PATCHMASTER
+    
+    Commands are written to the file E9Batch.In as documented in the 
+    PATCHMASTER tutorial (included in this repo, /docs/pm_tutorial.pdf)
+    
+    From testing, it seems that PATCHMASTER can only read commands every
+    ~100 ms. So, each command is followed by a 200ms delay to assure all commands
+    are read
+    '''
     # TODO: sometimes double sends commands
     def __init__(self, master, input_file=input_file):
         self.master = master
@@ -89,9 +104,11 @@ class HekaWriter(Logger):
         
         self.file = input_file   # For EPC10 batch communication
         self.num = 0
-        with open(self.file, 'w') as f:
-            f.write(f'+{self.num}\n')
+        # with open(self.file, 'w') as f:
+        #     f.write(f'+{self.num}\n')
+        self.clear_file()
         self.send_command('Echo startup')
+        self.send_command('SetSleep 0.01')
         
         self.pgf_params = {}
         
@@ -110,16 +127,31 @@ class HekaWriter(Logger):
     
     
     def test_btn(self):
-        self.save_last_experiment()
+        # self.save_last_experiment()
         return
      
         
     def send_command(self, cmd):
         # print(f'Sending: {self.num} {cmd}')
         with open(self.file, 'w') as f:
-            f.write(f'+{self.num}\n{cmd}')
+            f.write(f'+{self.num}\n{cmd}\n')
         self.num += 1
-        time.sleep(0.2)
+        time.sleep(0.1)
+       
+        
+    def send_multiple_cmds(self, cmds):
+        with open(self.file, 'w') as f:
+            f.write(f'+{self.num}\n')
+            for cmd in cmds:
+                f.write(f'{cmd}\n')
+        self.num += 1
+        time.sleep(0.1)
+    
+    
+    def clear_file(self):
+        with open(self.file, 'w') as f:
+            f.close()
+        self.num = 0
     
     
     def macro(self, cmd):
@@ -129,15 +161,16 @@ class HekaWriter(Logger):
             self.idle()
     
     
+    
     def abort(self):
         # Send commands to halt measurement
         self.idle() # Overwrite self.status
         self.macro('N Break 1')
-        time.sleep(0.2)
+        time.sleep(0.1)
         self.macro('N Stop 1')
         self.idle()
         self.macro('N Break 1')
-        time.sleep(0.2)
+        time.sleep(0.1)
         self.macro('N Stop 1')
         time.sleep(0.1)
         self.macro('N Store 1')
@@ -221,8 +254,10 @@ class HekaWriter(Logger):
             if val != old_val:
                 vals_to_update[key] = val
         
+        cmds = []
         for i, val in vals_to_update.items():
-            self.send_command(f'SetValue {int(i)} {val}')
+            cmds.append(f'SetValue {int(i)} {val}')
+        self.send_multiple_cmds(cmds)
         self.send_command('ExecuteProtocol _update_pgf_params_')
         self.pgf_params = values
       

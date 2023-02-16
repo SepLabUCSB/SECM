@@ -23,7 +23,7 @@ from gui import *
 matplotlib.use('TkAgg')
 plt.style.use('default')
 
-TEST_MODE = True
+TEST_MODE = False
 
 
     
@@ -164,6 +164,9 @@ class MasterModule(Logger):
 
 
 class GUI(Logger):
+    '''
+    Graphical user interface
+    '''
     
     def __init__(self, root, master):
         self.master = master
@@ -318,6 +321,8 @@ class GUI(Logger):
         self.params['CV'] = make_CV_window(self, cv_control)
         
         self.amp_param_fields  = make_amp_window(self, amplifier_control)
+        
+        # TODO: fix storage of amplifier parameter fields/ values
         self.params['amp']  = {}
         
         ###  TODO: UNCOMMENT ME FOR FINAL CONFIG. STARTUP FROM KNOWN AMP. STATE ###
@@ -498,10 +503,11 @@ class GUI(Logger):
             if key == 'float_gain':
                 continue
             if val != self.params['amp'].get(key, None):
-                cmds.append(f'{key} {val}')
+                cmds.append(f'Set {key} {val}')
         
-        for cmd in cmds:
-            self.master.HekaWriter.macro(cmd)
+        # for cmd in cmds:
+        #     self.master.HekaWriter.send_command(cmd)
+        self.master.HekaWriter.send_multiple_cmds(cmds)
         
         self.params['amp'] = new_params
         self.master.make_ready()
