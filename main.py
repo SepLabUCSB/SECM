@@ -4,6 +4,7 @@ from tkinter import filedialog
 import time
 import traceback
 import tracemalloc
+import json
 from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -22,18 +23,12 @@ from gui import *
 matplotlib.use('TkAgg')
 plt.style.use('default')
 
-TEST_MODE = False
+TEST_MODE = True
 
 
     
 '''
 TODO:
-    
-    1. CV at each point in hopping mode
-        - trigger HEKA to record
-        - use ADC to plot in real time
-        - save to known path and to Experiment()
-    
     
     Lock thread - i.e. make only one button call an object at a time
     
@@ -66,6 +61,8 @@ TODO:
 
 global gl_st 
 gl_st = time.time()
+
+SETTINGS_FILE = 'settings/DEFAULT.json'
 
 class MasterModule():
     
@@ -172,9 +169,9 @@ class GUI():
         menubar = Menu(root)
         root['menu'] = menubar
         menu_file = Menu(menubar)
-        menu_edit = Menu(menubar)
+        menu_settings = Menu(menubar)
         menubar.add_cascade(menu=menu_file, label='File')
-        menubar.add_cascade(menu=menu_edit, label='Settings')
+        menubar.add_cascade(menu=menu_settings, label='Settings')
         
         
         menu_file.add_command(label='New', command=self.newFile)
@@ -182,6 +179,9 @@ class GUI():
         menu_file.add_command(label='Save', command=self.save)
         menu_file.add_command(label='Save as...', command=self.saveAs)
         menu_file.add_command(label='Quit', command=self.Quit)
+        
+        menu_settings.add_command(label='Save settings...', command=self.save_settings)
+        menu_settings.add_command(label='Load settings...', command=self.load_settings)
         
                 
         
@@ -267,9 +267,9 @@ class GUI():
         self.fig2selection = StringVar(botfigframe)
         OptionMenu(botfigframe, self.fig2selection, fig2Options[2], 
                    *fig2Options, command=self.fig_opt_changed).grid(column=1, row=0, sticky=(W,E))
-        option13 = StringVar(botfigframe)
-        OptionMenu(botfigframe, option13, 'Option 3', 
-                   *['Option 3', '']).grid(column=2, row=0, sticky=(W,E))                      
+        # option13 = StringVar(botfigframe)
+        # OptionMenu(botfigframe, option13, 'Option 3', 
+        #            *['Option 3', '']).grid(column=2, row=0, sticky=(W,E))                      
                               
         FigureCanvasTkAgg(self.botfig, master=botfigframe
                           ).get_tk_widget().grid(
@@ -391,6 +391,49 @@ class GUI():
     # Exit program
     def Quit(self):
         self.root.destroy()
+    
+    
+    def save_settings(self):
+        settings = {
+            'heatmapselection': self.heatmapselection,      # StringVar
+            'HeatMapDisplayParam': self.HeatMapDisplayParam, # Text
+            'fig2selection': self.fig2selection,            # StringVar
+            'params': {
+                'CV': self.params['CV'],            # dict
+                'amp': self.params['amp'],          # dict
+                'hopping': self.params['hopping']   # dict
+                },
+            }
+        
+        
+        def convert_field(field):
+            if isinstance(field, StringVar):
+                return field.get()
+            elif isinstance(field, Text):
+                return field.get('1.0', 'end').rstrip('\n')
+            return None
+        
+        
+        def convert_all(d):
+            # Recursively iterate through settings dict and sub-dicts
+            for key, value in d.items():
+                if isinstance(value, dict):
+                    d[key] = convert_all(value)
+                    continue
+                d[key] = convert_field(value)
+            return d
+        
+        settings = convert_all(settings)
+        SETTINGS_FILE = filedialog.asksaveasfilename(initialdir='settings/',
+                                                     defaultextension='.json')
+        if not SETTINGS_FILE: return
+        with open(SETTINGS_FILE, 'w') as f:
+            json.dump(settings, f)
+          
+    
+    
+    def load_settings(self):
+        pass
     
     
     # Selected new view for fig2

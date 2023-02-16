@@ -35,7 +35,7 @@ def get_xy_coords(length, n_points):
 class Experiment:
     
     def __init__(self, length=10, n_pts=10, expt_type='', 
-                 path='D:/SECM/temp.secmdata'):
+                 path='D:/SECM/temp/temp.secmdata'):
         if not os.path.exists(path.split('/')[0]):
             path = 'temp/temp.secmdata'
         self.timestamp  = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
@@ -135,7 +135,8 @@ class Experiment:
         with open(path, 'wb') as f:
             # json.dump(d, f)
             pickle.dump(self, f)
-        print(f'Saved as {path}')
+        if not path.endswith('temp.secmdata'):
+            print(f'Saved as {path}')
             
 
     

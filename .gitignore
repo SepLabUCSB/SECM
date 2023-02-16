@@ -1,4 +1,6 @@
 temp/
+settings/*
+!settings/DEFAULT*
 *.secmdata
 
 # Byte-compiled / optimized / DLL files

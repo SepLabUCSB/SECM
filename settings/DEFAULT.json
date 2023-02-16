@@ -1,0 +1,1 @@
+{"heatmapselection": "Max. current", "HeatMapDisplayParam": "", "fig2selection": "I vs V", "params": {"CV": {"E0": "0", "t0": "0.2", "E1": "0.5", "E2": "0", "Ef": "0", "v": "0.1"}, "amp": {}, "hopping": {"size": "50", "Z": "50", "n_pts": "10", "method": "CV"}}}

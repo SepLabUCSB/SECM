@@ -95,7 +95,6 @@ class FeedbackController():
         # Initialize data storage 
         expt = Experiment(length    = length,
                           n_pts     = n_pts,
-                          path      ='D:/SECM/test/',
                           expt_type = expt_type)
         points, order = expt.get_xy_coords()     
         
@@ -131,7 +130,7 @@ class FeedbackController():
             
             # Send data for plotting
             self.master.Plotter.data1 = expt.get_heatmap_data()
-            
+            expt.save()
             time.sleep(0.01)
         
         self.master.expt = expt
