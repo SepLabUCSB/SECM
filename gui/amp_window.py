@@ -95,7 +95,7 @@ def make_amp_window(gui, master_frame):
     
     
     # Column 3 #
-    Label(frame, text='V').grid(column=3, row=1, sticky=(W))
+    Label(frame, text='mV').grid(column=3, row=1, sticky=(W))
     Label(frame, text='kHz').grid(column=3, row=4, sticky=(W))
     
     amp_params = {'Vhold': Vhold,

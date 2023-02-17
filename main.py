@@ -31,9 +31,10 @@ TEST_MODE = False
 TODO:
     
     Lock thread - i.e. make only one button call an object at a time
+         
+    Make separate data viewer to make high quality figures
     
-    Make logger!
-        
+    Write documentation
     
     HEKA control
     - init to known state
@@ -52,6 +53,12 @@ TODO:
     - const. distance scan
     - hopping mode
     - const. current, measure Z mode
+    
+    DISPLAY
+    - Color by average value
+    - Color by value at ...
+    - Color by...
+    - 
     
     
     
