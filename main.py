@@ -175,6 +175,7 @@ class GUI(Logger):
         
         self.root = root
         self.params = {} # master dict to store all parameters
+        self.amp_params = {} # stores current state of amplifier
                 
         root.title("SECM Controller")
         root.attributes('-topmost', 1)
@@ -319,11 +320,7 @@ class GUI(Logger):
         
         
         self.params['CV'] = make_CV_window(self, cv_control)
-        
-        self.amp_param_fields  = make_amp_window(self, amplifier_control)
-        
-        # TODO: fix storage of amplifier parameter fields/ values
-        self.params['amp']  = {}
+        self.params['amp'] = make_amp_window(self, amplifier_control)
         
         ###  TODO: UNCOMMENT ME FOR FINAL CONFIG. STARTUP FROM KNOWN AMP. STATE ###
         # self.set_amplifier()
@@ -363,7 +360,7 @@ class GUI(Logger):
         
         
         # Collect all settings for saving/ loading
-        self.settings = {
+        self.__settings = {
             'heatmapselection': self.heatmapselection,      # StringVar
             'HeatMapDisplayParam': self.HeatMapDisplayParam, # Text
             'fig2selection': self.fig2selection,            # StringVar
@@ -435,14 +432,16 @@ class GUI(Logger):
 
         def convert_all(d):
             # Recursively iterate through settings dict and sub-dicts
+            d2 = dict() # Copy everything to a new output dict to avoid
+                        # modifying self.__settings
             for key, value in d.items():
                 if isinstance(value, dict):
-                    d[key] = convert_all(value)
+                    d2[key] = convert_all(value)
                     continue
-                d[key] = convert_field(value)
-            return d
+                d2[key] = convert_field(value)
+            return d2
         
-        settings = convert_all(self.settings.copy())
+        settings = convert_all(self.__settings)
         SETTINGS_FILE = filedialog.asksaveasfilename(initialdir='settings/',
                                                      defaultextension='.json')
         if not SETTINGS_FILE: return
@@ -478,7 +477,7 @@ class GUI(Logger):
                 set_value(settings_dict[key], value)
             return settings_dict
         
-        set_all(self.settings, loaded)
+        set_all(self.__settings, loaded)
         
         return
         
@@ -496,20 +495,22 @@ class GUI(Logger):
     
     # Take parameters from CV window and send to HEKA    
     def set_amplifier(self):
-        new_params = convert_to_index(self.amp_param_fields)
-        self.amp_params = new_params
+        if not self.master.HekaReader.PatchmasterRunning():
+            self.log('PATCHMASTER not opened!')
+            return
+        new_params = convert_to_index(self.params['amp'])
         cmds = []
         for key, val in new_params.items():
             if key == 'float_gain':
                 continue
-            if val != self.params['amp'].get(key, None):
+            if val != self.amp_params.get(key, None):
                 cmds.append(f'Set {key} {val}')
         
         # for cmd in cmds:
         #     self.master.HekaWriter.send_command(cmd)
         self.master.HekaWriter.send_multiple_cmds(cmds)
         
-        self.params['amp'] = new_params
+        self.amp_params = new_params # Store current amplifier state to amp_params
         self.master.make_ready()
         return
     
