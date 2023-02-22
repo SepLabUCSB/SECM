@@ -1,6 +1,6 @@
 from tkinter import *
 from tkinter.ttk import *
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 import time
 import traceback
 import tracemalloc
@@ -39,9 +39,7 @@ TODO:
     Make separate data viewer to make high quality figures
     
     Write documentation
-    
-    Check for unsaved data before starting new Experiment
-    
+        
     HEKA control
     - init to known state
     - store current amplifier state for next time controller loads
@@ -111,7 +109,13 @@ class MasterModule(Logger):
     
     
     def set_expt(self, expt):
+        self.check_save()
         self.expt = expt
+    
+    
+    def check_save(self):
+        if not self.expt.isSaved():
+            self.GUI.savePrevious()
     
     
     def run(self):
@@ -128,6 +132,7 @@ class MasterModule(Logger):
                     self.STOP = True
                     self.abort()
                     self.log('Stopping')
+                    self.check_save()
                     self.endState()
                     return 
             time.sleep(0.1)
@@ -456,6 +461,14 @@ class GUI(Logger):
                 defaultextension='.secmdata', initialdir='D:\SECM\Data')
             if not f: return
             self.master.expt.save(f)
+    
+    def savePrevious(self):
+        answer = messagebox.askyesno('Save previous?', 
+                          'Do you want to save the unsaved data?')
+        if not answer:
+            return
+        self.saveAs()
+                          
     
     # Exit program
     def Quit(self):

@@ -47,6 +47,12 @@ class Experiment:
         self.set_scale(length)
         self.set_type(expt_type)
         self.setup_blank(length, n_pts)
+        self.saved = True # Toggles to False when first data point is appended
+        
+    
+    
+    def isSaved(self):
+        return self.saved
     
     
     def setup_blank(self, length, n_pts):
@@ -73,15 +79,18 @@ class Experiment:
     
     def set_type(self, expt_type):
         self.expt_type = expt_type
+        self.saved = False
     
     
     def set_scale(self, length):
-        self.length = length
+        self.length = length  
+        self.saved = False
     
         
     def set_datapoint(self, grid_ids, point):
         i, j = grid_ids[0], grid_ids[1]
         self.data[i][j] = point
+        self.saved = False
         
         
     def get_data(self):
@@ -137,6 +146,7 @@ class Experiment:
             pickle.dump(self, f)
         if not path.endswith('temp.secmdata'):
             print(f'Saved as {path}')
+            self.saved = True
             
 
     

@@ -356,7 +356,7 @@ class HekaWriter(Logger):
             if self.master.ABORT:
                 self.abort()
                 self.master.ADC.STOP_POLLING()
-                path = self.save_last_experiment(save_path, name)
+                path = self.save_last_experiment(f'{save_path}/{name}.asc')
                 self.idle()
                 return path
             
