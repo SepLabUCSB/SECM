@@ -36,13 +36,14 @@ class Logger():
     
         
     
-    def log(self, string):
+    def log(self, string, quiet=False):
         # All child classes inherit this so self is i.e. MasterModule,
         # GUI, etc.
         time   = datetime.datetime.now().strftime('%Y%m%d-%H:%M:%S.%f')
         module = self.__class__.__name__[:12]
         
-        print(f'{module.ljust(12)} | {string}')
+        if not quiet:
+            print(f'{module.ljust(12)} | {string}')
         msg = f'{time} | {module.ljust(12)} | {string}\n'
         
         with open(self.LOG_FILE, 'a') as f:

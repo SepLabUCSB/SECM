@@ -9,7 +9,7 @@ from modules.DataStorage import Experiment, CVDataPoint
 
 
 def read_heka_data(file):
-    # Use StringIO object to parse through file
+    # Use StringIO to parse through file (fastest method I've found)
     # Convert only floats to np arrays
     
     def isFloat(x):
@@ -36,6 +36,12 @@ def read_heka_data(file):
 
 
 class FeedbackController(Logger):
+    '''
+    Class to glue HEKA communication, Piezo, ADC, data storage,
+    and data plotting together.
+    
+
+    '''
     
     def __init__(self, master):
         self.master = master
@@ -55,11 +61,14 @@ class FeedbackController(Logger):
         current = np.random.rand()
         return current
     
+    
     def fake_CV(self, i):
+        # Generate fake data for testing piezo
         voltage = np.linspace(0, 0.5, 50)
         max_I = 100*np.random.rand()
         current = np.linspace(0, i, 50)
         return voltage, current
+    
     
     def run_CV(self, save_path, name):
         if save_path.endswith('.secmdata'):
@@ -75,6 +84,13 @@ class FeedbackController(Logger):
     
     
     def hopping_mode(self, params, expt_type='CV'):
+        '''
+        Run a hopping mode scan.
+        
+        Runs in its own thread!
+        
+        '''
+        # TODO: extend this to handle constant voltage hopping mode
         length = params['size'].get('1.0', 'end')
         height = params['Z'].get('1.0', 'end')
         n_pts  = params['n_pts'].get('1.0', 'end')

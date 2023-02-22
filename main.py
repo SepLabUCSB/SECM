@@ -40,6 +40,8 @@ TODO:
     
     Write documentation
     
+    Check for unsaved data before starting new Experiment
+    
     HEKA control
     - init to known state
     - store current amplifier state for next time controller loads
@@ -113,7 +115,12 @@ class MasterModule(Logger):
     
     
     def run(self):
-        # master main loop
+        '''
+        Master main loop
+        !! Runs in its own thread !!
+        Checks if any module has issued a global stop command.
+        If so, stops all other modules.
+        '''
         while True:
             for module in self.modules:
                 if module.willStop:

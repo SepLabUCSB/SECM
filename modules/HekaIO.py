@@ -190,8 +190,10 @@ class HekaWriter(Logger):
     
     
     def isDataFile(self):
-        # Query PATCHMASTER to check whether a DataFile is currently
-        # open to save to
+        '''
+        Query PATCHMASTER to check whether a DataFile is 
+        currently open to save to
+        '''
         self.send_command('GetParameters DataFile')
         response = self.master.HekaReader.last[1]
         if response.split(' ')[-1] == '""':
@@ -218,19 +220,22 @@ class HekaWriter(Logger):
             os.remove(savepath)
         self.send_command('Export overwrite, test.asc')
         
+        st = time.time()
         while True: # Wait for file creation by PATCHMASTER
             response = self.master.HekaReader.last
+            if time.time() - st > 5:
+                self.log('save_last_experiment timed out waiting for PATCHMASTER!')
+                return ''
             try:
                 if response[1].startswith('error'):
                     self.log('File export error!')
                     print('file export error!')
-                    return
+                    return ''
                 if response[1].startswith('Reply_Export'):
                     break
             except: pass # Response may be None or a single '+000xx'
-                    
-        else: 
-            
+        
+        if not path: 
             self.send_command('GetParameters SeriesDate, SeriesTime')
             SeriesDate, SeriesTime = self.master.HekaReader.last[1].split(',')
 
@@ -239,8 +244,7 @@ class HekaWriter(Logger):
 
             folder_path = os.path.join(DEFAULT_SAVE_PATH, SeriesDate)
             os.makedirs(folder_path, exist_ok=True)
-            copy_path = os.path.join(folder_path, f'{SeriesTime}.asc')
-            path = copy_path
+            path = os.path.join(folder_path, f'{SeriesTime}.asc')
         
         
         base_path = os.path.split(path)[0]
@@ -248,7 +252,7 @@ class HekaWriter(Logger):
         
         try:
             shutil.copy2(savepath, path)
-            self.log(f'Saved to {path}')
+            self.log(f'Saved to {path}', 1)
         except Exception as e:
             self.log(f'Saving error: {e}')
         return path
@@ -259,6 +263,7 @@ class HekaWriter(Logger):
     #### EXPERIMENT DEFINITIONS ####
         
     def update_Values(self, values):
+        # Update Values which are used to define CV, CA, etc voltages, timings, ...
         # PATCHMASTER maps Value i to p{i+1}... but calls it Value-{i+1} in GUI
 
         old_params = self.pgf_params
@@ -271,8 +276,8 @@ class HekaWriter(Logger):
         cmds = []
         for i, val in vals_to_update.items():
             cmds.append(f'SetValue {int(i)} {val}')
+        cmds.append('ExecuteProtocol _update_pgf_params_') # Set PgfParams = Values
         self.send_multiple_cmds(cmds)
-        self.send_command('ExecuteProtocol _update_pgf_params_')
         self.pgf_params = values
       
         
@@ -303,13 +308,25 @@ class HekaWriter(Logger):
     
     
     def run_CV(self, mode='normal'):
-        # TODO: implement high sampling rate CV
         cmds = {
-                'normal': '_CV-10Hz', 
+                '10Hz'  : '_CV-10Hz', 
                 '100Hz' : '_CV-100Hz',
                 '1kHz'  : '_CV-1kHz',
                 '10kHz' : '_CV-10kHz',
                 }
+        
+        # Determine which sampling rate to use
+        E1 = self.CV_params[0] 
+        E0 = self.CV_params[2]
+        ti = self.CV_params[3]
+        scan_rate = abs(E1 - E0) / ti
+        if scan_rate <= 0.1:
+            mode = '10Hz'
+        elif scan_rate > 0.1 and scan_rate <= 0.5:
+            mode = '100Hz'
+        elif scan_rate > 0.5:
+            mode = '1kHz'
+        
         cmd = cmds[mode]
         self.send_command(f'ExecuteSequence {cmd}')
     
@@ -320,7 +337,7 @@ class HekaWriter(Logger):
             return
         
         if not self.isDataFile():
-            print('Open a DataFile in PATCHMASTER before recording!')
+            print('== Open a DataFile in PATCHMASTER before recording! ==')
             return
     
         self.running()
@@ -333,6 +350,7 @@ class HekaWriter(Logger):
                     timeout = self.CV_duration)
             )
         
+        # Measurement loop
         while time.time() - st < self.CV_duration + 3:
             
             if self.master.ABORT:
@@ -354,7 +372,6 @@ class HekaWriter(Logger):
             
         if not self.master.HekaReader.last[1] == 'Query_Idle':
             self.log('CV failed!')
-            print('CV failed!')
             return
         
         self.master.ADC.STOP_POLLING()

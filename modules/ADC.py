@@ -114,7 +114,7 @@ class ADC(Logger):
         self.port.reset_input_buffer()
         self.port.write(b"start\r")
         self.polling_on()
-        self.log('Starting polling')
+        self.log('Starting polling', quiet=True)
         
         st = time.time()
         idx = 0
@@ -157,7 +157,7 @@ class ADC(Logger):
         
         self.port.write(b"stop\r")
         self.polling_off()
-        self.log('Ending polling')
+        self.log('Ending polling', quiet=True)
         
         return idxs, t, data
       
