@@ -5,6 +5,7 @@ import time
 import traceback
 import tracemalloc
 import json
+import sys
 from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -19,6 +20,9 @@ from utils.utils import run, Logger
 import gui
 from gui import *
 
+default_stdout = sys.stdout
+default_stdin  = sys.stdin
+default_stderr = sys.stderr
 
 matplotlib.use('TkAgg')
 plt.style.use('default')
@@ -163,10 +167,21 @@ class MasterModule(Logger):
         return
         
         
+ 
     
-    
-            
+##### PrintLogger class #####
+class PrintLogger(): 
+    # Class to print console output into Tkinter window
+    def __init__(self, textbox): 
+        self.textbox = textbox # tk.Text object
 
+    def write(self, text):
+        self.textbox.insert(END, text) # write text to textbox
+        self.textbox.see('end') # scroll to end
+
+    def flush(self): # needed for file like object
+        pass
+    
 
 
 
@@ -209,12 +224,21 @@ class GUI(Logger):
         menu_settings.add_command(label='Load settings...', command=self.load_settings)
         
                 
-        
+        # Left panel: potentiostat/ SECM parameters
         leftpanel = Frame(self.root)
         leftpanel.grid(row=1, column=0, sticky=(N, S))
         
+        # Right panel: Figures
         rightpanel = Frame(self.root)
         rightpanel.grid(row=1, column=1)
+        
+        # Bottom panel: Console
+        bottompanel = Frame(self.root)
+        bottompanel.grid(row=2, column=0, columnspan=2, sticky=(N,W,E))
+        console = Text(bottompanel, width=70, height=10)
+        console.grid(row=0, column=0, sticky=(N,S,E,W))
+        pl = PrintLogger(console)
+        sys.stdout = pl
         
         
         # tabControl = Notebook(leftpanel)
@@ -596,11 +620,23 @@ if __name__ == '__main__':
         root.mainloop()
         root.quit()
         gui.willStop = True
+        
+        sys.stdout = default_stdout
+        sys.stdin  = default_stdin
+        sys.stderr = default_stderr
+        
     except Exception as e:
+        # Catch exceptions to make sure adc port closes and 
+        # stdout resets to default
         print(traceback.format_exc())
-    
+
     if not master.TEST_MODE:
         adc.stop()
-        print('stopped ADC')
+    
+    
+    sys.stdout = default_stdout
+    sys.stdin  = default_stdin
+    sys.stderr = default_stderr
+    
     
     

@@ -9,10 +9,12 @@ from functools import partial
 input_file  = r'C:/ProgramData/HEKA/com/E9Batch.In'
 output_file = r'C:/ProgramData/HEKA/com/E9Batch.Out'
 
-DEFAULT_SAVE_PATH = r'D:\Brian\SECM'
+DEFAULT_SAVE_PATH = r'D:\SECM'
 
 gl_st = time.time()
      
+
+
 
         ######################################
         #####                            #####
@@ -186,12 +188,12 @@ class HekaWriter(Logger):
         
                
     
-    def save_last_experiment(self, path=None, name=''):
+    def save_last_experiment(self, path=None):
         '''
         There is a bug in PATCHMASTER which does not allow the
         "Export" macro to accept a user-defined path. So, we
         save to the default path (which is the same as the 
-        current DataFile path) and copy the file to the desired location
+        current DataFile path) and copy the file to the desired path
         '''
         self.send_command('GetParameters DataFile')
         # while True:
@@ -214,11 +216,7 @@ class HekaWriter(Logger):
                 if response[1].startswith('Reply_Export'):
                     break
             except: pass # Response may be None or a single '+000xx'
-        
-        # Copy file to new path
-        if path:
-            path = os.path.join(path, f'{name}.asc')
-            
+                    
         else: 
             
             self.send_command('GetParameters SeriesDate, SeriesTime')
@@ -229,8 +227,12 @@ class HekaWriter(Logger):
 
             folder_path = os.path.join(DEFAULT_SAVE_PATH, SeriesDate)
             os.makedirs(folder_path, exist_ok=True)
-            copy_path = os.path.join(folder_path, SeriesTime +f'-{name}.asc')
+            copy_path = os.path.join(folder_path, f'{SeriesTime}.asc')
             path = copy_path
+        
+        
+        base_path = os.path.split(path)[0]
+        os.makedirs(base_path, exist_ok=True)
         
         try:
             shutil.copy2(savepath, path)
@@ -345,7 +347,7 @@ class HekaWriter(Logger):
         
         self.master.ADC.STOP_POLLING()
         
-        path = self.save_last_experiment(path=save_path, name=name)
+        path = self.save_last_experiment(path=f'{save_path}/{name}.asc')
         self.idle()
         return path
         

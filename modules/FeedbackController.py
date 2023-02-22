@@ -62,11 +62,13 @@ class FeedbackController(Logger):
         return voltage, current
     
     def run_CV(self, save_path, name):
-        self.master.HekaWriter.run_CV_loop(save_path=save_path,
-                                           name=name)
-        output = read_heka_data(
-                os.path.join(save_path, f'{name}.asc')
-                                )
+        if save_path.endswith('.secmdata'):
+            save_path = save_path.replace('.secmdata', '')
+        path = self.master.HekaWriter.run_CV_loop(
+                                           save_path=save_path,
+                                           name=name
+                                           )
+        output = read_heka_data(path)
         _, t, i, _, v = output
         return v, i
         
