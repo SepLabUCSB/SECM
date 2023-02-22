@@ -5,7 +5,6 @@ import shutil
 
 def run(func, args=()):
     t = threading.Thread(target=func, args=args)
-    # t = StoppableThread(target=func, args=args)
     t.start()
     return t
 
@@ -38,6 +37,8 @@ class Logger():
         
     
     def log(self, string):
+        # All child classes inherit this so self is i.e. MasterModule,
+        # GUI, etc.
         time   = datetime.datetime.now().strftime('%Y%m%d-%H:%M:%S.%f')
         module = self.__class__.__name__[:12]
         

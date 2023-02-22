@@ -169,9 +169,12 @@ class MasterModule(Logger):
         
  
     
-##### PrintLogger class #####
 class PrintLogger(): 
-    # Class to print console output into Tkinter window
+    '''
+    File like object to print console output into Tkinter window
+    set sys.stdout = PrintLogger, then print() will print to
+    PrintLogger.textbox
+    '''
     def __init__(self, textbox): 
         self.textbox = textbox # tk.Text object
 

@@ -1,27 +1,18 @@
 import serial
 import time
-import numpy as np
-import matplotlib.pyplot as plt
-import threading
-from utils.utils import Logger
+from utils.utils import run, Logger
 
 CONST_SER_PORT = 'COM6'   #get the com port from device manger and enter it here
 
 
-srate = 1000
-dec   = 1
-deca  = 1
-
-sara = 60_000_000/(srate * dec * deca)
-
-def run(func, args=()):
-    t = threading.Thread(target=func, args=args)
-    t.start()
-    return t
 
 class ADC(Logger):
     '''
     https://github.com/dataq-instruments/Simple-Python-Examples/blob/master/simpletest_binary.py
+    
+    Controller for DATAQ DI-2108. ONLY used to monitor voltage and 
+    current in real time during experiments. Saved data is instead 
+    read from HEKA save files.     
     '''
     
     
@@ -41,23 +32,28 @@ class ADC(Logger):
         self.pollingdata  = [[0],]
     
     
-    def STOP_POLLING(self): #Command
+    # Command
+    def STOP_POLLING(self): 
         self._STOP_POLLING = True
     
     
-    def polling_on(self): # Set flags
+    # Set flags
+    def polling_on(self): 
         self._is_polling   = True
         self._STOP_POLLING = False
         
-        
-    def polling_off(self): # Set flag
+    
+    # Set flag   
+    def polling_off(self): 
         self._is_polling = False
     
     
-    def isPolling(self): # Check flag
+    # Check flag
+    def isPolling(self): 
         return self._is_polling
     
     
+    # Stop recording and close serial port
     def stop(self):
         try:
             self.port.write(b"stop\r")
@@ -68,8 +64,8 @@ class ADC(Logger):
         self.log('Serial port closed')
         return
        
-    
-    def setup(self, n_channels=1, srate=1000, dec=1, deca=1, ps=6):
+    # Set up serial port
+    def setup(self, n_channels=2, srate=1000, dec=1, deca=1, ps=6):
         # TODO: input checks
         self.number_of_channels = n_channels
         self.ps = ps         # packet size = 2**(ps + 4) bytes, min = 2**(0 + 4) = 32
@@ -92,7 +88,21 @@ class ADC(Logger):
         return
     
     
+    
     def polling(self, timeout=2):
+        '''
+        Polling mode recording.
+        
+        ADC samples continuously until timeout. While sampling, 
+        the most recent 100 points [index, time, V, I] are stored 
+        in self.pollingdata. 
+        
+        This function should be run in its own thread. self.isPolling()
+        is the check to make sure the ADC is not already polling data
+        in another thread. To stop polling, another module should 
+        call ADC.STOP_POLLING(). Alternatively, polling halts on 
+        master.ABORT. 
+        '''
         if self.isPolling(): return
         numofbyteperscan = 2**(self.ps + 4)
         idxs = []
@@ -151,64 +161,3 @@ class ADC(Logger):
         
         return idxs, t, data
       
-
-    def record(self, timeout=2):
-        # Record for a set amount of time
-        numofbyteperscan = 2**(self.ps + 4)
-        
-        self.port.reset_input_buffer()
-        self.port.write(b"start\r")
-        
-        data = [ [] for _ in range(self.number_of_channels)]
-        t    = []
-        
-        st = time.time()
-        while True:
-            if (self.master.ABORT or
-                time.time() - st > timeout):   
-                self.stop()
-                print("ADC recording finished")
-                if self.master.ABORT:
-                    self.master.make_ready()
-                break
-            else:
-                i= self.port.in_waiting
-                if (i//numofbyteperscan)>0:
-                    response = self.port.read(i - i%numofbyteperscan)
-           
-                    for x in range(0, self.number_of_channels):
-                        adc=response[x*2]+response[x*2+1]*256
-                        if adc>32767:
-                            adc=adc-65536
-                        adc *= (10/2**15) # +- 10 V full scale, 16 bit
-                        data[x].append(adc)
-                        
-                    t.append(time.time() - st)
-        
-        times = np.linspace(t[0], t[-1], len(t))
-        return times, data
-
-
-    
-        
-
-
-if __name__ == '__main__':
-    adc = ADC()
-    adc.setup(n_channels=2)
-    # adc.plotter()
-    # idx, t, data = adc.polling()
-    # t, data = adc.record()
-    
-    # import matplotlib.pyplot as plt
-    # fig, ax = plt.subplots()
-    # for i, d in enumerate(data):
-    #     ax.plot(t, d, '.-', label=f'Channel {i}')
-    # ax.set_ylabel('V')
-    # ax.set_xlabel('t/ min')
-    
-    adc.stop()
-
-
-
-

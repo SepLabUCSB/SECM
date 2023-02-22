@@ -26,7 +26,7 @@ class HekaReader(Logger):
     '''
     Class for reading PATCHMASTER's responses in /E9Batch.Out
     
-    The last response ss stored in HekaReader.last and should be checked
+    The last response is stored in HekaReader.last and should be checked
     immediately after a command is sent, because it could get overwritten
     by a subsequent message
     '''
@@ -49,6 +49,7 @@ class HekaReader(Logger):
         
     
     def test_read(self, timeout=60):
+        # Test function
         st = time.time()
         while True:
             if time.time() - st > timeout:
@@ -59,7 +60,11 @@ class HekaReader(Logger):
     
     
     def read_stream(self):
-        st = time.time()
+        '''
+        Called in its own thread. Reads HEKA output file continuously
+        until receives stop command from master. Stores the last
+        output in self.last.
+        '''
         while True:
             if self.master.STOP:
                 self.willStop = True
@@ -72,7 +77,7 @@ class HekaReader(Logger):
                 if (lines != self.last and lines != None):
                     # print(f'Response: {lines} {time.time() - gl_st:0.4f}')
                     self.last = lines
-        self.log(f'Stopped reading')
+        self.log('Stopped reading')
 
 
 
@@ -94,8 +99,14 @@ class HekaWriter(Logger):
     PATCHMASTER tutorial (included in this repo, /docs/pm_tutorial.pdf)
     
     From testing, it seems that PATCHMASTER can only read commands every
-    ~100 ms. So, each command is followed by a 200ms delay to assure all commands
-    are read
+    ~50-100 ms. So, each command is followed by a 100ms delay to assure 
+    all commands are read.
+    
+    We can write a series of commands to the file simultaneously and 
+    PATCHMASTER will execute them all in order. This is useful for setting
+    amplifier and CV parameters, for example, bypassing the 200ms delay between
+    each command. 
+    
     '''
     # TODO: sometimes double sends commands
     def __init__(self, master, input_file=input_file):
@@ -106,8 +117,7 @@ class HekaWriter(Logger):
         
         self.file = input_file   # For EPC10 batch communication
         self.num = 0
-        # with open(self.file, 'w') as f:
-        #     f.write(f'+{self.num}\n')
+        
         self.clear_file()
         self.send_command('Echo startup')
         self.send_command('SetSleep 0.01')
@@ -157,6 +167,9 @@ class HekaWriter(Logger):
     
     
     def macro(self, cmd):
+        '''
+        Send a macro command as given in docs/HEKA Macro Commands.txt
+        '''
         if not self.isRunning():
             self.running()
             self.send_command(f'Set {cmd}')
@@ -168,14 +181,13 @@ class HekaWriter(Logger):
         # Send commands to halt measurement
         self.idle() # Overwrite self.status
         self.macro('N Break 1')
-        time.sleep(0.1)
         self.macro('N Stop 1')
         self.idle()
         self.macro('N Break 1')
-        time.sleep(0.1)
         self.macro('N Stop 1')
-        time.sleep(0.1)
         self.macro('N Store 1')
+        self.idle()
+    
     
     def isDataFile(self):
         # Query PATCHMASTER to check whether a DataFile is currently
