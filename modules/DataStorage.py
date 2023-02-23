@@ -33,6 +33,17 @@ def get_xy_coords(length, n_points):
 
 
 class Experiment:
+    '''
+    Structure for storing SECM data.
+    
+    self.data is a n x n array representing the scanning region.
+    
+    Each entry in the array is a DataPoint type object. It has
+    attributes DataPoint.loc, which is its location in piezo coordinates,
+    and DataPoint.data, which may be a float, list, or array depending on
+    what type of electrochemical data that point represents. 
+    '''
+    
     
     def __init__(self, length=10, n_pts=10, expt_type='', 
                  path='D:/SECM/temp/temp.secmdata'):

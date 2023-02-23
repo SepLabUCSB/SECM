@@ -395,6 +395,7 @@ class GUI(Logger):
         SECM_TABS.add(const_current, text=' Constant I ')
         SECM_TABS.add(const_height, text=' Constant Z ')
         SECM_TABS.pack(expand=1, fill='both')
+        SECM_TABS.select(hopping_mode)
         
         
         make_approach_window(self, approach_curve)
@@ -588,9 +589,6 @@ class GUI(Logger):
     def run_CV(self):
         self.set_amplifier()
         E0, E1, E2, E3, v, t0 = self.get_CV_params()
-        if v > 0.1:
-            print('max scan rate 100mV/s - gotta fix')
-            return
         self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
         path = self.master.HekaWriter.run_CV_loop()
         self.master.make_ready()

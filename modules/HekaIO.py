@@ -9,7 +9,7 @@ from functools import partial
 input_file  = r'C:/ProgramData/HEKA/com/E9Batch.In'
 output_file = r'C:/ProgramData/HEKA/com/E9Batch.Out'
 
-DEFAULT_SAVE_PATH = r'D:\SECM'
+DEFAULT_SAVE_PATH = r'D:/SECM/Data'
 
 gl_st = time.time()
      
@@ -235,7 +235,7 @@ class HekaWriter(Logger):
                     break
             except: pass # Response may be None or a single '+000xx'
         
-        if not path: 
+        if (not path or path == 'None/.asc'): 
             self.send_command('GetParameters SeriesDate, SeriesTime')
             SeriesDate, SeriesTime = self.master.HekaReader.last[1].split(',')
 
