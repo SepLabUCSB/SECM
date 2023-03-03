@@ -112,9 +112,13 @@ class Experiment:
             'timestamp':self.timestamp,
             }
     
-    def get_heatmap_data(self):
+    def get_heatmap_data(self, datatype='max', arg=None):
+        '''
+        datatype: string, specifies what data to return
+        arg: string or float to accompany datatype
+        '''
         gridpts = np.array([
-            [d.get_val() for d in row]
+            [d.get_val(datatype, arg) for d in row]
             for row in self.data]         
             )
         return gridpts
@@ -172,7 +176,7 @@ class DataPoint:
         #  * list: CV: [ [t], [V], [I] ]
         self.data = data
         
-    def get_val(self, valtype='max', valarg=None):
+    def get_val(self, datatype='max', arg=None):
         # Overwrite in subclasses
         return self.data
     
@@ -182,13 +186,13 @@ class DataPoint:
         
 
 class SinglePoint(DataPoint):
-    def get_val(self):
+    def get_val(self, datatype=None, arg=None):
         return self.data
 
 
 
 class CVDataPoint(DataPoint):
-    def get_val(self, valtype='max', valarg=None):
+    def get_val(self, datatype='max', arg=None):
         '''
         valtype: str, defines what to return
             'max': max I
@@ -196,8 +200,10 @@ class CVDataPoint(DataPoint):
             'val_at': I at valarg voltage
             etc
         '''
-        if valtype=='max':
+        if datatype=='max':
             return max(self.data[2])
+        if datatype=='loc':
+            return self.loc[0]
     
     def get_data(self):
         return self.data

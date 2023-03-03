@@ -1,3 +1,4 @@
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from utils.utils import Logger
@@ -74,6 +75,82 @@ def get_axval_axlabels(expt_type):
     
     return xval, yval, xaxlabel, yaxlabel
 
+class RectangleSelector:
+    '''
+    Class which draws a rectangle on the heatmap based on the user
+    clicking and dragging. Rectangle is used to zoom in to the 
+    selected region.
+    '''
+    
+    def __init__(self, Plotter, fig, ax):
+        self.Plotter = Plotter
+        self.fig = fig
+        self.ax  = ax
+        
+        self.bg      = None
+        self.clicked = False
+        
+        self.rect = matplotlib.patches.Rectangle((0,0), 0, 0, fill=0,
+                                                 edgecolor='red', lw=2)
+        self.ax.add_artist(self.rect)
+        
+        
+    def connect(self):
+        self.clickedcid = self.fig.canvas.mpl_connect('button_press_event',
+                                                      self.on_press)
+        self.releasecid = self.fig.canvas.mpl_connect('button_release_event',
+                                                      self.on_release)
+        self.dragcid    = self.fig.canvas.mpl_connect('motion_notify_event',
+                                                      self.on_drag)
+    
+    def disconnect(self):
+        for cid in (self.clickedcid, self.releasecid, self.dragcid):
+            self.fig.canvas.mpl_disconnect(cid)
+        # Give control back to Plotter
+        self.Plotter.connect_cids()
+    
+    def clear(self):
+        self.rect.set_width(0)
+        self.rect.set_height(0)
+        self.fig.canvas.draw()
+        plt.pause(0.001)
+    
+    def make_rectangle(self, loc1, loc2):
+        x1, y1 = loc1
+        x2, y2 = loc2
+        width  = x2 - x1
+        height = y2 - y1
+        self.rect.set_x(x1)
+        self.rect.set_y(y1)
+        self.rect.set_width(width)
+        self.rect.set_height(height)
+        
+        # Redraw with blitting
+        self.rect.set_animated(True)
+        self.fig.canvas.draw()
+        self.bg = self.fig.canvas.copy_from_bbox(self.ax.bbox)
+        
+        self.ax.draw_artist(self.rect)
+        self.fig.canvas.blit(self.ax.bbox)
+        
+        
+    def on_press(self, event):
+        if event.inaxes != self.ax:
+            return
+        self.clicked = True
+        self.loc1 = (event.xdata, event.ydata)
+    
+    def on_release(self, event):
+        self.clicked = False
+        self.disconnect()
+    
+    def on_drag(self, event):
+        if (not self.clicked or event.inaxes != self.ax):
+            return
+        self.loc2 = (event.xdata, event.ydata)
+        self.make_rectangle(self.loc1, self.loc2) 
+
+
 
 class Plotter(Logger):
     
@@ -97,8 +174,7 @@ class Plotter(Logger):
         self.last_data1checksum = checksum(self.data1)
         self.last_data2checksum = checksum(self.data2)
         
-        
-        
+
         # Initialize heatmap
         self.image1 = self.ax1.imshow(np.array([
             np.array([0 for _ in range(10)]) for _ in range(10)
@@ -110,9 +186,6 @@ class Plotter(Logger):
         self.ax1bg = self.fig1.canvas.copy_from_bbox(self.ax1.bbox)
         self.ax1.draw_artist(self.image1)
         plt.pause(0.001)
-        
-        self.cid1 = self.fig1.canvas.mpl_connect('button_press_event',
-                                                 self.onclick)
         
         
         # Initialize echem fig
@@ -127,10 +200,21 @@ class Plotter(Logger):
         self.ax2.draw_artist(self.ln)
         plt.pause(0.001)
         
+        
+        self.connect_cids()
+        self.RectangleSelector = RectangleSelector(self, self.fig1, self.ax1)
+        
+    
+    def connect_cids(self):
+        self.cid1 = self.fig1.canvas.mpl_connect('button_press_event',
+                                                 self.onclick)
         self.cid2 = self.fig2.canvas.mpl_connect('button_press_event',
                                                  self.onclick)
-        
-        
+    
+    def disconnect_cids(self):
+        for cid in (self.cid1, self.cid2):
+            self.fig2.canvas.mpl_disconnect(cid)
+    
     
     def load_from_expt(self, expt):
         self.data1 = expt.get_heatmap_data()
@@ -147,6 +231,14 @@ class Plotter(Logger):
             closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
             self.update_fig2data(closest_datapoint.get_data(),
                                  sample_freq=10000)
+        return 
+    
+    
+    def heatmap_zoom(self):
+        self.disconnect_cids()
+        self.RectangleSelector.connect() 
+        # Plotter regains control of mouse inputs 
+        # on RectangleSelector.disconnect()
         return
      
     
@@ -330,6 +422,9 @@ class Plotter(Logger):
         self.fig2.tight_layout()
         self.fig2.canvas.draw_idle()
         plt.pause(0.001)
+        
+    
+    
         
     
         

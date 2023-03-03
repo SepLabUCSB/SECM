@@ -100,8 +100,12 @@ class FeedbackController(Logger):
     
     
     def run_CV(self, save_path, name):
+        if self.master.TEST_MODE:
+            return self.fake_CV(name)
+        
         if save_path.endswith('.secmdata'):
             save_path = save_path.replace('.secmdata', '')
+            
         path = self.master.HekaWriter.run_CV_loop(
                                            save_path=save_path,
                                            name=name
@@ -152,17 +156,16 @@ class FeedbackController(Logger):
                                       )
         
         self.log(f'Starting hopping mode {expt_type} scan')
+        z = z_max
         for i, (x, y) in enumerate(points):
             if self.master.ABORT:
                 return
-            self.Piezo.goto(x, y, z_max)
-            z = self.approach()
+            if not self.master.TEST_MODE:
+                self.Piezo.goto(x, y, z_max)
+                z = self.approach()
             
             # TODO: run variable echem experiment(s) at each pt
-            if self.master.TEST_MODE:
-                voltage, current = self.fake_CV(i)
-            else:
-                voltage, current = self.run_CV(expt.path, i)
+            voltage, current = self.run_CV(expt.path, i)
             
             data = CVDataPoint(
                     loc = (x,y,z),
@@ -177,7 +180,10 @@ class FeedbackController(Logger):
             expt.set_datapoint( (grid_i, grid_j), data)
             
             # Send data for plotting
-            self.master.Plotter.data1 = expt.get_heatmap_data()
+            self.master.Plotter.data1 = expt.get_heatmap_data(
+                                           datatype='loc',
+                                           arg=None
+                                            )
             expt.save()
             time.sleep(0.01)
         

@@ -27,7 +27,7 @@ default_stderr = sys.stderr
 matplotlib.use('TkAgg')
 plt.style.use('default')
 
-TEST_MODE = False
+TEST_MODE = True
 
 
     
@@ -315,9 +315,13 @@ class GUI(Logger):
         self.HeatMapDisplayParam.insert('1.0', '')
         self.HeatMapDisplayParam.grid(column=2, row=0, sticky=(W,E))
         
+        Button(topfigframe, text='Zoom to grid...', 
+               command=self.heatmap_rect_zoom).grid(column=0, row=1,
+                                                    sticky=(W,E))
+        
         FigureCanvasTkAgg(self.topfig, master=topfigframe
                           ).get_tk_widget().grid(
-                                              row=1, column=0,
+                                              row=2, column=0,
                                               columnspan=10)
         
         
@@ -544,6 +548,10 @@ class GUI(Logger):
         self.master.Plotter.update_fig2data(
             data = self.master.Plotter.data2
             )
+    
+    
+    def heatmap_rect_zoom(self):
+        self.master.Plotter.heatmap_zoom()
     
     
     ########## ELECTROCHEMISTRY CALLBACKS ###########
