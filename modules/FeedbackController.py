@@ -54,6 +54,35 @@ class FeedbackController(Logger):
         self.HekaWriter = self.master.HekaWriter
 
     
+    def approach(self, start_coords:tuple, voltage:float, 
+                 i_cutoff:float):
+        '''
+        start_coords: (x,y,z)
+        voltage: float, mV
+        i_cutoff: float, A
+        
+        Step probe closer to surface starting at point (x,y,z). 
+        Stop when measured i > i_cutoff
+        '''
+        
+        j = 0
+        step = 0.1 # um = 100nm
+        x, y, z_start = start_coords
+        self.HekaWriter.macro('E Vhold {voltage}')
+        self.ADC.polling(timeout = 10)
+        while j < 100:
+            if self.master.ABORT:
+                break
+            
+            z = z_start - j*step
+            self.Piezo.goto(x, y, z)
+            time.sleep(0.1)
+            _, _, V, I = self.ADC.pollingdata
+            if np.average(abs(I[-20:])) > abs(i_cutoff):
+                break           
+            
+        return z
+
 
     def do_approach_curve(self, i_cutoff):
         
@@ -97,7 +126,7 @@ class FeedbackController(Logger):
         method = params['method'].get()
         
         length = float(length) 
-        z      = float(height)
+        z_max  = float(height)
         n_pts  = int(n_pts)
         
         
@@ -126,7 +155,8 @@ class FeedbackController(Logger):
         for i, (x, y) in enumerate(points):
             if self.master.ABORT:
                 return
-            self.Piezo.goto(x, y, z)
+            self.Piezo.goto(x, y, z_max)
+            z = self.approach()
             
             # TODO: run variable echem experiment(s) at each pt
             if self.master.TEST_MODE:
