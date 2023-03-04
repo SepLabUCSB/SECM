@@ -28,25 +28,33 @@ class Piezo(Logger):
         # <-----
         # ----->
         points = []
-        coords = np.linspace(self.starting_coords[0], length, n_points)
+        order  = []
+        coords = np.linspace(self.starting_coords[0], 
+                             self.starting_coords[0] + length, 
+                             n_points)
+        print(self.starting_coords)
         
         reverse = False
-        for x in coords:
+        for i, y in enumerate(coords):
             if reverse:
-                for y in reversed(coords):
+                for j, x in reversed(list(enumerate(coords))):
                     points.append((x,y))
+                    order.append((i,j))
                 reverse = False
             else:
-                for y in coords:
+                for j, x in enumerate(coords):
                     points.append((x,y))
+                    order.append((i,j))
                 reverse = True
-        return points
+        
+        return points, order
     
     def set_new_scan_bounds(self, corners):
         # i.e. [(5, 5), (5, 44), (44, 5), (44, 44)]
         corners.sort()
         self.starting_coords = corners[0]
         scale = corners[2][0] - corners[0][0]
+        print(f"starting coords: {self.starting_coords}")
         return scale
     
     def zero(self):

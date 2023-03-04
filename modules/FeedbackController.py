@@ -144,10 +144,12 @@ class FeedbackController(Logger):
         
         
         # Initialize data storage 
-        expt = Experiment(length    = length,
-                          n_pts     = n_pts,
+        # Starts scan from Piezo.starting_coords
+        points, order = self.Piezo.get_xy_coords(length, n_pts) 
+        expt = Experiment(points    = points,
+                          order     = order,
                           expt_type = expt_type)
-        points, order = expt.get_xy_coords()     
+            
         
         self.master.set_expt(expt)
         self.master.Plotter.set_axlim('fig1',
@@ -159,6 +161,8 @@ class FeedbackController(Logger):
         z = z_max
         for i, (x, y) in enumerate(points):
             if self.master.ABORT:
+                self.log('Hopping mode aborted')
+                self.master.make_ready()
                 return
             if not self.master.TEST_MODE:
                 self.Piezo.goto(x, y, z_max)

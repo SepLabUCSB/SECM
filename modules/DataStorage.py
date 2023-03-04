@@ -4,31 +4,32 @@ import pickle
 import numpy as np
 
 
-def get_xy_coords(length, n_points):
+def get_xy_coords(length, n_pts):
         # Generate ordered list of xy coordinates for a scan
         # ----->
         # <-----
         # ----->
+        # !!!          NOW DONE BY PIEZO CLASS       !!!
+        # !!! ONLY HERE FOR DEFAULT EXPERIMENT INIT  !!!
         points = []
         order  = []
-        coords = np.linspace(0, length, n_points)
+        coords = np.linspace(0, length, n_pts)
         
         reverse = False
-        i, j = 0, 0 # i -> x, j -> y
-        for y in coords:
+        # i, j = 0, 0 # i -> x, j -> y
+        for i, y in enumerate(coords):
             if reverse:
                 for j, x in reversed(list(enumerate(coords))):
                     points.append((x,y))
                     order.append((i,j))
                 reverse = False
-                i += 1
             else:
                 for j, x in enumerate(coords):
                     points.append((x,y))
                     order.append((i,j))
                 reverse = True
-                i += 1
-                          
+            # j += 1
+        
         return points, order
 
 
@@ -45,8 +46,8 @@ class Experiment:
     '''
     
     
-    def __init__(self, length=10, n_pts=10, expt_type='', 
-                 path='D:/SECM/temp/temp.secmdata'):
+    def __init__(self, points:list=list(), order:list=list(),                 
+                 expt_type='', path='D:/SECM/temp/temp.secmdata'):
         if not os.path.exists(path.split('/')[0]):
             path = 'temp/temp.secmdata'
         self.timestamp  = datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
@@ -55,9 +56,8 @@ class Experiment:
         os.makedirs(self.basepath, exist_ok=True)
         
         # Set blank SECM grid data
-        self.set_scale(length)
         self.set_type(expt_type)
-        self.setup_blank(length, n_pts)
+        self.setup_blank(points, order)
         self.saved = True # Toggles to False when first data point is appended
     
     
@@ -68,8 +68,13 @@ class Experiment:
         return self.saved
     
     
-    def setup_blank(self, length, n_pts):
-        points, order = get_xy_coords(length, n_pts)
+    def setup_blank(self, points, order):
+        if len(points) == 0:
+            points, order = get_xy_coords(length=10, n_pts=10)
+        
+        n_pts = int(np.sqrt(len(points)))
+        xs = [x for (x,y) in points]
+        length = max(xs) - min(xs)
         
         gridpts = np.array([
             np.array([0 for _ in range(n_pts)]) for _ in range(n_pts)
@@ -83,6 +88,8 @@ class Experiment:
             data = SinglePoint(loc = (x,y,0), data = 0)
             grid_i, grid_j = order[i]
             self.set_datapoint( (grid_i, grid_j), data)
+        
+        self.set_scale(length)
         return
     
     
