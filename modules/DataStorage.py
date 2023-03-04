@@ -15,7 +15,7 @@ def get_xy_coords(length, n_points):
         
         reverse = False
         i, j = 0, 0 # i -> x, j -> y
-        for y in reversed(coords):
+        for y in coords:
             if reverse:
                 for j, x in reversed(list(enumerate(coords))):
                     points.append((x,y))
@@ -59,7 +59,9 @@ class Experiment:
         self.set_type(expt_type)
         self.setup_blank(length, n_pts)
         self.saved = True # Toggles to False when first data point is appended
-        
+    
+    
+    
     
     
     def isSaved(self):
@@ -125,7 +127,7 @@ class Experiment:
     
     def get_loc_data(self):
         gridpts = np.array([
-            [(int(d.loc[0]), int(d.loc[1])) for d in row]
+            [(float(d.loc[0]), float(d.loc[1])) for d in row]
             for row in self.data]         
             )
         return gridpts

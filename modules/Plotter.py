@@ -75,6 +75,7 @@ def get_axval_axlabels(expt_type):
     
     return xval, yval, xaxlabel, yaxlabel
 
+
 class RectangleSelector:
     '''
     Class which draws a rectangle on the heatmap based on the user
@@ -132,7 +133,55 @@ class RectangleSelector:
         
         self.ax.draw_artist(self.rect)
         self.fig.canvas.blit(self.ax.bbox)
+    
+    def get_coords(self):
+        x = self.rect.get_x()
+        y = self.rect.get_y()
+        h = self.rect.get_height()
+        w = self.rect.get_width()
+        corners = [
+            (x  , y),
+            (x+w, y),
+            (x  , y+h),
+            (x+w, y+h)
+            ]
+        return corners
+    
+    
+    def snap_to_grid(self):
+        '''
+        snap to nearest coordinates on the grid and 
+        make it square
+        '''
+        gridpts = self.Plotter.master.expt.get_loc_data()
+        delta = abs(gridpts[0][0][0] - gridpts[0][1][0])
+        corners = self.get_coords()
+        corners.sort()
+        nearest_points = []
+        for corner in corners:
+            nearest = self.Plotter.master.expt.get_nearest_datapoint(corner[0], 
+                                                                     corner[1])
+            x0, y0, _ = nearest.loc
+            nearest_points.append( (x0, y0) )
         
+        nearest_points.sort() # in order [(0,0), (0,1), (1,0), (1,1)]
+
+        x, y = nearest_points[0]
+        w    = nearest_points[3][0] - x
+        h    = nearest_points[3][1] - y
+        w = h = max(w, h) # make it a square            
+        self.make_rectangle( (x, y), (x+w, y+h) )
+        return
+        
+        
+        
+            
+            
+            
+            
+        
+        return
+    
         
     def on_press(self, event):
         if event.inaxes != self.ax:
@@ -141,6 +190,7 @@ class RectangleSelector:
         self.loc1 = (event.xdata, event.ydata)
     
     def on_release(self, event):
+        self.snap_to_grid()
         self.clicked = False
         self.disconnect()
     
@@ -276,7 +326,7 @@ class Plotter(Logger):
     
     def update_fig1(self, **kwargs):
         # Fig 1 - SECM heatmap
-        arr = self.data1
+        arr = self.data1[::-1]
         self.image1.set_data(arr)
         minval, maxval = get_clim(arr)
         self.image1.set(clim=( minval, maxval) )

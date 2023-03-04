@@ -318,6 +318,9 @@ class GUI(Logger):
         Button(topfigframe, text='Zoom to grid...', 
                command=self.heatmap_rect_zoom).grid(column=0, row=1,
                                                     sticky=(W,E))
+        Button(topfigframe, text='Set new area',
+               command=self.set_new_area).grid(column=1, row=1,
+                                               sticky=(W,E))
         
         FigureCanvasTkAgg(self.topfig, master=topfigframe
                           ).get_tk_widget().grid(
@@ -468,6 +471,7 @@ class GUI(Logger):
             self.master.expt.save(f)
     
     def savePrevious(self):
+        if self.master.TEST_MODE: return
         answer = messagebox.askyesno('Save previous?', 
                           'Do you want to save the unsaved data?')
         if not answer:
@@ -552,6 +556,15 @@ class GUI(Logger):
     
     def heatmap_rect_zoom(self):
         self.master.Plotter.heatmap_zoom()
+    
+    def set_new_area(self):
+        corners = self.master.Plotter.RectangleSelector.get_coords()
+        if all([c == (0,0) for c in corners]):
+            return
+        scale = self.master.Piezo.set_new_scan_bounds(corners)
+        gui.params['hopping']['size'].delete('1.0', 'end')
+        gui.params['hopping']['size'].insert('1.0', f"{scale:0.3f}")
+        return
     
     
     ########## ELECTROCHEMISTRY CALLBACKS ###########

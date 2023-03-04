@@ -12,6 +12,7 @@ class Piezo(Logger):
         self.x = 0
         self.y = 0
         self.z = 0
+        self.starting_coords = (0,0)
         pass
     
     def loc(self):
@@ -27,7 +28,7 @@ class Piezo(Logger):
         # <-----
         # ----->
         points = []
-        coords = np.linspace(0, length, n_points)
+        coords = np.linspace(self.starting_coords[0], length, n_points)
         
         reverse = False
         for x in coords:
@@ -40,4 +41,15 @@ class Piezo(Logger):
                     points.append((x,y))
                 reverse = True
         return points
+    
+    def set_new_scan_bounds(self, corners):
+        # i.e. [(5, 5), (5, 44), (44, 5), (44, 44)]
+        corners.sort()
+        self.starting_coords = corners[0]
+        scale = corners[2][0] - corners[0][0]
+        return scale
+    
+    def zero(self):
+        self.starting_coords = (0,0)
+        self.goto(0,0, self.z)
     

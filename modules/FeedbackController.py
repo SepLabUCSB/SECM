@@ -95,7 +95,7 @@ class FeedbackController(Logger):
         # Generate fake data for testing piezo
         voltage = np.linspace(0, 0.5, 50)
         max_I = 100*np.random.rand()
-        current = np.linspace(0, i, 50)
+        current = np.linspace(0, max_I, 50)
         return voltage, current
     
     
@@ -181,7 +181,7 @@ class FeedbackController(Logger):
             
             # Send data for plotting
             self.master.Plotter.data1 = expt.get_heatmap_data(
-                                           datatype='loc',
+                                           datatype='max',
                                            arg=None
                                             )
             expt.save()
