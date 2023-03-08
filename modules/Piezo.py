@@ -32,17 +32,16 @@ class Piezo(Logger):
         coords = np.linspace(self.starting_coords[0], 
                              self.starting_coords[0] + length, 
                              n_points)
-        print(self.starting_coords)
         
         reverse = False
-        for i, y in enumerate(coords):
+        for j, y in reversed(list(enumerate(coords))):
             if reverse:
-                for j, x in reversed(list(enumerate(coords))):
+                for i, x in reversed(list(enumerate(coords))):
                     points.append((x,y))
                     order.append((i,j))
                 reverse = False
             else:
-                for j, x in enumerate(coords):
+                for i, x in enumerate(coords):
                     points.append((x,y))
                     order.append((i,j))
                 reverse = True
@@ -61,3 +60,31 @@ class Piezo(Logger):
         self.starting_coords = (0,0)
         self.goto(0,0, self.z)
     
+
+    
+if __name__ == '__main__':
+    # grid testing
+    points = []
+    order  = []
+    coords = np.linspace(0,1,9)
+    cnt = 0
+    reverse = False
+    for j, y in reversed(list(enumerate(coords))):
+        s = ''
+        o = ''
+        if reverse:
+            for i, x in reversed(list(enumerate(coords))):
+                points.append((x,y))
+                order.append((i,j))
+                s = f'({x:.1f}, {y:.1f}) ' + s
+                o = f'{str(cnt).rjust(3)} ' + o
+                cnt += 1
+            reverse = False
+        else:
+            for i, x in enumerate(coords):
+                points.append((x,y))
+                order.append((i,j))
+                s += f'({x:.1f}, {y:.1f}) '
+                o += f'{str(cnt).rjust(3)} '
+                cnt += 1
+            reverse = True

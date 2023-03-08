@@ -212,7 +212,7 @@ class CVDataPoint(DataPoint):
         if datatype=='max':
             return max(self.data[2])
         if datatype=='loc':
-            return self.loc[0]
+            return self.loc[0] + self.loc[1]
     
     def get_data(self):
         return self.data

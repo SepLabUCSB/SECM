@@ -185,7 +185,7 @@ class FeedbackController(Logger):
             
             # Send data for plotting
             self.master.Plotter.data1 = expt.get_heatmap_data(
-                                           datatype='max',
+                                           datatype='loc',
                                            arg=None
                                             )
             expt.save()
