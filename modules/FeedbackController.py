@@ -95,8 +95,6 @@ class FeedbackController(Logger):
         # Generate fake data for testing piezo
         voltage = np.linspace(0, 0.5, 50)
         max_I = 100*np.random.rand()
-        if i%2:
-            i = -i
         current = np.linspace(0, i, 50)
         return voltage, current
     
@@ -183,14 +181,11 @@ class FeedbackController(Logger):
                     )
             
             grid_i, grid_j = order[i]  
-            # print(f'{i}, ({grid_i:0.0f}, {grid_j:0.0f}),({x:0.0f}, {y:0.0f})')
             expt.set_datapoint( (grid_i, grid_j), data)
             
             # Send data for plotting
-            self.master.Plotter.data1 = expt.get_heatmap_data(
-                                           datatype='loc',
-                                           arg=None
-                                            )
+            self.master.Plotter.update_heatmap()
+            
             expt.save()
             time.sleep(0.01)
         

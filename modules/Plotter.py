@@ -172,29 +172,23 @@ class RectangleSelector:
         w = h = max(w, h) # make it a square            
         self.make_rectangle( (x, y), (x+w, y+h) )
         return
-        
-        
-        
-            
-            
-            
-            
-        
-        return
     
         
     def on_press(self, event):
+        # click
         if event.inaxes != self.ax:
             return
         self.clicked = True
         self.loc1 = (event.xdata, event.ydata)
     
     def on_release(self, event):
+        # release
         self.snap_to_grid()
         self.clicked = False
         self.disconnect()
     
     def on_drag(self, event):
+        # drag rectangle
         if (not self.clicked or event.inaxes != self.ax):
             return
         self.loc2 = (event.xdata, event.ydata)
@@ -229,6 +223,8 @@ class Plotter(Logger):
         self.image1 = self.ax1.imshow(np.array([
             np.array([0 for _ in range(10)]) for _ in range(10)
             ], dtype=np.float32), cmap='afmhot', origin='upper')
+        self.fig1.colorbar(self.image1, ax=self.ax1, shrink=0.5,
+                           pad=0.02, )
         self.ax1.set_xlabel(r'$\mu$m')
         self.ax1.set_ylabel(r'$\mu$m')
         self.fig1.canvas.draw()
@@ -282,14 +278,18 @@ class Plotter(Logger):
             self.update_fig2data(closest_datapoint.get_data(),
                                  sample_freq=10000)
             x0, y0, _ = closest_datapoint.loc
-            print(f'Selected ({x0:0.2f}, {y0:0.2f}).')
         return 
     
     
-    def update_heatmap(self, option, value):
+    def update_heatmap(self, option=None, value=None):
         # Called from GUI by changing view selector
         expt = self.master.expt
         pts = []
+        
+        if option == value == None:
+            option = self.master.GUI.heatmapselection.get()
+            value = self.master.GUI.HeatMapDisplayParam.get('1.0', 'end')
+        
         if option == 'Max. current':
             pts = expt.get_heatmap_data('max')
         if option == 'Current @ ... (V)':

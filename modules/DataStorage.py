@@ -67,11 +67,23 @@ class Experiment:
         self.saved = True # Toggles to False when first data point is appended
     
     
-    
-    
-    
     def isSaved(self):
         return self.saved
+    
+    
+    def save(self, path=None):
+        if not path:
+            path = self.path
+        
+        if not path.endswith('.secmdata'):
+            path += '.secmdata'
+                
+        with open(path, 'wb') as f:
+            # json.dump(d, f)
+            pickle.dump(self, f)
+        if not path.endswith('temp.secmdata'):
+            print(f'Saved as {path}')
+            self.saved = True
     
     
     def setup_blank(self, points, order):
@@ -164,19 +176,7 @@ class Experiment:
         return closest
     
     
-    def save(self, path=None):
-        if not path:
-            path = self.path
-        
-        if not path.endswith('.secmdata'):
-            path += '.secmdata'
-                
-        with open(path, 'wb') as f:
-            # json.dump(d, f)
-            pickle.dump(self, f)
-        if not path.endswith('temp.secmdata'):
-            print(f'Saved as {path}')
-            self.saved = True
+    
             
 
     

@@ -262,9 +262,9 @@ class GUI(Logger):
         # pstat_frame = Frame(tabControl)
         
         pstat_frame = Frame(leftpanel)
-        pstat_frame.grid(row=0, column=0, sticky=(N,W,E))
+        pstat_frame.grid(row=0, column=0, sticky=(N,S,W,E))
         secm_frame = Frame(leftpanel)
-        secm_frame.grid(row=1, column=0, sticky=(N,W,E))
+        secm_frame.grid(row=1, column=0, sticky=(N,S,W,E))
         
         
         # tabControl.add(pstat_frame, text ='Potentiostat Control')
@@ -279,19 +279,19 @@ class GUI(Logger):
         
         # Label(rightpanel, text='right frame').grid(column=1, row=1)
         topfigframe = Frame(rightpanel)
-        topfigframe.grid(row=0, column=1)
+        topfigframe.grid(row=0, column=0)
         topfigframe.pack_propagate(0)
         
         Separator(rightpanel, 
-                  orient='horizontal').grid(row=1, column=1, sticky=(W,E))
+                  orient='vertical').grid(row=0, column=1, sticky=(N,S))
         
         botfigframe = Frame(rightpanel)
-        botfigframe.grid(row=2, column=1)
+        botfigframe.grid(row=0, column=2)
         botfigframe.pack_propagate(0)
         
         
-        self.topfig = plt.Figure(figsize=(3,3), dpi=75)
-        self.botfig = plt.Figure(figsize=(3,3), dpi=75)
+        self.topfig = plt.Figure(figsize=(4.5,4.5), dpi=75)
+        self.botfig = plt.Figure(figsize=(4.5,4.5), dpi=75)
         
         self.topfig.add_subplot(111)
         self.botfig.add_subplot(111)
@@ -303,7 +303,7 @@ class GUI(Logger):
         ### HEATMAP DISPLAY OPTIONS ###
         ###############################
         
-        Label(topfigframe, text='Display: ').grid(column=0, row=0, 
+        Label(topfigframe, text='SECM').grid(column=0, row=0, 
                                                   sticky=(W,E))
         heatmapOptions = [
             'Max. current',
@@ -313,14 +313,14 @@ class GUI(Logger):
             ]
         self.heatmapselection = StringVar(topfigframe)
         OptionMenu(topfigframe, self.heatmapselection, 
-                   heatmapOptions[0], *heatmapOptions).grid(column=1, 
-                                                            row=0, 
+                   heatmapOptions[0], *heatmapOptions).grid(column=2, 
+                                                            row=1, 
                                                             sticky=(W,E))
         self.heatmapselection.trace('w', self.heatmap_opt_changed)
         
         self.HeatMapDisplayParam = Text(topfigframe, height=1, width=5)
         self.HeatMapDisplayParam.insert('1.0', '')
-        self.HeatMapDisplayParam.grid(column=2, row=0, sticky=(W,E))
+        self.HeatMapDisplayParam.grid(column=3, row=1, sticky=(W,E))
         
         Button(topfigframe, text='Zoom to grid...', 
                command=self.heatmap_rect_zoom).grid(column=0, row=1,
@@ -344,18 +344,18 @@ class GUI(Logger):
              'I vs t',
              'I vs V',
              ]
-                              
-        Label(botfigframe, text='Show: ').grid(column=0, row=0, sticky=(W,E))
+        Label(botfigframe, text='Electrochemistry').grid(column=0, row=0)
+        # Label(botfigframe, text='Show: ').grid(column=0, row=1, sticky=(W,E))
         self.fig2selection = StringVar(botfigframe)
         OptionMenu(botfigframe, self.fig2selection, fig2Options[2], 
-                   *fig2Options, command=self.fig_opt_changed).grid(column=1, row=0, sticky=(W,E))
+                   *fig2Options, command=self.fig_opt_changed).grid(column=0, row=1, sticky=(W,E))
         # option13 = StringVar(botfigframe)
         # OptionMenu(botfigframe, option13, 'Option 3', 
         #            *['Option 3', '']).grid(column=2, row=0, sticky=(W,E))                      
                               
         FigureCanvasTkAgg(self.botfig, master=botfigframe
                           ).get_tk_widget().grid(
-                                              row=1, column=0,
+                                              row=2, column=0,
                                               columnspan=10)                       
         
         
