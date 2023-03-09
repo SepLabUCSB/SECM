@@ -34,17 +34,30 @@ class Piezo(Logger):
                              n_points)
         
         reverse = False
+        cnt = 0
         for j, y in reversed(list(enumerate(coords))):
+            s = ''
+            o = ''
+            
             if reverse:
                 for i, x in reversed(list(enumerate(coords))):
                     points.append((x,y))
                     order.append((i,j))
+                    # s = f'({x:0.0f}, {y:0.0f}) ' + s
+                    s = f'{str(cnt).ljust(3)} ' + s
+                    o = f'({i}, {j}) ' + o
+                    cnt += 1
                 reverse = False
             else:
                 for i, x in enumerate(coords):
                     points.append((x,y))
                     order.append((i,j))
+                    o += f'({i}, {j}) '
+                    s += f'{str(cnt).ljust(3)} '
+                    # s += f'({x:0.0f}, {y:0.0f}) '
+                    cnt += 1
                 reverse = True
+            # print(s)
         
         return points, order
     

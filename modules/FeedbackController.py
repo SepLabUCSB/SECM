@@ -180,7 +180,8 @@ class FeedbackController(Logger):
                         ]
                     )
             
-            grid_i, grid_j = order[i]            
+            grid_i, grid_j = order[i]  
+            # print(f'{i}, ({grid_i:0.0f}, {grid_j:0.0f}),({x:0.0f}, {y:0.0f})')
             expt.set_datapoint( (grid_i, grid_j), data)
             
             # Send data for plotting

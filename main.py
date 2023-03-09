@@ -253,7 +253,7 @@ class GUI(Logger):
         console = Text(bottompanel, width=70, height=10)
         console.grid(row=0, column=0, sticky=(N,S,E,W))
         pl = PrintLogger(console)
-        sys.stdout = pl
+        # sys.stdout = pl
         
         
         # tabControl = Notebook(leftpanel)

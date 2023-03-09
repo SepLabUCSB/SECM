@@ -228,7 +228,7 @@ class Plotter(Logger):
         # Initialize heatmap
         self.image1 = self.ax1.imshow(np.array([
             np.array([0 for _ in range(10)]) for _ in range(10)
-            ], dtype=np.float32), cmap='afmhot', origin='lower')
+            ], dtype=np.float32), cmap='afmhot', origin='upper')
         self.ax1.set_xlabel(r'$\mu$m')
         self.ax1.set_ylabel(r'$\mu$m')
         self.fig1.canvas.draw()

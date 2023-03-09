@@ -109,7 +109,7 @@ class Experiment:
         
     def set_datapoint(self, grid_ids, point):
         i, j = grid_ids[0], grid_ids[1]
-        self.data[i][j] = point
+        self.data[j][i] = point  # TODO: heatmap axes are messed up
         self.saved = False
         
         
