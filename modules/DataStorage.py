@@ -4,6 +4,12 @@ import pickle
 import numpy as np
 
 
+def nearest(arr, val):
+    diff = abs(np.array(arr) - val)
+    idx = np.where(diff == min(diff))[0][0]
+    return idx, arr[idx]
+
+
 def get_xy_coords(length, n_pts):
         # Generate ordered list of xy coordinates for a scan
         # ----->
@@ -184,18 +190,25 @@ class DataPoint:
         #  * float: single potential measurements
         #  * list: CV: [ [t], [V], [I] ]
         self.data = data
+    
         
     def get_val(self, datatype='max', arg=None):
+        # Return requested value (for heatmap display)
         # Overwrite in subclasses
+        if datatype == 'z':
+            return self.loc[2]
         return self.data
     
     def get_data(self):
+        # Return all data
         return [0], [0], [0]
 
         
 
 class SinglePoint(DataPoint):
     def get_val(self, datatype=None, arg=None):
+        if datatype == 'z':
+            return self.loc[2]
         return self.data
 
 
@@ -209,10 +222,17 @@ class CVDataPoint(DataPoint):
             'val_at': I at valarg voltage
             etc
         '''
+        if datatype == 'z':
+            return self.loc[2]
         if datatype=='max':
             return max(self.data[2])
         if datatype=='loc':
             return self.loc[0] + self.loc[1]
+        if datatype == 'avg':
+            return np.mean(self.data[2])
+        if datatype == 'val_at':
+            idx, _ = nearest(self.data[1], arg)
+            return self.data[2][idx]
     
     def get_data(self):
         return self.data

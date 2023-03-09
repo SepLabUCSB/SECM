@@ -281,7 +281,31 @@ class Plotter(Logger):
             closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
             self.update_fig2data(closest_datapoint.get_data(),
                                  sample_freq=10000)
+            x0, y0, _ = closest_datapoint.loc
+            print(f'Selected ({x0:0.2f}, {y0:0.2f}).')
         return 
+    
+    
+    def update_heatmap(self, option, value):
+        # Called from GUI by changing view selector
+        expt = self.master.expt
+        pts = []
+        if option == 'Max. current':
+            pts = expt.get_heatmap_data('max')
+        if option == 'Current @ ... (V)':
+            try:
+                value = float(value)
+                pts = expt.get_heatmap_data('val_at', value)
+            except:
+                return
+        if option == 'Z height':
+            pts = expt.get_heatmap_data('z')
+        if option == 'Avg. current':
+            pts = expt.get_heatmap_data('avg')
+        
+        if len(pts) > 0:
+            self.data1 = pts #will update plot automatically
+        return
     
     
     def heatmap_zoom(self):

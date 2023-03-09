@@ -253,7 +253,7 @@ class GUI(Logger):
         console = Text(bottompanel, width=70, height=10)
         console.grid(row=0, column=0, sticky=(N,S,E,W))
         pl = PrintLogger(console)
-        # sys.stdout = pl
+        sys.stdout = pl
         
         
         # tabControl = Notebook(leftpanel)
@@ -298,6 +298,11 @@ class GUI(Logger):
         
         
         
+        
+        ###############################
+        ### HEATMAP DISPLAY OPTIONS ###
+        ###############################
+        
         Label(topfigframe, text='Display: ').grid(column=0, row=0, 
                                                   sticky=(W,E))
         heatmapOptions = [
@@ -311,6 +316,8 @@ class GUI(Logger):
                    heatmapOptions[0], *heatmapOptions).grid(column=1, 
                                                             row=0, 
                                                             sticky=(W,E))
+        self.heatmapselection.trace('w', self.heatmap_opt_changed)
+        
         self.HeatMapDisplayParam = Text(topfigframe, height=1, width=5)
         self.HeatMapDisplayParam.insert('1.0', '')
         self.HeatMapDisplayParam.grid(column=2, row=0, sticky=(W,E))
@@ -328,6 +335,10 @@ class GUI(Logger):
                                               columnspan=10)
         
         
+        ##################    
+        #### FIGURE 2 ####
+        ##################    
+                 
         fig2Options = [
              'V vs t',
              'I vs t',
@@ -552,6 +563,16 @@ class GUI(Logger):
         self.master.Plotter.update_fig2data(
             data = self.master.Plotter.data2
             )
+    
+    
+    def heatmap_opt_changed(self, *args):
+        # selected a new view for heatmap
+        option = self.heatmapselection.get()
+        value  = self.HeatMapDisplayParam.get('1.0', 'end')
+        
+        self.master.Plotter.update_heatmap(option, value)        
+        return
+    
     
     
     def heatmap_rect_zoom(self):
