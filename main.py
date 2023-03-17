@@ -553,9 +553,13 @@ class GUI(Logger):
     
     # Selected new view for fig2
     def fig_opt_changed(self, _):
-        self.master.Plotter.update_fig2data(
-            data = self.master.Plotter.data2
+        # self.master.Plotter.update_fig2data(
+        #     data = self.master.Plotter.data2
+        #     )
+        self.master.Plotter.set_echemdata(
+            DATAPOINT = self.master.Plotter.fig2data 
             )
+        return
     
     
     def heatmap_opt_changed(self, *args):

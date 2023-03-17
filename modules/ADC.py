@@ -1,5 +1,7 @@
 import serial
 import time
+import numpy as np
+from modules.DataStorage import ADCDataPoint
 from utils.utils import run, Logger
 
 CONST_SER_PORT = 'COM6'   #get the com port from device manger and enter it here
@@ -30,7 +32,8 @@ class ADC(Logger):
         self.setup(n_channels=2)
             
         self.pollingcount = 0
-        self.pollingdata  = [[0],]
+        self.pollingdata  = ADCDataPoint(loc=(0,),
+                                         data=[ [], [], [] ])
     
     
     # Command
@@ -114,7 +117,17 @@ class ADC(Logger):
         data = [ [] for _ in range(self.number_of_channels)]
         t    = []
         
-        self.pollingdata = [idxs, t, *data]
+        
+        self.pollingdata = ADCDataPoint(loc=(0,),
+                                        data=[t,
+                                              [],
+                                              [],]
+                                        )
+        
+        gain = 1e9 * self.master.GUI.amp_params['float_gain']
+        self.pollingdata.set_HEKA_gain(gain)
+        self.master.Plotter.FIG2_FORCED = False
+        
         self.pollingcount += 1
         self.port.reset_input_buffer()
         self.port.write(b"start\r")
@@ -126,7 +139,7 @@ class ADC(Logger):
         
         while True:
             if time.time() - st > timeout:
-                # print('ADC timeout')
+                self.log('Timed out')
                 break
             if self._STOP_POLLING:
                 self._STOP_POLLING = False
@@ -136,28 +149,35 @@ class ADC(Logger):
             i = self.port.in_waiting
             if (i//numofbyteperscan) > 0:
                 response = self.port.read(i - i%numofbyteperscan)
+                ch = []
                 for x in range(0, self.number_of_channels):
                     adc=response[x*2]+response[x*2+1]*256
                     if adc>32767:
                         adc=adc-65536
                     adc *= (10/2**15) # +- 10 V full scale, 16 bit
-                    data[x].append(adc)
+                    # data[x].append(adc)
+                    ch.append(adc)
+                
+                self.pollingdata.append_data(time.time() - st,
+                                             ch[0],
+                                             ch[1])
                 
                 idxs.append(idx)
-                t.append(time.time() - st)
+                # t.append(time.time() - st)
                 idx += 1
-                if len(t) > 100:
-                    # Only save most recent 100 pts
-                    t = t[-100:] 
-                    idxs = idxs[-100:]
-                    data = [
-                        l[-100:] for l in data
-                        ]
-                self.pollingdata = [idxs, t, *data]
+                # if len(t) > 100:
+                #     # Only save most recent 100 pts
+                #     t = t[-100:] 
+                #     idxs = idxs[-100:]
+                #     data = [
+                #         l[-100:] for l in data
+                #         ]
+                # self.pollingdata = [idxs, t, *data]
         
         # TODO: aborting in between scans (sometimes?) causes an error here
-        freq = self.pollingdata[0][-1]/(self.pollingdata[1][-1])
-        
+        times = self.pollingdata.data[0]
+        freq = times[-1]/len(times)
+        freq = 1/freq
         # print(f'Sampling frequency: {freq:0.2f} Hz')
         
         self.port.write(b"stop\r")

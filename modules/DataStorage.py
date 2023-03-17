@@ -103,7 +103,7 @@ class Experiment:
         self.data   = gridpts
         
         for i, (x, y) in enumerate(points):
-            data = [ SinglePoint(loc = (x,y,0), data = 0) ]
+            data = SinglePoint(loc = (x,y,0), data = 0)
             grid_i, grid_j = order[i]
             self.set_datapoint( (grid_i, grid_j), data)
         
@@ -145,7 +145,7 @@ class Experiment:
         arg: string or float to accompany datatype
         '''
         gridpts = np.array([
-            [d[0].get_val(datatype, arg) for d in row]
+            [d.get_val(datatype, arg) for d in row]
             for row in self.data]         
             )
         return gridpts
@@ -175,13 +175,9 @@ class Experiment:
                 closest = datapoint
         return closest
     
+  
     
-    
-            
-
-    
-
-
+# Base DataPoint class
 class DataPoint:
     # Data from a single SECM pixel
     def __init__(self, loc: tuple, data):
@@ -190,6 +186,7 @@ class DataPoint:
         #  * float: single potential measurements
         #  * list: CV: [ [t], [V], [I] ]
         self.data = data
+        self.gain = 1 # Used for ADCDataPoint
     
         
     def get_val(self, datatype='max', arg=None):
@@ -201,7 +198,24 @@ class DataPoint:
     
     def get_data(self):
         # Return all data
-        return [0], [0], [0]
+        return self.data    
+
+
+class ADCDataPoint(DataPoint):
+    
+    def append_data(self, t, V, I):
+        try:
+            self.data[0].extend(t)
+            self.data[1].extend(V)
+            self.data[2].extend(I)
+        except TypeError: #passed floats instead of lists
+            self.data[0].append(t)
+            self.data[1].append(V)
+            self.data[2].append(I)
+        return     
+
+    def set_HEKA_gain(self, gain):
+        self.gain = gain
 
         
 

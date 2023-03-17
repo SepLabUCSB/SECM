@@ -81,7 +81,7 @@ class FeedbackController(Logger):
             self.Piezo.goto(x, y, z)
             # Collect some data at this loc
             time.sleep(0.1)
-            _, _, V, I = self.ADC.pollingdata.copy()
+            t, V, I = self.ADC.pollingdata.get_data()
             I = np.array(I)
             I /= gain # convert V -> I
             val = np.average(abs(I[-20:]))
@@ -142,10 +142,9 @@ class FeedbackController(Logger):
         if expt_type == 'CV':
             voltage, current = self.run_CV(expt.path, i)
                 
-            data = [
-                    CVDataPoint(loc = loc, data = [np.linspace(0,1,len(voltage)),
+            data = CVDataPoint(loc = loc, data = [np.linspace(0,1,len(voltage)),
                                                    voltage, current])
-                        ]
+                        
         return data
     
     
@@ -194,7 +193,7 @@ class FeedbackController(Logger):
                 return
             if not self.master.TEST_MODE:
                 self.Piezo.goto(x, y, z_max)
-                z = self.approach()
+                # z = self.approach()
             
             # TODO: run variable echem experiment(s) at each pt
             data = self.run_echems('CV', expt, (x, y, z), i)
