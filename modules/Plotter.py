@@ -263,26 +263,8 @@ class Plotter(Logger):
         # Clicking on pixel in SECM histogram displays that CV ( or
         # CA, or EIS, ...) in the lower figure
         if event.inaxes == self.ax1:
-            x, y = event.xdata, event.ydata
-            
-            # coords = self.master.expt.get_loc_data()
-            
-            min_x_dist = 1e6
-            min_y_dist = 1e6
-            for point in self.master.expt.data.flatten():
-                x0, y0, z0 = point.loc
-                if ((x - x0) > 0 and abs(x - x0) < min_x_dist):
-                    closest_x = x0
-                if ((y - y0) < 0 and abs(y - y0) < min_y_dist):
-                    closest_y = x0
-            
-            # TODO: Fix point selection
-            closest_datapoint = self.master.expt.get_nearest_datapoint(closest_x,
-                                                                       closest_y)
-            
-            # closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
-            # self.update_fig2data(closest_datapoint.get_data(),
-            #                      sample_freq=10000)
+            x, y = event.xdata, event.ydata            
+            closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
             self.set_echemdata(closest_datapoint, sample_freq=10000)
             x0, y0, _ = closest_datapoint.loc
         return 
