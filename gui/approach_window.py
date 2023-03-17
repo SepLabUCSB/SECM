@@ -29,7 +29,11 @@ def make_approach_window(gui, master_frame):
     
     ttk.Label(frame, text='    ').grid(column=5, row=5)
     
-def func(): print('running')
+    approach_params = {'cutoff': I_field,}
+    
+    return approach_params
+    
+
 
 if __name__ == '__main__':
     root = Tk()

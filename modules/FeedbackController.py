@@ -2,6 +2,7 @@ import numpy as np
 import time
 from io import StringIO
 import os
+from functools import partial
 from utils.utils import run, Logger
 from modules.DataStorage import Experiment, CVDataPoint
 
@@ -54,8 +55,7 @@ class FeedbackController(Logger):
         self.HekaWriter = self.master.HekaWriter
 
     
-    def approach(self, start_coords:tuple, voltage:float, 
-                 i_cutoff:float):
+    def approach(self, i_cutoff:float, voltage:float, start_coords:tuple=None):
         '''
         start_coords: (x,y,z)
         voltage: float, mV
@@ -67,20 +67,27 @@ class FeedbackController(Logger):
         
         j = 0
         step = 0.1 # um = 100nm
+        if not start_coords:
+            start_coords = self.Piezo.loc()
         x, y, z_start = start_coords
-        self.HekaWriter.macro('E Vhold {voltage}')
-        self.ADC.polling(timeout = 10)
-        while j < 100:
+        self.HekaWriter.macro(f'E Vhold {voltage}')
+        gain = 1e9 * self.master.GUI.amp_params['float_gain']
+        run(partial(self.ADC.polling, 15))
+        time.sleep(0.2)
+        for j in range(100):
             if self.master.ABORT:
                 break
-            
             z = z_start - j*step
             self.Piezo.goto(x, y, z)
+            # Collect some data at this loc
             time.sleep(0.1)
-            _, _, V, I = self.ADC.pollingdata
-            if np.average(abs(I[-20:])) > abs(i_cutoff):
-                break           
-            
+            _, _, V, I = self.ADC.pollingdata.copy()
+            I = np.array(I)
+            I /= gain # convert V -> I
+            val = np.average(abs(I[-20:]))
+            if val > i_cutoff:
+                break 
+        self.ADC.STOP_POLLING()  
         return z
 
 
@@ -113,7 +120,33 @@ class FeedbackController(Logger):
         output = read_heka_data(path)
         _, t, i, _, v = output
         return v, i
+    
+
+    def potentiostat_setup(self, expt_type):
+        if self.master.TEST_MODE:
+            return
+        if expt_type == 'CV':
+            self.master.GUI.set_amplifier()
+            CV_vals = self.master.GUI.get_CV_params()
+            self.master.HekaWriter.setup_CV(*CV_vals)
+        return
+    
+    def run_echems(self, expt_type, expt, loc, i):
+        '''
+        Run echem experiments defined by expt_type at loc (x,y,z).
         
+        Save .asc(s) to appropriate folder
+        
+        Return         
+        '''
+        if expt_type == 'CV':
+            voltage, current = self.run_CV(expt.path, i)
+                
+            data = [
+                    CVDataPoint(loc = loc, data = [np.linspace(0,1,len(voltage)),
+                                                   voltage, current])
+                        ]
+        return data
     
     
     def hopping_mode(self, params, expt_type='CV'):
@@ -135,17 +168,12 @@ class FeedbackController(Logger):
         
         
         # Setup potentiostat for experiment
-        if expt_type == 'CV':
-            
-            if not self.master.TEST_MODE:
-                self.master.GUI.set_amplifier()
-                CV_vals = self.master.GUI.get_CV_params()
-                self.master.HekaWriter.setup_CV(*CV_vals)
-        
-        
-        # Initialize data storage 
+        self.potentiostat_setup(expt_type)
+                                
         # Starts scan from Piezo.starting_coords
         points, order = self.Piezo.get_xy_coords(length, n_pts) 
+        
+        # Initialize data storage 
         expt = Experiment(points    = points,
                           order     = order,
                           expt_type = expt_type)
@@ -169,17 +197,8 @@ class FeedbackController(Logger):
                 z = self.approach()
             
             # TODO: run variable echem experiment(s) at each pt
-            voltage, current = self.run_CV(expt.path, i)
-            
-            data = CVDataPoint(
-                    loc = (x,y,z),
-                    data = [
-                        np.linspace(0,1,len(voltage)),
-                        voltage,
-                        current
-                        ]
-                    )
-            
+            data = self.run_echems('CV', expt, (x, y, z), i)
+                
             grid_i, grid_j = order[i]  
             expt.set_datapoint( (grid_i, grid_j), data)
             

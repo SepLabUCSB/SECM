@@ -103,7 +103,7 @@ class Experiment:
         self.data   = gridpts
         
         for i, (x, y) in enumerate(points):
-            data = SinglePoint(loc = (x,y,0), data = 0)
+            data = [ SinglePoint(loc = (x,y,0), data = 0) ]
             grid_i, grid_j = order[i]
             self.set_datapoint( (grid_i, grid_j), data)
         
@@ -127,7 +127,7 @@ class Experiment:
         
     def set_datapoint(self, grid_ids, point):
         i, j = grid_ids[0], grid_ids[1]
-        self.data[j][i] = point  # TODO: heatmap axes are messed up
+        self.data[j][i] = point  # TODO: heatmap axes are messed up?
         self.saved = False
         
         
@@ -145,7 +145,7 @@ class Experiment:
         arg: string or float to accompany datatype
         '''
         gridpts = np.array([
-            [d.get_val(datatype, arg) for d in row]
+            [d[0].get_val(datatype, arg) for d in row]
             for row in self.data]         
             )
         return gridpts

@@ -21,12 +21,13 @@ class ADC(Logger):
             self.master = master
             self.master.register(self)
         self.willStop   = False
+        self._is_setup  = False
         self._is_polling  = False
         self._STOP_POLLING = False
         
-        if not self.master.TEST_MODE:
-            self.port = serial.Serial(port = SER_PORT, timeout=0.5)
-            self.setup(n_channels=2)
+        # if not self.master.TEST_MODE:
+        self.port = serial.Serial(port = SER_PORT, timeout=0.5)
+        self.setup(n_channels=2)
             
         self.pollingcount = 0
         self.pollingdata  = [[0],]
@@ -66,6 +67,8 @@ class ADC(Logger):
        
     # Set up serial port
     def setup(self, n_channels=2, srate=1000, dec=1, deca=1, ps=6):
+        if self._is_setup:
+            return
         # TODO: input checks
         self.number_of_channels = n_channels
         self.ps = ps         # packet size = 2**(ps + 4) bytes, min = 2**(0 + 4) = 32
@@ -85,6 +88,7 @@ class ADC(Logger):
                 response = self.port.read(i)
                 break
         self.log('ADC setup complete')
+        self._is_setup = True
         return
     
     
@@ -104,6 +108,7 @@ class ADC(Logger):
         master.ABORT. 
         '''
         if self.isPolling(): return
+        self.setup()
         numofbyteperscan = 2**(self.ps + 4)
         idxs = []
         data = [ [] for _ in range(self.number_of_channels)]
@@ -114,7 +119,7 @@ class ADC(Logger):
         self.port.reset_input_buffer()
         self.port.write(b"start\r")
         self.polling_on()
-        self.log('Starting polling', quiet=True)
+        self.log('Starting polling', quiet=False)
         
         st = time.time()
         idx = 0

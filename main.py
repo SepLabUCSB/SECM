@@ -34,8 +34,8 @@ TEST_MODE = True
 '''
 TODO:
     
-    Lock thread - i.e. make only one button call an object at a time
-         
+    Lock threads
+    
     Make separate data viewer to make high quality figures
     
     Write documentation
@@ -59,11 +59,7 @@ TODO:
     - const. current, measure Z mode
     
     DISPLAY
-    - Color by average value
-    - Color by value at ...
-    - Color by...
     - 
-    
     
     
 '''
@@ -250,27 +246,19 @@ class GUI(Logger):
         # Bottom panel: Console
         bottompanel = Frame(self.root)
         bottompanel.grid(row=2, column=0, columnspan=2, sticky=(N,W,E))
-        console = Text(bottompanel, width=70, height=10)
+        console = Text(bottompanel, width=125, height=10)
         console.grid(row=0, column=0, sticky=(N,S,E,W))
         pl = PrintLogger(console)
         sys.stdout = pl
         
         
-        # tabControl = Notebook(leftpanel)
-        
-        # secm_frame  = Frame(tabControl)
-        # pstat_frame = Frame(tabControl)
         
         pstat_frame = Frame(leftpanel)
         pstat_frame.grid(row=0, column=0, sticky=(N,S,W,E))
         secm_frame = Frame(leftpanel)
         secm_frame.grid(row=1, column=0, sticky=(N,S,W,E))
         
-        
-        # tabControl.add(pstat_frame, text ='Potentiostat Control')
-        # tabControl.add(secm_frame, text ='SECM Control')
-        # tabControl.grid(row=0, column=0, sticky=(N))
-           
+                   
         ######################################
         #####                            #####
         #####          FIGURES           #####                            
@@ -305,6 +293,10 @@ class GUI(Logger):
         
         Label(topfigframe, text='SECM').grid(column=0, row=0, 
                                                   sticky=(W,E))
+        
+        Label(topfigframe, text='Display:').grid(column=2, row=0,
+                                                 sticky=(W,E))
+        
         heatmapOptions = [
             'Max. current',
             'Current @ ... (V)',
@@ -407,6 +399,7 @@ class GUI(Logger):
         hopping_mode   = Frame(SECM_TABS)
         const_current  = Frame(SECM_TABS)
         const_height   = Frame(SECM_TABS)
+        custom_scan    = Frame(SECM_TABS)
         
         SECM_TABS.add(approach_curve, text=' Approach Curve ')
         SECM_TABS.add(hopping_mode, text=' Hopping ')
@@ -416,8 +409,8 @@ class GUI(Logger):
         SECM_TABS.select(hopping_mode)
         
         
-        make_approach_window(self, approach_curve)
-        self.params['hopping'] = make_hopping_window(self, hopping_mode)
+        self.params['approach'] = make_approach_window(self, approach_curve)
+        self.params['hopping']  = make_hopping_window(self, hopping_mode)
     
     
         # Initialize plotter
@@ -603,12 +596,9 @@ class GUI(Logger):
             if val != self.amp_params.get(key, None):
                 cmds.append(f'Set {key} {val}')
         
-        # for cmd in cmds:
-        #     self.master.HekaWriter.send_command(cmd)
         self.master.HekaWriter.send_multiple_cmds(cmds)
         
         self.amp_params = new_params # Store current amplifier state to amp_params
-        self.master.make_ready()
         return
     
     
@@ -643,6 +633,14 @@ class GUI(Logger):
     
     def run_approach_curve(self):
         self.set_amplifier()
+        cutoff = self.params['approach']['cutoff'].get('1.0', 'end')
+        
+        cutoff  = float(cutoff) * 1e-12
+        voltage = 400
+        
+        func = partial(self.master.FeedbackController.approach,
+                       cutoff, voltage)
+        run(func)
         
     
     def run_hopping(self):
