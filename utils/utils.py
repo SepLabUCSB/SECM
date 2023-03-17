@@ -14,7 +14,6 @@ def focus_next_widget(event):
 
 
 
-
 LOG_FILE = 'log/log.txt'
 if not os.path.exists(LOG_FILE):
     with open(LOG_FILE, 'w') as f:

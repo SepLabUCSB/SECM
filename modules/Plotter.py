@@ -2,10 +2,19 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 from utils.utils import Logger
+from modules.DataStorage import (ADCDataPoint, CVDataPoint, 
+                                 SinglePoint)
 
 
 def checksum(data):
     # TODO: make this simpler
+    
+    if isinstance(data, ADCDataPoint):
+        return sum(data.data[0])
+    
+    if isinstance(data, CVDataPoint):
+        return sum(data.data[0])
+    
     if type(data) == np.ndarray:
         # Heatmap type data
         return data.sum()
@@ -18,6 +27,8 @@ def checksum(data):
 
 
 def get_plotlim(xdata, ydata):
+    if len(xdata) == 0 or len(xdata) == 1:
+        return ((0,0.1), (0,0.1))
     lim = (
      (min(xdata) - 0.05*abs(min(xdata)),
       max(xdata) + 0.05*abs(max(xdata))
@@ -26,8 +37,6 @@ def get_plotlim(xdata, ydata):
       max(ydata) + 0.05*abs(max(ydata))
       )
      )
-    if len(xdata) == 1:
-        return ((0,0.1), (0,0.1))
     return lim
 
 
@@ -219,37 +228,18 @@ class Plotter(Logger):
         self.last_data2checksum = checksum(self.data2)
         
 
-        # Initialize heatmap
-        self.image1 = self.ax1.imshow(np.array([
-            np.array([0 for _ in range(10)]) for _ in range(10)
-            ], dtype=np.float32), cmap='afmhot', origin='upper')
-        self.fig1.colorbar(self.image1, ax=self.ax1, shrink=0.5,
-                           pad=0.02, )
-        self.ax1.set_xlabel(r'$\mu$m')
-        self.ax1.set_ylabel(r'$\mu$m')
-        self.fig1.canvas.draw()
-        self.fig1.tight_layout()
-        self.ax1bg = self.fig1.canvas.copy_from_bbox(self.ax1.bbox)
-        self.ax1.draw_artist(self.image1)
-        plt.pause(0.001)
-        
-        
-        # Initialize echem fig
-        self.ln, = self.ax2.plot([], [])
-        self.ln2, = self.ax2.plot([], [])
-        self.ax2.set_xlim(-0., 2.1)
-        self.ax2.set_xlabel('')
-        self.ax2.set_ylabel('')
-        self.fig2.canvas.draw()
-        self.fig2.tight_layout()
-        self.ax2bg = self.fig2.canvas.copy_from_bbox(self.ax2.bbox)
-        self.ax2.draw_artist(self.ln)
-        plt.pause(0.001)
-        
-        
+        self.init_heatmap()
+        self.init_echem_fig()
+
         self.connect_cids()
         self.RectangleSelector = RectangleSelector(self, self.fig1, self.ax1)
-        
+       
+     
+       
+     
+    ###########################
+    #### GENERAL FUNCTIONS ####
+    ###########################
     
     def connect_cids(self):
         self.cid1 = self.fig1.canvas.mpl_connect('button_press_event',
@@ -275,14 +265,71 @@ class Plotter(Logger):
         if event.inaxes == self.ax1:
             x, y = event.xdata, event.ydata
             closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
-            self.update_fig2data(closest_datapoint.get_data(),
-                                 sample_freq=10000)
+            # self.update_fig2data(closest_datapoint.get_data(),
+            #                      sample_freq=10000)
+            self.set_echemdata(closest_datapoint, sample_freq=10000)
             x0, y0, _ = closest_datapoint.loc
         return 
     
     
+    # Called every 100 ms by TK mainloop.
+    # Check if data has updated. If so, plot it to
+    # the appropriate figure.
+    def update_figs(self, **kwargs):
+        
+        pollingData = self.master.ADC.pollingdata
+        if checksum(self.data1) != self.last_data1checksum:
+            self.update_fig1()
+        
+        if checksum(pollingData) != self.last_data2checksum:
+            if hasattr(self, 'fig2data') and id(pollingData) != id(self.fig2data):
+                self.init_echem_fig()
+            self.update_fig2()        
+        
+        self.master.GUI.root.after(100, self.update_figs)
+        return
+    
+    
+    def set_axlim(self, fig, xlim, ylim):
+        if ((xlim[1] == xlim[0]) or (ylim[1] == ylim[0])):
+            return
+        
+        if fig == 'fig1':
+            self.ax1lim = (xlim, ylim)
+            self.ax1.set_xlim(xlim)
+            self.ax1.set_ylim(ylim)
+        if fig == 'fig2':
+            self.ax2lim = (xlim, ylim)
+            self.ax2.set_xlim(xlim)
+            self.ax2.set_ylim(ylim) 
+    
+    
+    
+    
+    ###########################
+    #### HEATMAP FUNCTIONS ####
+    ###########################
+    
+    # Initialize heatmap
+    def init_heatmap(self):
+        self.image1 = self.ax1.imshow(np.array([
+            np.array([0 for _ in range(10)]) for _ in range(10)
+            ], dtype=np.float32), cmap='afmhot', origin='upper')
+        self.fig1.colorbar(self.image1, ax=self.ax1, shrink=0.5,
+                           pad=0.02, )
+        self.ax1.set_xlabel(r'$\mu$m')
+        self.ax1.set_ylabel(r'$\mu$m')
+        self.fig1.canvas.draw()
+        self.fig1.tight_layout()
+        self.ax1bg = self.fig1.canvas.copy_from_bbox(self.ax1.bbox)
+        self.ax1.draw_artist(self.image1)
+        plt.pause(0.001)
+        return
+    
+    
+    # Called from GUI by changing view selector
+    # Update what is shown on the heatmap
     def update_heatmap(self, option=None, value=None):
-        # Called from GUI by changing view selector
         expt = self.master.expt
         pts = []
         
@@ -308,48 +355,8 @@ class Plotter(Logger):
         return
     
     
-    def heatmap_zoom(self):
-        self.disconnect_cids()
-        self.RectangleSelector.connect() 
-        # Plotter regains control of mouse inputs 
-        # on RectangleSelector.disconnect()
-        return
-     
-    
-    def isADCpolling(self):
-        self.adc_polling = self.master.ADC.isPolling()
-        return self.adc_polling
-        
-   
-    def update_figs(self, **kwargs):
-        # Called every 100 ms by TK mainloop.
-        # Check if data has updated. If so, plot it to
-        # the appropriate figure.
-        
-        pollingData = self.master.ADC.pollingdata
-        if checksum(self.data1) != self.last_data1checksum:
-            self.update_fig1()
-        
-        if checksum(pollingData) != self.last_data2checksum:
-            self.update_fig2()        
-        
-        self.master.GUI.root.after(100, self.update_figs)
-        return
-    
-    
-    def set_axlim(self, fig, xlim, ylim):
-        if fig == 'fig1':
-            self.ax1lim = (xlim, ylim)
-            self.ax1.set_xlim(xlim)
-            self.ax1.set_ylim(ylim)
-        if fig == 'fig2':
-            self.ax2lim = (xlim, ylim)
-            self.ax2.set_xlim(xlim)
-            self.ax2.set_ylim(ylim)    
-    
-    
+    # Set new data on heatmap
     def update_fig1(self, **kwargs):
-        # Fig 1 - SECM heatmap
         arr = self.data1[::-1]
         self.image1.set_data(arr)
         minval, maxval = get_clim(arr)
@@ -363,10 +370,24 @@ class Plotter(Logger):
         self.last_data1checksum = checksum(self.data1)
         plt.pause(0.001)
     
-        
     
-    def reinit_fig2(self):
-        # Redraw blank fig2 before polling ADC
+    # Enter heatmap zoom mode
+    def heatmap_zoom(self):
+        self.disconnect_cids()
+        self.RectangleSelector.connect() 
+        # Plotter regains control of mouse inputs 
+        # on RectangleSelector.disconnect()
+        return
+     
+
+    
+
+    #############################
+    #### ECHEM FIG FUNCTIONS ####
+    #############################
+    
+    # Draw blank echem figure
+    def init_echem_fig(self):
         self.FIG2_FORCED = False
         self.data2 = [ [-1], [], [], [] ]
         self.ax2.cla()
@@ -381,86 +402,62 @@ class Plotter(Logger):
         self.ax2.draw_artist(self.ln)
         # self.fig2.canvas.blit(self.ax2.bbox)
         plt.pause(0.001)
+
     
     
-    def update_fig2data(self, data=None, sample_freq=10):
-        # Called either by loading a previously recorded data point 
-        # (passes data [ idxs, ts, ch1, ch2 ] to this func) or from 
-        # new ADC polling data.
+    def update_fig2(self):
+        DATAPOINT = self.master.ADC.pollingdata
+        self.set_echemdata(DATAPOINT)
+
+    
+    def set_echemdata(self, DATAPOINT, sample_freq=10):
+        # Determine what to plot
+        _, _, xval, yval = get_axval_axlabels(
+                                self.master.GUI.fig2selection.get()
+                                )
         
-        if type(data) != type(None):
-            # Passed previously recorded data
+        # Get the data
+        if isinstance(DATAPOINT, ADCDataPoint):
+            if self.FIG2_FORCED:
+                # Don't update with new ADC data
+                return
+            t, V, I = DATAPOINT.get_data()
+            V = np.array(V)/10
+            I = np.array(I)/DATAPOINT.gain
+            
+        elif isinstance(DATAPOINT, CVDataPoint):
+            t, V, I = DATAPOINT.get_data()
             self.FIG2_FORCED = True
-            if len(data) == 3:
-                ts, v, i = data
-                idxs = [i for i, _ in enumerate(ts)]
-            elif len(data) == 4:
-                idxs, ts, v, i = data
-            self.lastdata2checksum = checksum(data)
-            self.data2 = [idxs, ts, v, i]
-            self._update_fig2(idxs, ts, v, i, sample_freq = 1000)
-            return self.data2, 10000
         
-        if self.FIG2_FORCED:
-            return self.data2, 10000
-            
-        # Updating with new data    
-        dat = self.master.ADC.pollingdata.copy()
-        if type(dat) != list:
-            return [[-1], [], [], []], sample_freq
+        elif isinstance(DATAPOINT, SinglePoint):
+            t, V, I = [0], [0], [0]
         
-        gain = 1e9 * self.master.GUI.amp_params['float_gain']
+        else:
+            print(type(DATAPOINT))
         
-        idxs, ts, ch1, ch2 = dat
-        ch1 = [v/10 for v in ch1] # Analog voltage output gets 
-                                  # multiplied by 10
-        ch2 = [v/gain for v in ch2] # Convert V --> pA
+        d = {'t': t,
+             'V': V,
+             'I': I}
         
-        dat = idxs, ts, ch1, ch2
-        
-        self.lastdata2checksum = checksum(dat)
-        
-        # Determine new points to add
-        old_idx = self.data2[0].copy()
-        startpoint = min([i for i, val in enumerate(idxs)
-                                  if val > old_idx[-1]])
-        
-        for i, (l, new_l) in enumerate(zip(self.data2, dat)):
-            self.data2[i] += new_l[startpoint:]
-        
-        return self.data2, sample_freq
-    
-
-
-    def update_fig2(self, sample_freq=10):
-        # Called by ADC polling
-        if self.master.ADC.pollingcount != self.adc_polling_count:
-            # Check if new polling has started
-            self.adc_polling_count = self.master.ADC.pollingcount
-            self.reinit_fig2()
-        
-        if self.isADCpolling():
-            data, sample_freq = self.update_fig2data(sample_freq=sample_freq)            
-            self._update_fig2(*data, sample_freq)
-            
-    
-    
-    def _update_fig2(self, idxs, ts, ch1, ch2, sample_freq=10):
-        # Function for redrawing fig 2 data
-        
-        # Determine what to plot based on user selection in GUI
-        xval, yval, xaxlabel, yaxlabel = get_axval_axlabels(
-                                        self.master.GUI.fig2selection.get()
-                                        )
-        
-        # Get the correct data
-        d = {'t': ts,
-             'ch1': ch1,
-             'ch2': ch2
-             }
+        t = d['t']
         x = d[xval]
         y = d[yval]
         
+        
+        # Plot the data
+        # t always used to determine sampling frequency
+        self.draw_echemfig(t, x, y, sample_freq)
+        self.ax2.set_xlabel(xval)
+        self.ax2.set_ylabel(yval)
+        self.fig2.tight_layout()
+        self.fig2.canvas.draw_idle()
+        plt.pause(0.001)
+        
+        self.fig2data = DATAPOINT
+        return
+    
+
+    def draw_echemfig(self, t, x, y, undersample_freq=10):
         # Undersample data if desired
         # (i.e. HEKA records CV at 10 Hz, but ADC samples at 234 Hz -
         #  we see every step in the digital CV and pick up excess noise
@@ -473,29 +470,144 @@ class Plotter(Logger):
             end =  n * int(len(arr)/n)
             return np.mean(arr[:end].reshape(-1, n), 1)
         
-        if len(x) > sample_freq:
-            data_freq = 1/np.mean(np.diff(ts))
-            undersample_factor = int(data_freq//sample_freq)
+        if len(x) > undersample_freq:
+            data_freq = 1/np.mean(np.diff(t))
+            undersample_factor = int(data_freq//undersample_freq)
             
             plotx = average(np.array(x), undersample_factor)
             ploty = average(np.array(y), undersample_factor)
-        
         else:
             plotx = x
             ploty = y
+        
+        self.ln.set_data(plotx, ploty)
+        self.set_axlim('fig2', *get_plotlim(plotx, ploty) )
+        return
+
+
+
+
+###################################
+
+    # def isADCpolling(self):
+    #     self.adc_polling = self.master.ADC.isPolling()
+    #     return self.adc_polling
+        
+        
+    
+    # def update_fig2data(self, data=None, sample_freq=10):
+    #     # Called either by loading a previously recorded data point 
+    #     # (passes data [ idxs, ts, ch1, ch2 ] to this func) or from 
+    #     # new ADC polling data.
+        
+    #     if type(data) != type(None):
+    #         # Passed previously recorded data
+    #         self.FIG2_FORCED = True
+    #         if len(data) == 3:
+    #             ts, v, i = data
+    #             idxs = [i for i, _ in enumerate(ts)]
+    #         elif len(data) == 4:
+    #             idxs, ts, v, i = data
+    #         self.lastdata2checksum = checksum(data)
+    #         self.data2 = [idxs, ts, v, i]
+    #         self._update_fig2(idxs, ts, v, i, sample_freq = 1000)
+    #         return self.data2, 10000
+        
+    #     if self.FIG2_FORCED:
+    #         return self.data2, 10000
+            
+    #     # Updating with new data    
+    #     dat = self.master.ADC.pollingdata.copy()
+    #     if type(dat) != list:
+    #         return [[-1], [], [], []], sample_freq
+        
+    #     gain = 1e9 * self.master.GUI.amp_params['float_gain']
+        
+    #     idxs, ts, ch1, ch2 = dat
+    #     ch1 = [v/10 for v in ch1] # Analog voltage output gets 
+    #                               # multiplied by 10
+    #     ch2 = [v/gain for v in ch2] # Convert V --> pA
+        
+    #     dat = idxs, ts, ch1, ch2
+        
+    #     self.lastdata2checksum = checksum(dat)
+        
+    #     # Determine new points to add
+    #     old_idx = self.data2[0].copy()
+    #     startpoint = min([i for i, val in enumerate(idxs)
+    #                               if val > old_idx[-1]])
+        
+    #     for i, (l, new_l) in enumerate(zip(self.data2, dat)):
+    #         self.data2[i] += new_l[startpoint:]
+        
+    #     return self.data2, sample_freq
+    
+
+
+    # def update_fig2(self, sample_freq=10):
+    #     # Called by ADC polling
+    #     if self.master.ADC.pollingcount != self.adc_polling_count:
+    #         # Check if new polling has started
+    #         self.adc_polling_count = self.master.ADC.pollingcount
+    #         self.init_echemfig()
+        
+    #     if self.isADCpolling():
+    #         data, sample_freq = self.update_fig2data(sample_freq=sample_freq)            
+    #         self._update_fig2(*data, sample_freq)
+            
+    
+    
+    # def _update_fig2(self, idxs, ts, ch1, ch2, sample_freq=10):
+    #     # Function for redrawing fig 2 data
+        
+    #     # Determine what to plot based on user selection in GUI
+    #     xval, yval, xaxlabel, yaxlabel = get_axval_axlabels(
+    #                                     self.master.GUI.fig2selection.get()
+    #                                     )
+        
+    #     # Get the correct data
+    #     d = {'t': ts,
+    #          'ch1': ch1,
+    #          'ch2': ch2
+    #          }
+    #     x = d[xval]
+    #     y = d[yval]
+        
+    #     # Undersample data if desired
+    #     # (i.e. HEKA records CV at 10 Hz, but ADC samples at 234 Hz -
+    #     #  we see every step in the digital CV and pick up excess noise
+    #     #  as well as current spikes.)
+        
+    #     def average(arr, n):
+    #         if n < 2:
+    #             return arr
+    #         # Undersample arr by averaging over n pts
+    #         end =  n * int(len(arr)/n)
+    #         return np.mean(arr[:end].reshape(-1, n), 1)
+        
+    #     if len(x) > sample_freq:
+    #         data_freq = 1/np.mean(np.diff(ts))
+    #         undersample_factor = int(data_freq//sample_freq)
+            
+    #         plotx = average(np.array(x), undersample_factor)
+    #         ploty = average(np.array(y), undersample_factor)
+        
+    #     else:
+    #         plotx = x
+    #         ploty = y
            
         
-        # Finally, plot the data
-        self.ln.set_data(plotx, ploty)
-        self.set_axlim('fig2', 
-                       *get_plotlim(plotx, ploty)
-                       )
-        self.ax2.set_xlabel(xaxlabel)
-        self.ax2.set_ylabel(yaxlabel)
-        self.ax2.draw_artist(self.ln)
-        self.fig2.tight_layout()
-        self.fig2.canvas.draw_idle()
-        plt.pause(0.001)
+    #     # Finally, plot the data
+    #     self.ln.set_data(plotx, ploty)
+    #     self.set_axlim('fig2', 
+    #                    *get_plotlim(plotx, ploty)
+    #                    )
+    #     self.ax2.set_xlabel(xaxlabel)
+    #     self.ax2.set_ylabel(yaxlabel)
+    #     self.ax2.draw_artist(self.ln)
+    #     self.fig2.tight_layout()
+    #     self.fig2.canvas.draw_idle()
+    #     plt.pause(0.001)
         
     
     
