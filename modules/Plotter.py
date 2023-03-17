@@ -264,7 +264,23 @@ class Plotter(Logger):
         # CA, or EIS, ...) in the lower figure
         if event.inaxes == self.ax1:
             x, y = event.xdata, event.ydata
-            closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
+            
+            # coords = self.master.expt.get_loc_data()
+            
+            min_x_dist = 1e6
+            min_y_dist = 1e6
+            for point in self.master.expt.data.flatten():
+                x0, y0, z0 = point.loc
+                if ((x - x0) > 0 and abs(x - x0) < min_x_dist):
+                    closest_x = x0
+                if ((y - y0) < 0 and abs(y - y0) < min_y_dist):
+                    closest_y = x0
+            
+            # TODO: Fix point selection
+            closest_datapoint = self.master.expt.get_nearest_datapoint(closest_x,
+                                                                       closest_y)
+            
+            # closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
             # self.update_fig2data(closest_datapoint.get_data(),
             #                      sample_freq=10000)
             self.set_echemdata(closest_datapoint, sample_freq=10000)
@@ -282,7 +298,9 @@ class Plotter(Logger):
             self.update_fig1()
         
         if checksum(pollingData) != self.last_data2checksum:
-            if hasattr(self, 'fig2data') and id(pollingData) != id(self.fig2data):
+            if (hasattr(self, 'fig2data') and 
+                id(pollingData) != id(self.fig2data) and
+                not self.FIG2_FORCED):
                 self.init_echem_fig()
             self.update_fig2()        
         
@@ -484,141 +502,6 @@ class Plotter(Logger):
         self.set_axlim('fig2', *get_plotlim(plotx, ploty) )
         return
 
-
-
-
-###################################
-
-    # def isADCpolling(self):
-    #     self.adc_polling = self.master.ADC.isPolling()
-    #     return self.adc_polling
-        
-        
+  
     
-    # def update_fig2data(self, data=None, sample_freq=10):
-    #     # Called either by loading a previously recorded data point 
-    #     # (passes data [ idxs, ts, ch1, ch2 ] to this func) or from 
-    #     # new ADC polling data.
-        
-    #     if type(data) != type(None):
-    #         # Passed previously recorded data
-    #         self.FIG2_FORCED = True
-    #         if len(data) == 3:
-    #             ts, v, i = data
-    #             idxs = [i for i, _ in enumerate(ts)]
-    #         elif len(data) == 4:
-    #             idxs, ts, v, i = data
-    #         self.lastdata2checksum = checksum(data)
-    #         self.data2 = [idxs, ts, v, i]
-    #         self._update_fig2(idxs, ts, v, i, sample_freq = 1000)
-    #         return self.data2, 10000
-        
-    #     if self.FIG2_FORCED:
-    #         return self.data2, 10000
-            
-    #     # Updating with new data    
-    #     dat = self.master.ADC.pollingdata.copy()
-    #     if type(dat) != list:
-    #         return [[-1], [], [], []], sample_freq
-        
-    #     gain = 1e9 * self.master.GUI.amp_params['float_gain']
-        
-    #     idxs, ts, ch1, ch2 = dat
-    #     ch1 = [v/10 for v in ch1] # Analog voltage output gets 
-    #                               # multiplied by 10
-    #     ch2 = [v/gain for v in ch2] # Convert V --> pA
-        
-    #     dat = idxs, ts, ch1, ch2
-        
-    #     self.lastdata2checksum = checksum(dat)
-        
-    #     # Determine new points to add
-    #     old_idx = self.data2[0].copy()
-    #     startpoint = min([i for i, val in enumerate(idxs)
-    #                               if val > old_idx[-1]])
-        
-    #     for i, (l, new_l) in enumerate(zip(self.data2, dat)):
-    #         self.data2[i] += new_l[startpoint:]
-        
-    #     return self.data2, sample_freq
-    
-
-
-    # def update_fig2(self, sample_freq=10):
-    #     # Called by ADC polling
-    #     if self.master.ADC.pollingcount != self.adc_polling_count:
-    #         # Check if new polling has started
-    #         self.adc_polling_count = self.master.ADC.pollingcount
-    #         self.init_echemfig()
-        
-    #     if self.isADCpolling():
-    #         data, sample_freq = self.update_fig2data(sample_freq=sample_freq)            
-    #         self._update_fig2(*data, sample_freq)
-            
-    
-    
-    # def _update_fig2(self, idxs, ts, ch1, ch2, sample_freq=10):
-    #     # Function for redrawing fig 2 data
-        
-    #     # Determine what to plot based on user selection in GUI
-    #     xval, yval, xaxlabel, yaxlabel = get_axval_axlabels(
-    #                                     self.master.GUI.fig2selection.get()
-    #                                     )
-        
-    #     # Get the correct data
-    #     d = {'t': ts,
-    #          'ch1': ch1,
-    #          'ch2': ch2
-    #          }
-    #     x = d[xval]
-    #     y = d[yval]
-        
-    #     # Undersample data if desired
-    #     # (i.e. HEKA records CV at 10 Hz, but ADC samples at 234 Hz -
-    #     #  we see every step in the digital CV and pick up excess noise
-    #     #  as well as current spikes.)
-        
-    #     def average(arr, n):
-    #         if n < 2:
-    #             return arr
-    #         # Undersample arr by averaging over n pts
-    #         end =  n * int(len(arr)/n)
-    #         return np.mean(arr[:end].reshape(-1, n), 1)
-        
-    #     if len(x) > sample_freq:
-    #         data_freq = 1/np.mean(np.diff(ts))
-    #         undersample_factor = int(data_freq//sample_freq)
-            
-    #         plotx = average(np.array(x), undersample_factor)
-    #         ploty = average(np.array(y), undersample_factor)
-        
-    #     else:
-    #         plotx = x
-    #         ploty = y
-           
-        
-    #     # Finally, plot the data
-    #     self.ln.set_data(plotx, ploty)
-    #     self.set_axlim('fig2', 
-    #                    *get_plotlim(plotx, ploty)
-    #                    )
-    #     self.ax2.set_xlabel(xaxlabel)
-    #     self.ax2.set_ylabel(yaxlabel)
-    #     self.ax2.draw_artist(self.ln)
-    #     self.fig2.tight_layout()
-    #     self.fig2.canvas.draw_idle()
-    #     plt.pause(0.001)
-        
-    
-    
-        
-    
-        
-        
-        
-            
-        
-    
-
-
 

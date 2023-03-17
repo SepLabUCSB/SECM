@@ -193,7 +193,7 @@ class FeedbackController(Logger):
                 return
             if not self.master.TEST_MODE:
                 self.Piezo.goto(x, y, z_max)
-                z = self.approach()
+                # z = self.approach()
             
             # TODO: run variable echem experiment(s) at each pt
             data = self.run_echems('CV', expt, (x, y, z), i)

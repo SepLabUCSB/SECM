@@ -556,9 +556,9 @@ class GUI(Logger):
         # self.master.Plotter.update_fig2data(
         #     data = self.master.Plotter.data2
         #     )
-        # self.master.Plotter.set_echemdata(
-        #     data = self.master.Plotter.fig2data 
-        #     )
+        self.master.Plotter.set_echemdata(
+            DATAPOINT = self.master.Plotter.fig2data 
+            )
         return
     
     

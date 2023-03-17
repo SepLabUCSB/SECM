@@ -126,6 +126,7 @@ class ADC(Logger):
         
         gain = 1e9 * self.master.GUI.amp_params['float_gain']
         self.pollingdata.set_HEKA_gain(gain)
+        self.master.Plotter.FIG2_FORCED = False
         
         self.pollingcount += 1
         self.port.reset_input_buffer()
