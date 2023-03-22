@@ -1,8 +1,8 @@
 import numpy as np
 from utils.utils import Logger
-import pyvisa
+import serial
 
-
+PIEZO_COMPORT = 'COM7'
 
 class Piezo(Logger):
     
@@ -19,23 +19,30 @@ class Piezo(Logger):
         if not self.master.TEST_MODE:
             self.setup_piezo()
      
+    
+    def write(self, msg):
+        if not self._piezo_on:
+            return
+        self.port.write(f'{msg}\r'.encode('utf-8'))
+    
         
     def setup_piezo(self):
-        rm = pyvisa.ResourceManager()
-        self.inst = rm.open_resource(CONTROLLER_ADDRESS)
+        self.port = serial.Serial(PIEZO_COMPORT, timeout=0.5,
+                                  baudrate=19200,
+                                  xonxoff=True)
         
         # Set all channels to remote control only
-        self.inst.write('setk,0,1')
-        self.inst.write('setk,1,1')
-        self.inst.write('setk,2,2')
+        self.write('setk,0,1')
+        self.write('setk,1,1')
+        self.write('setk,2,2')
         
         # Set to closed loop
-        self.inst.write('cloop,0,1')
-        self.inst.write('cloop,1,1')
-        self.inst.write('cloop,2,1')
+        self.write('cloop,0,1')
+        self.write('cloop,1,1')
+        self.write('cloop,2,1')
         
         # Output actuator position instead of voltage
-        self.inst.write('monwpa,0,1')
+        self.write('monwpa,0,1')
         
         self._piezo_on = True
         
@@ -44,8 +51,10 @@ class Piezo(Logger):
     def measure_loc(self):
         if not self._piezo_on:
             return
-        location = self.inst.query('measure')
-        _, x, y, z = location.split(',')
+        self.write('measure')
+        # output from controller terminates with '\r'
+        location = self.port.read_until(b'\r').decode('utf-8')
+        _, x, y, z = location.strip('\r').split(',')
         
     
     # Return current (software) x,y,z
@@ -58,7 +67,7 @@ class Piezo(Logger):
     # TODO: measure loc after setting?
     def goto(self, x, y, z):
         if self._piezo_on:
-            self.inst.write(f'setall,{x},{y},{z}')
+            self.write(f'setall,{x},{y},{z}')
         self.x, self.y, self.z = x, y, z
         return self.loc()
     
