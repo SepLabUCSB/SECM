@@ -27,9 +27,9 @@ class ADC(Logger):
         self._is_polling  = False
         self._STOP_POLLING = False
         
-        # if not self.master.TEST_MODE:
-        self.port = serial.Serial(port = SER_PORT, timeout=0.5)
-        self.setup(n_channels=2)
+        if not self.master.TEST_MODE:
+            self.port = serial.Serial(port = SER_PORT, timeout=0.5)
+            self.setup(n_channels=2)
             
         self.pollingcount = 0
         self.pollingdata  = ADCDataPoint(loc=(0,),

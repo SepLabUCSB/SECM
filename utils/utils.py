@@ -16,6 +16,7 @@ def focus_next_widget(event):
 
 LOG_FILE = 'log/log.txt'
 if not os.path.exists(LOG_FILE):
+    os.makedirs('log/', exist_ok=True)
     with open(LOG_FILE, 'w') as f:
         f.close()
 if os.path.getsize(LOG_FILE) > 60000: # ~1000 lines

@@ -25,7 +25,7 @@ default_stdin  = sys.stdin
 default_stderr = sys.stderr
 
 matplotlib.use('TkAgg')
-plt.style.use('default')
+plt.style.use('secm.mplstyle')
 
 TEST_MODE = True
 
