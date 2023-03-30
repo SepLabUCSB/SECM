@@ -17,7 +17,6 @@ from modules.FeedbackController import FeedbackController
 from modules.Plotter import Plotter
 from modules.DataStorage import Experiment, load_from_file
 from utils.utils import run, Logger
-import gui
 from gui import *
 
 default_stdout = sys.stdout
@@ -27,7 +26,7 @@ default_stderr = sys.stderr
 matplotlib.use('TkAgg')
 plt.style.use('secm.mplstyle')
 
-TEST_MODE = True
+TEST_MODE = False
 
 
     
@@ -377,6 +376,7 @@ class GUI(Logger):
         
         self.params['CV'] = make_CV_window(self, cv_control)
         self.params['amp'] = make_amp_window(self, amplifier_control)
+        make_CA_window(self, ca_control)
         
         ###  TODO: UNCOMMENT ME FOR FINAL CONFIG. STARTUP FROM KNOWN AMP. STATE ###
         # self.set_amplifier()
