@@ -27,9 +27,13 @@ class Piezo(Logger):
     
         
     def setup_piezo(self):
-        self.port = serial.Serial(PIEZO_COMPORT, timeout=0.5,
+        try:
+            self.port = serial.Serial(PIEZO_COMPORT, timeout=0.5,
                                   baudrate=19200,
                                   xonxoff=True)
+        except Exception as e:
+            print(f"Error opening piezo port: {e}")
+            return
         
         # Set all channels to remote control only
         self.write('setk,0,1')
