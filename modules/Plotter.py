@@ -319,6 +319,8 @@ class Plotter(Logger):
                            pad=0.02, )
         self.ax1.set_xlabel(r'$\mu$m')
         self.ax1.set_ylabel(r'$\mu$m')
+        self.ax1.spines['right'].set_visible(True)
+        self.ax1.spines['top'].set_visible(True)
         self.fig1.canvas.draw()
         self.fig1.tight_layout()
         self.ax1bg = self.fig1.canvas.copy_from_bbox(self.ax1.bbox)
@@ -393,9 +395,8 @@ class Plotter(Logger):
         self.ax2.cla()
         self.ln, = self.ax2.plot([], [])
         self.ln2, = self.ax2.plot([], [])
-        self.ax2.set_xlim(-0., 2.1)
-        self.ax2.set_xlabel('')
-        self.ax2.set_ylabel('')
+        self.ax2.set_xlabel('V')
+        self.ax2.set_ylabel('I')
         self.fig2.canvas.draw()
         self.fig2.tight_layout()
         self.ax2bg = self.fig2.canvas.copy_from_bbox(self.ax2.bbox)
@@ -407,6 +408,7 @@ class Plotter(Logger):
     
     def update_fig2(self):
         DATAPOINT = self.master.ADC.pollingdata
+        self.last_data2checksum = checksum(DATAPOINT)
         self.set_echemdata(DATAPOINT)
 
     
