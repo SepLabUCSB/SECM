@@ -7,7 +7,6 @@ from utils.utils import run, Logger
 CONST_SER_PORT = 'COM6'   #get the com port from device manger and enter it here
 
 
-
 class ADC(Logger):
     '''
     https://github.com/dataq-instruments/Simple-Python-Examples/blob/master/simpletest_binary.py
@@ -27,9 +26,19 @@ class ADC(Logger):
         self._is_polling  = False
         self._STOP_POLLING = False
         
+        # Default ADC parameters, refer to DI-2108 manual for definitions
+        self.params = {
+            'n_channels': 2,
+            'srate'     : 800,
+            'dec'       : 1,
+            'deca'      : 1,
+            'ps'        : 0, # packet size = 2**(ps + 4) bytes, min = 2**(0 + 4) = 32
+            }
+        
+        
         if not self.master.TEST_MODE:
             self.port = serial.Serial(port = SER_PORT, timeout=0.5)
-            self.setup(n_channels=2)
+            self.setup()
             
         self.pollingcount = 0
         self.pollingdata  = ADCDataPoint(loc=(0,),
@@ -69,21 +78,36 @@ class ADC(Logger):
         return
        
     # Set up serial port
-    def setup(self, n_channels=2, srate=1000, dec=1, deca=1, ps=6):
-        if self._is_setup:
+    def setup(self, params=None):
+        
+        if not params:
+            params = {}
+        
+        new_params = {
+            'n_channels': params.get('n_channels', self.params['n_channels']),
+            'srate'     : params.get('srate', self.params['srate']),
+            'dec'       : params.get('dec', self.params['dec']),
+            'deca'      : params.get('deca', self.params['deca']),
+            'ps'        : params.get('ps', self.params['ps']),
+            }
+        
+        if (new_params == self.params) and self._is_setup:
             return
-        # TODO: input checks
-        self.number_of_channels = n_channels
-        self.ps = ps         # packet size = 2**(ps + 4) bytes, min = 2**(0 + 4) = 32
+        
+        self.params = new_params
+                
+        
         self.port.write(b"stop\r")        #stop in case device was left scanning
         self.port.write(b"encode 0\r")    #set up the device for binary mode
         self.port.write(b"slist 0 0\r")   #scan list position 0 channel 0
-        if n_channels == 2:
+        if self.params['n_channels'] == 2:
             self.port.write(b"slist 1 1\r")
-        self.port.write(f"srate {srate}\r".encode('utf-8')) #write scanning params
-        self.port.write(f"dec {dec}\r".encode('utf-8'))
-        self.port.write(f"deca {deca}\r".encode('utf-8'))
-        self.port.write(f"ps {ps}\r".encode('utf-8')) # packet size
+        
+        #write scanning params
+        self.port.write(f"srate {self.params['srate']}\r".encode('utf-8')) 
+        self.port.write(f"dec {self.params['dec']}\r".encode('utf-8'))
+        self.port.write(f"deca {self.params['deca']}\r".encode('utf-8'))
+        self.port.write(f"ps {self.params['ps']}\r".encode('utf-8')) # packet size
         time.sleep(0.5)
         while True:
             i = self.port.in_waiting
@@ -95,8 +119,27 @@ class ADC(Logger):
         return
     
     
+    def set_sample_rate(self, freq):
+        # Adjust sampling parameters to match desired sample rate
+        # with maximal filtering
+        
+        srate = 400*self.params['n_channels'] # minimum srate = fastest base freq
+        
+        # Maximum sample rate is ~15 kHz for 2 channels
+        
+        dec = 15000//freq
+        deca = 1
+        while dec > 512:
+            dec //= 10
+            deca *= 10
+        
+        self.setup(params={'srate': srate,
+                           'dec'  : dec,
+                           'deca' : deca})                
+        return
     
-    def polling(self, timeout=2):
+    
+    def polling(self, timeout=2, params=None):
         '''
         Polling mode recording.
         
@@ -109,12 +152,19 @@ class ADC(Logger):
         in another thread. To stop polling, another module should 
         call ADC.STOP_POLLING(). Alternatively, polling halts on 
         master.ABORT. 
+        
+        ARGUMENTS:
+            timeout: int, polling mode timeout
+            params: dict, passed to self.setup()
+        
+        RETURNS:
+            None
         '''
         if self.isPolling(): return
-        self.setup()
-        numofbyteperscan = 2**(self.ps + 4)
+        self.setup(params)
+        numofbyteperscan = 2*self.params['n_channels']
         idxs = []
-        data = [ [] for _ in range(self.number_of_channels)]
+        data = [ [] for _ in range(self.params['n_channels'])]
         t    = []
         
         
@@ -124,7 +174,7 @@ class ADC(Logger):
                                               [],]
                                         )
         
-        gain = 1e9 * self.master.GUI.amp_params['float_gain']
+        gain = 1e9 * self.master.GUI.amp_params.get('float_gain', 1e-9)
         self.pollingdata.set_HEKA_gain(gain)
         self.master.Plotter.FIG2_FORCED = False
         
@@ -150,7 +200,7 @@ class ADC(Logger):
             if (i//numofbyteperscan) > 0:
                 response = self.port.read(i - i%numofbyteperscan)
                 ch = []
-                for x in range(0, self.number_of_channels):
+                for x in range(0, self.params['n_channels']):
                     adc=response[x*2]+response[x*2+1]*256
                     if adc>32767:
                         adc=adc-65536
@@ -163,26 +213,57 @@ class ADC(Logger):
                                              ch[1])
                 
                 idxs.append(idx)
-                # t.append(time.time() - st)
                 idx += 1
-                # if len(t) > 100:
-                #     # Only save most recent 100 pts
-                #     t = t[-100:] 
-                #     idxs = idxs[-100:]
-                #     data = [
-                #         l[-100:] for l in data
-                #         ]
-                # self.pollingdata = [idxs, t, *data]
         
         # TODO: aborting in between scans (sometimes?) causes an error here
-        times = self.pollingdata.data[0]
-        freq = times[-1]/len(times)
-        freq = 1/freq
-        # print(f'Sampling frequency: {freq:0.2f} Hz')
+        try:
+            times = self.pollingdata.data[0]
+            freq = times[-1]/len(times)
+            freq = 1/freq
+            print(f'Sampling frequency: {freq:0.2f} Hz')
+        except Exception as e:
+            print(f'Error calculating frequency: {e}')
         
         self.port.write(b"stop\r")
+        time.sleep(0.1)
+        i = self.port.in_waiting
+        if i > 0: # clear port
+            self.port.read(i)
         self.polling_off()
         self.log('Ending polling', quiet=True)
         
-        return idxs, t, data
-      
+        return
+    
+    
+    def record(self):
+        self.port.write(b'start\r')
+        st = time.time()
+        while time.time() - st < 2:
+            i = self.port.in_waiting
+            if i > 0:
+                response = self.port.read(i)
+                print(response)
+        self.port.write(b"stop\r")
+        self.stop()
+        
+
+
+if __name__ == '__main__':
+    class thisMaster():
+        # minimal class to pass to ADC for ADC testing purposes
+        def __init__(self):
+            self.TEST_MODE = False
+            self.ABORT = False
+            self.GUI = self.Plotter = self
+            self.amp_params = {}
+            self.FIG2_FORCED = False
+            self.register = lambda x:0
+            
+    master = thisMaster()
+    adc = ADC(master=master)
+    for freq in [15000, 10000, 2000, 1000, 100, 50]:
+        print(f'requested freq {freq}')
+        adc.set_sample_rate(freq)
+        adc.polling()
+    adc.stop()
+        
