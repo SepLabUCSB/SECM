@@ -44,6 +44,7 @@ class ADC(Logger):
         self.pollingcount = 0
         self.pollingdata  = ADCDataPoint(loc=(0,),
                                          data=[ [], [], [] ])
+        self.set_sample_rate(1000)
     
     
     # Command
@@ -114,7 +115,7 @@ class ADC(Logger):
             i = self.port.in_waiting
             if i > 0:
                 response = self.port.read(i)
-                print(response)
+                # print(response)
                 break
         self.log('ADC setup complete')
         self._is_setup = True
@@ -201,16 +202,15 @@ class ADC(Logger):
             i = self.port.in_waiting
             
             if (i//numofbyteperscan) > 0:
-                num_of_scans = i//numofbyteperscan
                 response = self.port.read(i - i%numofbyteperscan)
-                ch =[list(), list()]
-                for j in range(num_of_scans//self.params['n_channels']):
-                    for x in range(0, self.params['n_channels']):
-                        adc=response[j*x*2]+response[j*x*2+1]*256
-                        if adc>32767:
-                            adc=adc-65536
-                        adc *= (10/2**15) # +- 10 V full scale, 16 bit
-                        ch[x].append(adc)
+                # TODO: does this save all data or just first scan in each response?
+                ch =[]
+                for x in range(0, self.params['n_channels']):
+                    adc=response[x*2]+response[x*2+1]*256
+                    if adc>32767:
+                        adc=adc-65536
+                    adc *= (10/2**15) # +- 10 V full scale, 16 bit
+                    ch.append(adc)
                 
                 self.pollingdata.append_data(time.time() - st,
                                              ch[0],
