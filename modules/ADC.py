@@ -32,7 +32,8 @@ class ADC(Logger):
             'srate'     : 800,
             'dec'       : 1,
             'deca'      : 1,
-            'ps'        : 0, # packet size = 2**(ps + 4) bytes, min = 2**(0 + 4) = 32
+            'ps'        : 1, # packet size = 2**(ps + 4) bytes, min = 2**(1 + 4) = 32
+                             # !!! Min ps = 1 or else buffer overflows !!!
             }
         
         
@@ -113,6 +114,7 @@ class ADC(Logger):
             i = self.port.in_waiting
             if i > 0:
                 response = self.port.read(i)
+                print(response)
                 break
         self.log('ADC setup complete')
         self._is_setup = True
@@ -125,9 +127,9 @@ class ADC(Logger):
         
         srate = 400*self.params['n_channels'] # minimum srate = fastest base freq
         
-        # Maximum sample rate is ~15 kHz for 2 channels
+        # Maximum sample rate is ~9 kHz for 2 channels
         
-        dec = 15000//freq
+        dec = 9000//freq
         deca = 1
         while dec > 512:
             dec //= 10
@@ -139,7 +141,7 @@ class ADC(Logger):
         return
     
     
-    def polling(self, timeout=2, params=None):
+    def polling(self, timeout=3, params=None):
         '''
         Polling mode recording.
         
@@ -197,16 +199,18 @@ class ADC(Logger):
             if self.master.ABORT:
                 break
             i = self.port.in_waiting
+            
             if (i//numofbyteperscan) > 0:
+                num_of_scans = i//numofbyteperscan
                 response = self.port.read(i - i%numofbyteperscan)
-                ch = []
-                for x in range(0, self.params['n_channels']):
-                    adc=response[x*2]+response[x*2+1]*256
-                    if adc>32767:
-                        adc=adc-65536
-                    adc *= (10/2**15) # +- 10 V full scale, 16 bit
-                    # data[x].append(adc)
-                    ch.append(adc)
+                ch =[list(), list()]
+                for j in range(num_of_scans//self.params['n_channels']):
+                    for x in range(0, self.params['n_channels']):
+                        adc=response[j*x*2]+response[j*x*2+1]*256
+                        if adc>32767:
+                            adc=adc-65536
+                        adc *= (10/2**15) # +- 10 V full scale, 16 bit
+                        ch[x].append(adc)
                 
                 self.pollingdata.append_data(time.time() - st,
                                              ch[0],
@@ -261,9 +265,13 @@ if __name__ == '__main__':
             
     master = thisMaster()
     adc = ADC(master=master)
-    for freq in [15000, 10000, 2000, 1000, 100, 50]:
+    # adc.polling()
+    for freq in [10000, 2000, 1000, 100, 50]:
         print(f'requested freq {freq}')
         adc.set_sample_rate(freq)
         adc.polling()
+        data = adc.pollingdata.get_data()
+        print(f'{len(data[0])} pts, max {max(data[0])} s')
     adc.stop()
+    
         
