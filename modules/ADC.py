@@ -1,5 +1,6 @@
 import serial
 import time
+import struct
 import numpy as np
 from modules.DataStorage import ADCDataPoint
 from utils.utils import run, Logger
@@ -117,7 +118,7 @@ class ADC(Logger):
                 response = self.port.read(i)
                 # print(response)
                 break
-        self.log('ADC setup complete')
+        self.log('ADC setup complete', quiet=True)
         self._is_setup = True
         return
     
@@ -128,14 +129,14 @@ class ADC(Logger):
         
         srate = 400*self.params['n_channels'] # minimum srate = fastest base freq
         
-        # Maximum sample rate is ~9 kHz for 2 channels
+        # Maximum sample rate is ~70 kHz for 2 channels
         
-        dec = 9000//freq
+        dec = 70000//freq
         deca = 1
         while dec > 512:
             dec //= 10
             deca *= 10
-        
+            
         self.setup(params={'srate': srate,
                            'dec'  : dec,
                            'deca' : deca})                
@@ -147,8 +148,7 @@ class ADC(Logger):
         Polling mode recording.
         
         ADC samples continuously until timeout. While sampling, 
-        the most recent 100 points [index, time, V, I] are stored 
-        in self.pollingdata. 
+        data are stored in self.pollingdata as an ADCDataPoint object. 
         
         This function should be run in its own thread. self.isPolling()
         is the check to make sure the ADC is not already polling data
@@ -164,6 +164,8 @@ class ADC(Logger):
             None
         '''
         if self.isPolling(): return
+        
+        # Initialize
         self.setup(params)
         numofbyteperscan = 2*self.params['n_channels']
         idxs = []
@@ -171,6 +173,7 @@ class ADC(Logger):
         t    = []
         
         
+        # Setup data saving structure
         self.pollingdata = ADCDataPoint(loc=(0,),
                                         data=[t,
                                               [],
@@ -181,41 +184,68 @@ class ADC(Logger):
         self.pollingdata.set_HEKA_gain(gain)
         self.master.Plotter.FIG2_FORCED = False
         
+        # Start reading ADC
         self.pollingcount += 1
         self.port.reset_input_buffer()
         self.port.write(b"start\r")
         self.polling_on()
         self.log('Starting polling', quiet=False)
         
-        st = time.time()
-        idx = 0
         
+        idx = 0
+        st = time.perf_counter_ns() # Need maximum precision here
+        last_timepoint = 0
         while True:
-            if time.time() - st > timeout:
-                self.log('Timed out')
+            # Stop conditions
+            if time.perf_counter_ns() - st > timeout*1e9:
+                self.log('Timed out', quiet=True)
                 break
             if self._STOP_POLLING:
                 self._STOP_POLLING = False
                 break
             if self.master.ABORT:
                 break
+            
+            # Check for new data block
             i = self.port.in_waiting
             
             if (i//numofbyteperscan) > 0:
+                '''
+                https://github.com/dataq-instruments/Simple-Python-Examples/blob/master/simpletest_binary2.py
+                '''
+                
+                data = [ [] for _ in range(self.params['n_channels'])]
+                
                 response = self.port.read(i - i%numofbyteperscan)
-                # TODO: does this save all data or just first scan in each response?
-                ch =[]
-                for x in range(0, self.params['n_channels']):
-                    adc=response[x*2]+response[x*2+1]*256
-                    if adc>32767:
-                        adc=adc-65536
-                    adc *= (10/2**15) # +- 10 V full scale, 16 bit
-                    ch.append(adc)
+                count = (i - i%numofbyteperscan)//2
                 
-                self.pollingdata.append_data(time.time() - st,
-                                             ch[0],
-                                             ch[1])
+                bResponse = bytearray(response)
+                Channel = struct.unpack("<"+"h"*count, bResponse)
                 
+                for j in range(count):
+                    ch = (count - j)%2
+                    data[ch].append(Channel[j]*10/2**15)
+                
+                
+                
+                # calculate what time each point was measured
+                # Assumes all channels measured simultaneously (they're not)
+                this_timepoint = time.perf_counter_ns() - st
+                dt = (this_timepoint - last_timepoint) / len(data[0])
+                
+                ts = list(1e-9*np.arange(last_timepoint,
+                                         this_timepoint,
+                                         dt)
+                          )
+                
+                # Save this block of data
+                self.pollingdata.append_data(ts,
+                                             data[0],
+                                             data[1])
+                self.pollingdata.reset_times() # make time points evenly spaced
+                
+                # Reset time counter
+                last_timepoint = this_timepoint
                 idxs.append(idx)
                 idx += 1
         
@@ -224,7 +254,7 @@ class ADC(Logger):
             times = self.pollingdata.data[0]
             freq = times[-1]/len(times)
             freq = 1/freq
-            print(f'Sampling frequency: {freq:0.2f} Hz')
+            # print(f'Sampling frequency: {freq:0.2f} Hz')
         except Exception as e:
             print(f'Error calculating frequency: {e}')
         
@@ -266,7 +296,8 @@ if __name__ == '__main__':
     master = thisMaster()
     adc = ADC(master=master)
     # adc.polling()
-    for freq in [10000, 2000, 1000, 100, 50]:
+    for freq in [10000, 2000, 1000, 100]:
+        print('')
         print(f'requested freq {freq}')
         adc.set_sample_rate(freq)
         adc.polling()

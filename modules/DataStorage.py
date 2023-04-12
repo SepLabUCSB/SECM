@@ -216,6 +216,19 @@ class ADCDataPoint(DataPoint):
 
     def set_HEKA_gain(self, gain):
         self.gain = gain
+        
+    def reset_times(self):
+        # Saved time data is not precise because data is send to the host
+        # PC in blocks and the time of each datapoint is backcalculated after.
+        # These data aren't quite evenly spaced (at 10kHz sampling, spacing
+        # between points is 100 +- 18 us), so use this function to reset the
+        # stored time data to be evenly spaced.
+        self.data[0] = list(np.linspace(self.data[0][0], 
+                                        self.data[0][-1],
+                                        len(self.data[1])
+                                        )
+                            )
+        
 
         
 

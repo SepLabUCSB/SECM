@@ -412,7 +412,7 @@ class Plotter(Logger):
         self.set_echemdata(DATAPOINT)
 
     
-    def set_echemdata(self, DATAPOINT, sample_freq=10):
+    def set_echemdata(self, DATAPOINT, sample_freq=100):
         # Determine what to plot
         _, _, xval, yval = get_axval_axlabels(
                                 self.master.GUI.fig2selection.get()
