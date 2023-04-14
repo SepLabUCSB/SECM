@@ -376,6 +376,7 @@ class GUI(Logger):
         
         self.params['CV'] = make_CV_window(self, cv_control)
         self.params['amp'] = make_amp_window(self, amplifier_control)
+        self.params['EIS'] = make_EIS_window(self, eis_control)
         make_CA_window(self, ca_control)
         
         ###  TODO: UNCOMMENT ME FOR FINAL CONFIG. STARTUP FROM KNOWN AMP. STATE ###
@@ -549,7 +550,7 @@ class GUI(Logger):
         return
         
      
-    
+    ########## DISPLAY FIGURE CALLBACKS ###########
     
     # Selected new view for fig2
     def fig_opt_changed(self, _):
@@ -629,6 +630,17 @@ class GUI(Logger):
         path = self.master.HekaWriter.run_CV_loop()
         self.master.make_ready()
         return path
+    
+    
+    def run_EIS(self):
+        # TODO: implement EIS
+        # validate EIS parameters
+        # generate waveform
+        # check saved waveform
+        # write waveform file
+        # send command to HEKA
+        eis_params = self.params['EIS'].copy()
+        return
     
     
     
