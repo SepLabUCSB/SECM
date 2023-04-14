@@ -89,9 +89,16 @@ def make_time_domain(freqs, phases, mVpp):
 
 
 
-def optimize_waveform(freqs, phases, Z):
-
-    return        
+def optimize_waveform(freqs, phases, mVpp, Z):
+    '''
+    Use previously recorded Z to adjust the amplitude for each sine wave.
+    
+    Summed waveform still has Vpp = mVpp
+    '''
+    Z = np.asarray(Z)
+    amp_factor = 1/np.absolute(Z)
+    mVpp = mVpp * (amp_factor/max(amp_factor))
+    return make_time_domain(freqs, phases, mVpp)
 
 
         
