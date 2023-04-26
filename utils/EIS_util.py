@@ -1,3 +1,4 @@
+import struct
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -116,7 +117,17 @@ def plot_freqs(freqs, amps):
     plt.xscale('log')
     plt.xlabel('Frequency/ Hz')
     plt.ylabel('Amplitude/ a.u.')
-        
+    
+
+def write_tpl_file(voltages, fname):
+    '''
+    voltages: list or array of time-domain voltages
+    fname: file to write to
+    '''
+    # write list of short floats to .tpl file
+    buff = struct.pack('f'*len(voltages), *voltages)
+    with open(fname, 'wb') as f:
+        f.write(buff)
         
         
         
