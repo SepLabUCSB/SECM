@@ -32,9 +32,7 @@ TEST_MODE = False
     
 '''
 TODO:
-    
-    Lock threads
-    
+        
     Make separate data viewer to make high quality figures
     
     Write documentation
@@ -43,6 +41,8 @@ TODO:
     - init to known state
     - store current amplifier state for next time controller loads
     - implement other echem funcs
+    - EIS
+    - run multiple echem experiments at each location
     
     XYZ control
     - create test module
@@ -627,7 +627,7 @@ class GUI(Logger):
         self.set_amplifier()
         E0, E1, E2, E3, v, t0 = self.get_CV_params()
         self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
-        path = self.master.HekaWriter.run_CV_loop()
+        path = self.master.HekaWriter.run_measurement_loop('CV')
         self.master.make_ready()
         return path
     

@@ -3,6 +3,7 @@ import os
 import psutil
 import shutil
 from utils.utils import run, Logger
+from utils.EIS_util import generate_tpl
 from functools import partial
 
 
@@ -61,7 +62,7 @@ class HekaReader(Logger):
     
     def read_stream(self):
         '''
-        Called in its own thread. Reads HEKA output file continuously
+        Call in its own thread. Reads HEKA output file continuously
         until receives stop command from master. Stores the last
         output in self.last.
         '''
@@ -331,57 +332,129 @@ class HekaWriter(Logger):
         self.send_command(f'ExecuteSequence {cmd}')
     
         
-    def run_CV_loop(self, save_path=None, name=''):
-        if self.isRunning():
-            self.log('Got new CV command, but already running!')
-            return
+    # def run_CV_loop(self, save_path=None, name=''):
+    #     if self.isRunning():
+    #         self.log('Got new CV command, but already running!')
+    #         return
         
-        if not self.isDataFile():
-            print('== Open a DataFile in PATCHMASTER before recording! ==')
-            return
+    #     if not self.isDataFile():
+    #         print('== Open a DataFile in PATCHMASTER before recording! ==')
+    #         return
     
-        self.running()
-        self.run_CV()
-        st = time.time()
+    #     self.running()
+    #     self.run_CV()
+    #     st = time.time()
         
-        # Start ADC polling
-        run(
-            partial(self.master.ADC.polling, 
-                    timeout = self.CV_duration)
-            )
+    #     # Start ADC polling
+    #     run(partial(self.master.ADC.polling, 
+    #                 timeout = self.CV_duration))
         
-        # Measurement loop
-        while time.time() - st < self.CV_duration + 3:
+    #     # Measurement loop
+    #     while time.time() - st < self.CV_duration + 3:
+    #         if self.master.ABORT:
+    #             self.abort()
+    #             self.master.ADC.STOP_POLLING()
+    #             path = self.save_last_experiment(f'{save_path}/{name}.asc')
+    #             self.idle()
+    #             return path
+    #         self.send_command('Query')
+    #         try:
+    #             if self.master.HekaReader.last[1] == 'Query_Idle':
+    #                 break 
+    #         except:
+    #             pass
+    #         time.sleep(0.5)
             
-            if self.master.ABORT:
-                self.abort()
-                self.master.ADC.STOP_POLLING()
-                path = self.save_last_experiment(f'{save_path}/{name}.asc')
-                self.idle()
-                return path
-            
-            self.send_command('Query')
-            
-            try:
-                if self.master.HekaReader.last[1] == 'Query_Idle':
-                    break 
-            except:
-                pass
-            
-            time.sleep(0.5)
-            
-        if not self.master.HekaReader.last[1] == 'Query_Idle':
-            self.log('CV failed!')
-            return
+    #     if not self.master.HekaReader.last[1] == 'Query_Idle':
+    #         self.log('CV failed!')
+    #         return
         
-        self.master.ADC.STOP_POLLING()
+    #     self.master.ADC.STOP_POLLING()
         
-        path = self.save_last_experiment(path=f'{save_path}/{name}.asc')
-        self.idle()
-        return path
+    #     path = self.save_last_experiment(path=f'{save_path}/{name}.asc')
+    #     self.idle()
+    #     return path
         
-      
+
+def setup_EIS(self):
+    '''
+    Set amplifier to hold DC bias
+    
+    Set filters
+    
+    Update EIS parameters in PATCHMASTER
+    '''
+    return
+
+
+def run_EIS(self):
+    '''
+    Send command to run single EIS scan
+    '''
+    return
+
+
+def run_measurement_loop(self, measurement_type, save_path=None, name=''):
+    '''
+    measurement_type: 'CV', 'CA', 'EIS'. Defines what to run
+    save_path: string, path to save to
+    name: string, name to save as. save_path/{name}.asc
+    '''
+    if measurement_type == 'CV':
+        run_func = self.run_CV
+        duration = self.CV_duration
+    elif measurement_type == 'CA':
+        run_func = self.run_CA
+        duration = self.CA_duration
+    elif measurement_type == 'EIS':
+        run_func = self.run_EIS
+        duration = self.EIS_duration
+    else:
+        print('Internal error: invalid measurement_type')
+        return
+    
+    if self.isRunning():
+        self.log('Got new CV command, but already running!')
+        return
         
+    if not self.isDataFile():
+        print('== Open a DataFile in PATCHMASTER before recording! ==')
+        return
+
+    self.running()
+    run_func()
+    st = time.time()
+    
+    # Start ADC polling
+    run(partial(self.master.ADC.polling, 
+                timeout = duration))
+    
+    # Measurement loop
+    while time.time() - st < duration + 3:
+        if self.master.ABORT:
+            self.abort()
+            self.master.ADC.STOP_POLLING()
+            path = self.save_last_experiment(f'{save_path}/{name}.asc')
+            self.idle()
+            return path
+        self.send_command('Query')
+        try:
+            if self.master.HekaReader.last[1] == 'Query_Idle':
+                break 
+        except:
+            pass
+        time.sleep(0.5)
+        
+    if not self.master.HekaReader.last[1] == 'Query_Idle':
+        self.log(f'Experiment {measurement_type} failed!')
+        return
+    
+    self.master.ADC.STOP_POLLING()
+    
+    path = self.save_last_experiment(path=f'{save_path}/{name}.asc')
+    self.idle()
+    return path
+    
       
         
 
@@ -420,7 +493,24 @@ def generate_CV_params(E0, E1, E2, E3, scan_rate, quiet_time):
         7: rt3
         }
     return values, duration
+
+
+
+def generate_EIS_params(E_DC, duration):
+    '''
+    *** POTENTIALS IN V, ***
     
+    Parameter assignments:
+        0: DC bias   (V)
+        1: scan time (s)
+    '''
+    
+    values = {
+        0: E_DC,
+        1: duration,
+        }
+    
+    return values
 
 
 
