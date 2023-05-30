@@ -256,6 +256,8 @@ class GUI(Logger):
         pstat_frame.grid(row=0, column=0, sticky=(N,S,W,E))
         secm_frame = Frame(leftpanel)
         secm_frame.grid(row=1, column=0, sticky=(N,S,W,E))
+        piezo_frame = Frame(leftpanel)
+        piezo_frame.grid(row=2, column=0, sticky=(N,S,W,E))
         
                    
         ######################################
@@ -412,7 +414,35 @@ class GUI(Logger):
         
         self.params['approach'] = make_approach_window(self, approach_curve)
         self.params['hopping']  = make_hopping_window(self, hopping_mode)
-    
+        
+        
+        ######################################
+        #####                            #####
+        #####      PIEZO CONTROLS        ##### 
+        #####                            #####
+        ######################################
+        
+        PIEZO_TABS = Notebook(piezo_frame)
+        piezo_control = Frame(PIEZO_TABS)
+        
+        self._x_display = StringVar()
+        self._y_display = StringVar()
+        self._z_display = StringVar()
+        
+        Label(piezo_control, textvariable=self._x_display).grid(
+            row=0, column=0, sticky=(W,E))
+        Label(piezo_control, textvariable=self._y_display).grid(row=0, column=1, sticky=(W,E))
+        Label(piezo_control, textvariable=self._z_display).grid(row=0, column=2, sticky=(W,E))
+        
+        # Entry().grid(row=1, column=0, sticky=(W,E))
+        # Entry().grid(row=1, column=1, sticky=(W,E))
+        # Entry().grid(row=1, column=2, sticky=(W,E))
+        Button(piezo_control, text='Go to', command=print('button')).grid(row=1, column=3, sticky=(W,E))
+        
+        PIEZO_TABS.add(piezo_control, text='Piezo')
+        PIEZO_TABS.pack(expand=1, fill='both')
+        
+        
     
         # Initialize plotter
         Plotter(self.master, self.topfig, self.botfig)
@@ -444,6 +474,13 @@ class GUI(Logger):
         #####                            #####
         ######################################
     
+    
+    def _update_piezo_display(self):
+        self._x_display.set(self.master.Piezo.x)
+        self._y_display.set(self.master.Piezo.y)
+        self._z_display.set(self.master.Piezo.z)
+        self.root.after(500, self._update_piezo_display)
+        
     ########## GUI CALLBACKS ###########    
     
     # create new measurement file
@@ -692,6 +729,7 @@ if __name__ == '__main__':
     try:
         gui = GUI(root, master)
         
+        gui._update_piezo_display()
         root.after(1000, master.Plotter.update_figs)
         # root.after(1000, master.malloc_snapshot)
         root.mainloop()

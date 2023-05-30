@@ -156,27 +156,27 @@ def write_tpl_file(voltages, fname):
         
         
         
-        
-# freqs, phases, mVpp = generate_waveform(1, 1000, 20, 25)
-
-# v = make_time_domain(freqs, phases, mVpp)
-
-Hz = 50000 #sampling rate
-A = -0.514   #amplitude
-A *= 2
-x = 73  #time
-t = np.linspace(0, x, Hz*x)
-
-#half of t datapoints
-half = int(len(t)/2)
-
-#creates waveform
-y1 = A*np.sqrt(abs(1-(2*(t[:half]/x))**2))
-y2 = -A*np.sqrt(abs(1-(2*(t[half:]/x-1))**2))
-
-v = list(y1) + list(y2)
-plt.plot(v)
-write_tpl_file(v, r'D:/Brian/circular_1.tpl')
+if __name__ == '__main__':        
+    # freqs, phases, mVpp = generate_waveform(1, 1000, 20, 25)
+    
+    # v = make_time_domain(freqs, phases, mVpp)
+    
+    Hz = 50000 #sampling rate
+    A = -0.514   #amplitude
+    A *= 2
+    x = 73  #time
+    t = np.linspace(0, x, Hz*x)
+    
+    #half of t datapoints
+    half = int(len(t)/2)
+    
+    #creates waveform
+    y1 = A*np.sqrt(abs(1-(2*(t[:half]/x))**2))
+    y2 = -A*np.sqrt(abs(1-(2*(t[half:]/x-1))**2))
+    
+    v = list(y1) + list(y2)
+    plt.plot(v)
+    write_tpl_file(v, r'D:/Brian/circular_1.tpl')
         
 
 

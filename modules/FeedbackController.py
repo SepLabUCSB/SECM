@@ -66,18 +66,22 @@ class FeedbackController(Logger):
         '''
         
         j = 0
-        step = 0.1 # um = 100nm
+        step = 0.5 # um
         if not start_coords:
             start_coords = self.Piezo.loc()
         x, y, z_start = start_coords
+        x, y, z_start = 0, 0, 80
+        self.Piezo.goto(x, y, z_start)
         self.HekaWriter.macro(f'E Vhold {voltage}')
         gain = 1e9 * self.master.GUI.amp_params['float_gain']
-        run(partial(self.ADC.polling, 15))
+        run(partial(self.ADC.polling, 60))
         time.sleep(0.2)
-        for j in range(100):
+        for j in range(200):
             if self.master.ABORT:
                 break
             z = z_start - j*step
+            if z < 0:
+                break
             self.Piezo.goto(x, y, z)
             # Collect some data at this loc
             time.sleep(0.1)
@@ -113,7 +117,8 @@ class FeedbackController(Logger):
         if save_path.endswith('.secmdata'):
             save_path = save_path.replace('.secmdata', '')
             
-        path = self.master.HekaWriter.run_CV_loop(
+        path = self.master.HekaWriter.run_measurement_loop(
+                                           'CV',
                                            save_path=save_path,
                                            name=name
                                            )

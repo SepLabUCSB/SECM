@@ -1,6 +1,7 @@
 import numpy as np
-from utils.utils import Logger
+from utils.utils import run, Logger
 import serial
+import time
 
 PIEZO_COMPORT = 'COM7'
 
@@ -15,15 +16,27 @@ class Piezo(Logger):
         self.z = 50
         self.starting_coords = (0,0)
         self._piezo_on = False
+        self._stop_monitoring = False
         
         if not self.master.TEST_MODE:
             self.setup_piezo()
-     
+    
+    
+    def stop(self):
+        if not hasattr(self, 'port'):
+            return
+        self.stop_monitoring()
+        self.port.close()
+        self.log('Serial port closed')
+    
     
     def write(self, msg):
         if not self._piezo_on:
             return
         self.port.write(f'{msg}\r'.encode('utf-8'))
+        r = self.port.read_all()
+        if r:
+            self.log(r)
     
         
     def setup_piezo(self):
@@ -38,7 +51,7 @@ class Piezo(Logger):
         # Set all channels to remote control only
         self.write('setk,0,1')
         self.write('setk,1,1')
-        self.write('setk,2,2')
+        self.write('setk,2,1')
         
         # Set to closed loop
         self.write('cloop,0,1')
@@ -49,16 +62,37 @@ class Piezo(Logger):
         self.write('monwpa,0,1')
         
         self._piezo_on = True
+        self.log('Setup complete')
+        self.start_monitoring()
+   
+   
+    def start_monitoring(self):
+        run(self.position_monitor)
         
-    
-    # Read (x,y,z) from piezo
+    def stop_monitoring(self):
+        self._stop_monitoring = True
+   
+    def position_monitor(self):
+        '''
+        Called in its own thread. 
+        '''
+        while True:
+            if self._stop_monitoring:
+                return
+            self.x, self.y, self.z = self.measure_loc()
+            time.sleep(0.5)
+            
+        
+        
     def measure_loc(self):
         if not self._piezo_on:
             return
+        self.port.read_all()
         self.write('measure')
         # output from controller terminates with '\r'
         location = self.port.read_until(b'\r').decode('utf-8')
         _, x, y, z = location.strip('\r').split(',')
+        return x, y, z
         
     
     # Return current (software) x,y,z
@@ -132,4 +166,16 @@ class Piezo(Logger):
     def zero(self):
         self.starting_coords = (0,0)
         self.goto(0,0, self.z)
+        
+
     
+    
+if __name__ == '__main__':
+    class thismaster():
+        def __init__(self):
+            self.register = lambda x:0
+            self.TEST_MODE = True
+            
+    master = thismaster()
+    piezo = Piezo(master)
+    piezo.setup_piezo()
