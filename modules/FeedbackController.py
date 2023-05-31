@@ -72,6 +72,8 @@ class FeedbackController(Logger):
         x, y, z_start = start_coords
         x, y, z_start = 0, 0, 80
         self.Piezo.goto(x, y, z_start)
+        self.Piezo.measure_loc()
+        self.Piezo.stop_monitoring()
         self.HekaWriter.macro(f'E Vhold {voltage}')
         gain = 1e9 * self.master.GUI.amp_params['float_gain']
         run(partial(self.ADC.polling, 60))
@@ -92,6 +94,7 @@ class FeedbackController(Logger):
             if val > i_cutoff:
                 break 
         self.ADC.STOP_POLLING()  
+        self.Piezo.start_monitoring()
         return z
 
 

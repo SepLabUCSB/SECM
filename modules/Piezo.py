@@ -30,13 +30,24 @@ class Piezo(Logger):
         self.log('Serial port closed')
     
     
+    def write_and_read(self, msg):
+        if not self._piezo_on:
+            self.log(f'Piezo not on! Could not send message: {msg}', quiet=True)
+            return
+        self.port.write(f'{msg}\r'.encode('utf-8'))
+        time.sleep(0.1)
+        r = self.port.read_all()
+        if r:
+            self.log(r)
+    
+    
     def write(self, msg):
         if not self._piezo_on:
             return
         self.port.write(f'{msg}\r'.encode('utf-8'))
-        r = self.port.read_all()
-        if r:
-            self.log(r)
+        # r = self.port.read_all()
+        # if r:
+        #     self.log(r)
     
         
     def setup_piezo(self):
@@ -47,21 +58,21 @@ class Piezo(Logger):
         except Exception as e:
             print(f"Error opening piezo port: {e}")
             return
+        self._piezo_on = True
         
         # Set all channels to remote control only
-        self.write('setk,0,1')
-        self.write('setk,1,1')
-        self.write('setk,2,1')
+        self.write_and_read('setk,0,1')
+        self.write_and_read('setk,1,1')
+        self.write_and_read('setk,2,1')
         
         # Set to closed loop
-        self.write('cloop,0,1')
-        self.write('cloop,1,1')
-        self.write('cloop,2,1')
+        self.write_and_read('cloop,0,1')
+        self.write_and_read('cloop,1,1')
+        self.write_and_read('cloop,2,1')
         
         # Output actuator position instead of voltage
-        self.write('monwpa,0,1')
+        self.write_and_read('monwpa,0,1')
         
-        self._piezo_on = True
         self.log('Setup complete')
         self.start_monitoring()
    
@@ -78,6 +89,7 @@ class Piezo(Logger):
         '''
         while True:
             if self._stop_monitoring:
+                self._stop_monitoring = False
                 return
             self.x, self.y, self.z = self.measure_loc()
             time.sleep(0.5)
@@ -86,9 +98,10 @@ class Piezo(Logger):
         
     def measure_loc(self):
         if not self._piezo_on:
-            return
+            return (-1,-1,-1)
         self.port.read_all()
         self.write('measure')
+        time.sleep(0.01)
         # output from controller terminates with '\r'
         location = self.port.read_until(b'\r').decode('utf-8')
         _, x, y, z = location.strip('\r').split(',')
@@ -106,7 +119,8 @@ class Piezo(Logger):
     def goto(self, x, y, z):
         if self._piezo_on:
             self.write(f'setall,{x},{y},{z}')
-        self.x, self.y, self.z = x, y, z
+            self.x, self.y, self.z = x, y, z
+        self.x, self.y, self.z = self.measure_loc()
         return self.loc()
     
     

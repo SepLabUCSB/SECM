@@ -424,20 +424,32 @@ class GUI(Logger):
         
         PIEZO_TABS = Notebook(piezo_frame)
         piezo_control = Frame(PIEZO_TABS)
+        piezo_control.grid(row=0, column=0, sticky=(W,E))
         
         self._x_display = StringVar()
         self._y_display = StringVar()
         self._z_display = StringVar()
         
-        Label(piezo_control, textvariable=self._x_display).grid(
-            row=0, column=0, sticky=(W,E))
-        Label(piezo_control, textvariable=self._y_display).grid(row=0, column=1, sticky=(W,E))
-        Label(piezo_control, textvariable=self._z_display).grid(row=0, column=2, sticky=(W,E))
+        self._x_set = StringVar(value='0')
+        self._y_set = StringVar(value='0')
+        self._z_set = StringVar(value='0')
         
-        # Entry().grid(row=1, column=0, sticky=(W,E))
-        # Entry().grid(row=1, column=1, sticky=(W,E))
-        # Entry().grid(row=1, column=2, sticky=(W,E))
-        Button(piezo_control, text='Go to', command=print('button')).grid(row=1, column=3, sticky=(W,E))
+        self._piezo_msg = StringVar()
+        
+        Label(piezo_control, text='  X:').grid(row=0, column=0, sticky=(W,E))
+        Label(piezo_control, textvariable=self._x_display).grid(row=0, column=1, sticky=(W,E))
+        Label(piezo_control, text='  Y:').grid(row=0, column=2, sticky=(W,E))
+        Label(piezo_control, textvariable=self._y_display).grid(row=0, column=3, sticky=(W,E))
+        Label(piezo_control, text='  Z:').grid(row=0, column=4, sticky=(W,E))
+        Label(piezo_control, textvariable=self._z_display).grid(row=0, column=5, sticky=(W,E))
+        
+        Entry(piezo_control, textvariable=self._x_set, width=6).grid(row=1, column=0, columnspan=2, sticky=(W,E))
+        Entry(piezo_control, textvariable=self._y_set, width=6).grid(row=1, column=2, columnspan=2, sticky=(W,E))
+        Entry(piezo_control, textvariable=self._z_set, width=6).grid(row=1, column=4, columnspan=2, sticky=(W,E))
+        Button(piezo_control, text='Go', command=self.piezo_goto).grid(row=1, column=6, sticky=(W,E))
+        
+        Entry(piezo_control, textvariable=self._piezo_msg, width=20).grid(row=2, column=0, columnspan=6, sticky=(W,E))
+        Button(piezo_control, text='Send Cmd', command=self.piezo_msg_send).grid(row=2, column=6, sticky=(W,E))
         
         PIEZO_TABS.add(piezo_control, text='Piezo')
         PIEZO_TABS.pack(expand=1, fill='both')
@@ -479,7 +491,7 @@ class GUI(Logger):
         self._x_display.set(self.master.Piezo.x)
         self._y_display.set(self.master.Piezo.y)
         self._z_display.set(self.master.Piezo.z)
-        self.root.after(500, self._update_piezo_display)
+        self.root.after(250, self._update_piezo_display)
         
     ########## GUI CALLBACKS ###########    
     
@@ -704,9 +716,40 @@ class GUI(Logger):
     
             
                                                         
-        
+     ########## PIEZO CALLBACKS ###########   
                                                             
-                
+    def piezo_goto(self):
+        x = self._x_set.get()
+        y = self._y_set.get()
+        z = self._z_set.get()
+        
+        def validate(n):
+            try:
+                n = float(n)
+            except:
+                print(f'Input error: {n}')
+                return None
+            if (n >= 0 and n <= 80):
+                return float(n)
+            print(f'Input out of range [0, 80]: {n}')
+            return None
+        
+        x = validate(x)
+        y = validate(y)
+        z = validate(z)
+        
+        if any(var is None for var in (x,y,z)):
+            return
+        
+        self.master.Piezo.goto(x, y, z)
+        return
+    
+    
+    def piezo_msg_send(self):
+        msg = self._piezo_msg.get()
+        self.master.Piezo.write_and_read(msg)
+        
+            
     
 
 
@@ -726,24 +769,24 @@ if __name__ == '__main__':
     
     root = Tk()
     
-    try:
-        gui = GUI(root, master)
+    # try:
+    gui = GUI(root, master)
+    
+    gui._update_piezo_display()
+    root.after(1000, master.Plotter.update_figs)
+    # root.after(1000, master.malloc_snapshot)
+    root.mainloop()
+    root.quit()
+    gui.willStop = True
+    
+    sys.stdout = default_stdout
+    sys.stdin  = default_stdin
+    sys.stderr = default_stderr
         
-        gui._update_piezo_display()
-        root.after(1000, master.Plotter.update_figs)
-        # root.after(1000, master.malloc_snapshot)
-        root.mainloop()
-        root.quit()
-        gui.willStop = True
-        
-        sys.stdout = default_stdout
-        sys.stdin  = default_stdin
-        sys.stderr = default_stderr
-        
-    except Exception as e:
-        # Catch exceptions to make sure adc port closes and 
-        # stdout resets to default
-        print(traceback.format_exc())
+    # except Exception as e:
+    #     # Catch exceptions to make sure adc port closes and 
+    #     # stdout resets to default
+    #     print(traceback.format_exc())
 
     if not master.TEST_MODE:
         adc.stop()
