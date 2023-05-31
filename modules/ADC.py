@@ -45,7 +45,7 @@ class ADC(Logger):
         self.pollingcount = 0
         self.pollingdata  = ADCDataPoint(loc=(0,),
                                          data=[ [], [], [] ])
-        self.set_sample_rate(1000)
+        self.set_sample_rate(100)
     
     
     # Command

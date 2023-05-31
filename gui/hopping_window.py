@@ -27,7 +27,7 @@ def make_hopping_window(gui, master_frame):
     
     Z_field = Text(frame, height=1, width=1)
     Z_field.grid(column=3, row=2, sticky=(E,W))
-    Z_field.insert('1.0', '50')
+    Z_field.insert('1.0', '80')
     Z_field.bind('<Tab>', focus_next_widget)
     
     points_field = Text(frame, height=1, width=1)

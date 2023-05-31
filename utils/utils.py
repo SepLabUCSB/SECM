@@ -3,10 +3,20 @@ import datetime
 import os
 import shutil
 
+import numpy as np
+
+
 def run(func, args=()):
     t = threading.Thread(target=func, args=args)
     t.start()
     return t
+
+
+def nearest(array, value):
+    array = np.asarray(array)
+    idx = (np.abs(array - value)).argmin()
+    return idx, array[idx]
+    
 
 def focus_next_widget(event):
     event.widget.tk_focusNext().focus()

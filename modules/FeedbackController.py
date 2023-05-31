@@ -55,7 +55,7 @@ class FeedbackController(Logger):
         self.HekaWriter = self.master.HekaWriter
 
     
-    def approach(self, i_cutoff:float, voltage:float, start_coords:tuple=None):
+    def approach(self, i_cutoff:float=20e-12, voltage:float=400, start_coords:tuple=None):
         '''
         start_coords: (x,y,z)
         voltage: float, mV
@@ -68,14 +68,13 @@ class FeedbackController(Logger):
         j = 0
         step = 0.5 # um
         if not start_coords:
-            start_coords = self.Piezo.loc()
+            start_coords = (0,0,80)
         x, y, z_start = start_coords
-        x, y, z_start = 0, 0, 80
         self.Piezo.goto(x, y, z_start)
-        self.Piezo.measure_loc()
         self.Piezo.stop_monitoring()
         self.HekaWriter.macro(f'E Vhold {voltage}')
         gain = 1e9 * self.master.GUI.amp_params['float_gain']
+        self.ADC.set_sample_rate(50)
         run(partial(self.ADC.polling, 60))
         time.sleep(0.2)
         for j in range(200):
@@ -90,7 +89,7 @@ class FeedbackController(Logger):
             t, V, I = self.ADC.pollingdata.get_data()
             I = np.array(I)
             I /= gain # convert V -> I
-            val = np.average(abs(I[-20:]))
+            val = np.average(abs(I[-10:]))
             if val > i_cutoff:
                 break 
         self.ADC.STOP_POLLING()  
@@ -195,13 +194,14 @@ class FeedbackController(Logger):
         self.log(f'Starting hopping mode {expt_type} scan')
         z = z_max
         for i, (x, y) in enumerate(points):
+            curr_x, curr_y, curr_z = self.Piezo.measure_loc()
+            self.Piezo.goto(curr_x, curr_y, z_max) # retract
             if self.master.ABORT:
                 self.log('Hopping mode aborted')
                 self.master.make_ready()
                 return
             if not self.master.TEST_MODE:
-                self.Piezo.goto(x, y, z_max)
-                # z = self.approach()
+                z = self.approach(start_coords = (x, y, z_max))
             
             # TODO: run variable echem experiment(s) at each pt
             data = self.run_echems('CV', expt, (x, y, z), i)

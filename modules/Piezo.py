@@ -104,14 +104,18 @@ class Piezo(Logger):
         time.sleep(0.001)
         # output from controller terminates with '\r'
         location = self.port.read_until(b'\r').decode('utf-8')
-        _, x, y, z = location.strip('\r').split(',')
+        try:
+            _, x, y, z = location.strip('\r').split(',')
+        except:
+            print(f'Error measuring location. Received: {location}')
+            return (-10,-10,-10)
         return x, y, z
         
     
     # Return current (software) x,y,z
     # TODO: measure every time?
     def loc(self):
-        return (self.x, self.y, self.z)
+        return self.measure_loc()
     
     
     # Send piezo to (x,y,z)

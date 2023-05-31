@@ -1,10 +1,12 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from utils.utils import Logger
+from utils.utils import Logger, nearest
 from modules.DataStorage import (ADCDataPoint, CVDataPoint, 
                                  SinglePoint)
 
+# For time domain plotting
+x_maxes = [5, 10, 30, 60] + [120*i for i in range(1, 60)]
 
 def checksum(data):
     # TODO: make this simpler
@@ -412,7 +414,7 @@ class Plotter(Logger):
         self.set_echemdata(DATAPOINT)
 
     
-    def set_echemdata(self, DATAPOINT, sample_freq=100):
+    def set_echemdata(self, DATAPOINT, sample_freq=10):
         # Determine what to plot
         _, _, xval, yval = get_axval_axlabels(
                                 self.master.GUI.fig2selection.get()
@@ -460,11 +462,11 @@ class Plotter(Logger):
     
 
     def draw_echemfig(self, t, x, y, undersample_freq=10):
-        # Undersample data if desired
+        # Undersample data if desiredd
         # (i.e. HEKA records CV at 10 Hz, but ADC samples at 234 Hz -
         #  we see every step in the digital CV and pick up excess noise
         #  as well as current spikes.)
-        
+                
         def average(arr, n):
             if n < 2:
                 return arr
@@ -484,8 +486,11 @@ class Plotter(Logger):
         
         self.ln.set_data(plotx, ploty)
         self.set_axlim('fig2', *get_plotlim(plotx, ploty) )
-        return
+        return True
 
+            
+        
+        
   
     
 

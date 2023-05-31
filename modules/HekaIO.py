@@ -196,10 +196,17 @@ class HekaWriter(Logger):
         currently open to save to
         '''
         self.send_command('GetParameters DataFile')
-        response = self.master.HekaReader.last[1]
-        if response.split(' ')[-1] == '""':
-            return False
-        return True
+        st = time.time()
+        while time.time() - st < 1:
+            response = self.master.HekaReader.last[1]
+            try:
+                if response.split(' ')[-1] == '""':
+                    return False
+                return True
+            except:
+                continue
+        self.log('Timed out waiting for PATCHMASTER to respond with current data file')
+        return False
         
                
     
@@ -239,6 +246,7 @@ class HekaWriter(Logger):
         
         if (not path or path == 'None/.asc'): 
             self.send_command('GetParameters SeriesDate, SeriesTime')
+            time.sleep(0.01)
             SeriesDate, SeriesTime = self.master.HekaReader.last[1].split(',')
 
             SeriesDate = SeriesDate.lstrip('Reply_GetParameters ').replace('/', '')
