@@ -101,7 +101,7 @@ class Piezo(Logger):
             return (-1,-1,-1)
         self.port.read_all()
         self.write('measure')
-        time.sleep(0.01)
+        time.sleep(0.001)
         # output from controller terminates with '\r'
         location = self.port.read_until(b'\r').decode('utf-8')
         _, x, y, z = location.strip('\r').split(',')
@@ -119,7 +119,7 @@ class Piezo(Logger):
     def goto(self, x, y, z):
         if self._piezo_on:
             self.write(f'setall,{x},{y},{z}')
-            self.x, self.y, self.z = x, y, z
+            # self.x, self.y, self.z = x, y, z
         self.x, self.y, self.z = self.measure_loc()
         return self.loc()
     
