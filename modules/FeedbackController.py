@@ -108,7 +108,7 @@ class FeedbackController(Logger):
         # Generate fake data for testing piezo
         voltage = np.linspace(0, 0.5, 50)
         max_I = 100*np.random.rand()
-        current = np.linspace(0, i, 50)
+        current = np.linspace(0, i*1e-9, 50)
         return voltage, current
     
     
