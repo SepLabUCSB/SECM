@@ -66,7 +66,7 @@ class FeedbackController(Logger):
         '''
         
         j = 0
-        step = 0.5 # um
+        step = 0.2 # um
         if not start_coords:
             start_coords = (0,0,80)
         x, y, z_start = start_coords
@@ -74,26 +74,29 @@ class FeedbackController(Logger):
         self.Piezo.stop_monitoring()
         self.HekaWriter.macro(f'E Vhold {voltage}')
         gain = 1e9 * self.master.GUI.amp_params['float_gain']
-        self.ADC.set_sample_rate(50)
+        self.ADC.set_sample_rate(200)
         run(partial(self.ADC.polling, 60))
         time.sleep(0.2)
-        for j in range(200):
+        for j in range(1000):
             if self.master.ABORT:
                 break
             z = z_start - j*step
-            if z < 0:
+            if z <= 0:
+                print('Did not hit surface')
                 break
             self.Piezo.goto(x, y, z)
             # Collect some data at this loc
-            time.sleep(0.1)
+            time.sleep(0.05)
             t, V, I = self.ADC.pollingdata.get_data()
             I = np.array(I)
             I /= gain # convert V -> I
-            val = np.average(abs(I[-10:]))
+            val = np.average(abs(I[-2:]))
             if val > i_cutoff:
+                print('On surface')
                 break 
         self.ADC.STOP_POLLING()  
         self.Piezo.start_monitoring()
+        self.master.make_ready()
         return z
 
 
