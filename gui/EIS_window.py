@@ -58,12 +58,7 @@ def make_EIS_window(gui, master_frame):
     
     Button(frame, text='Run EIS', command=
             partial(run, gui.run_EIS)).grid(column=2, row=7,
-                                           sticky=(E,W))
-    
-    Button(frame, text='Abort', command= 
-            partial(run, gui.master.abort)).grid(column=2, row=8)
-    
-    
+                                           sticky=(E,W))  
     
     return EIS_params
 
