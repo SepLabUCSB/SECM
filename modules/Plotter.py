@@ -268,7 +268,8 @@ class Plotter(Logger):
             x, y = event.xdata, event.ydata            
             closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
             self.set_echemdata(closest_datapoint, sample_freq=10000)
-            x0, y0, _ = closest_datapoint.loc
+            x0, y0, z0 = closest_datapoint.loc
+            print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f})')
         return 
     
     

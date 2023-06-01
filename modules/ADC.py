@@ -83,6 +83,9 @@ class ADC(Logger):
     # Set up serial port
     def setup(self, params=None):
         
+        if self.master.TEST_MODE:
+            return
+        
         if not params:
             params = {}
         
