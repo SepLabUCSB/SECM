@@ -165,7 +165,8 @@ class Experiment:
         '''
         min_dist = 1e10
         closest  = None
-        for datapoint in self.data.flatten():
+        idx = 0
+        for i, datapoint in enumerate(self.data.flatten()):
             x0, y0, z0 = datapoint.loc
             distance = np.sqrt(
                                 (x - x0)**2 + (y - y0)**2 
@@ -173,7 +174,8 @@ class Experiment:
             if distance < min_dist:
                 min_dist = distance
                 closest = datapoint
-        return closest
+                idx = i
+        return idx, closest
     
   
     

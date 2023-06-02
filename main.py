@@ -26,14 +26,13 @@ default_stderr = sys.stderr
 matplotlib.use('TkAgg')
 plt.style.use('secm.mplstyle')
 
-TEST_MODE = True
+TEST_MODE = False
 
 
     
 '''
 TODO:
     
-    2. click on pixel prints its displayed value
     3. set all amp settings every time
     4. update stored cv params without clicking run cv button
         - steamline echem running process    

@@ -170,7 +170,7 @@ class RectangleSelector:
         corners.sort()
         nearest_points = []
         for corner in corners:
-            nearest = self.Plotter.master.expt.get_nearest_datapoint(corner[0], 
+            _, nearest = self.Plotter.master.expt.get_nearest_datapoint(corner[0], 
                                                                      corner[1])
             x0, y0, _ = nearest.loc
             nearest_points.append( (x0, y0) )
@@ -266,10 +266,12 @@ class Plotter(Logger):
         # CA, or EIS, ...) in the lower figure
         if event.inaxes == self.ax1:
             x, y = event.xdata, event.ydata            
-            closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
+            idx, closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
             self.set_echemdata(closest_datapoint, sample_freq=10000)
             x0, y0, z0 = closest_datapoint.loc
-            print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f})')
+            val = self.data1.flatten()[idx]
+            # data = self.master.expt.data.flatten()
+            print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {val}')
         return 
     
     
