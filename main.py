@@ -26,13 +26,19 @@ default_stderr = sys.stderr
 matplotlib.use('TkAgg')
 plt.style.use('secm.mplstyle')
 
-TEST_MODE = False
+TEST_MODE = True
 
 
     
 '''
 TODO:
-        
+    
+    3. set all amp settings every time
+    4. update stored cv params without clicking run cv button
+        - steamline echem running process    
+    
+    
+    
     Make separate data viewer to make high quality figures
     
     Write documentation
@@ -138,10 +144,11 @@ class MasterModule(Logger):
         # submodule should call master.make_ready() after
         # aborting process
         self.ABORT = True
+        run(self.make_ready)
     
     
     def make_ready(self):
-        time.sleep(1) # wait for other threads to abort
+        time.sleep(2) # wait for other threads to abort
         self.ABORT = False
         
     
@@ -251,13 +258,17 @@ class GUI(Logger):
         sys.stdout = pl
         
         
+        abortbuttonframe = Frame(leftpanel)
+        abortbuttonframe.grid(row=0, column=0)
+        Button(abortbuttonframe, text='Stop', command=self.master.abort,
+               width=50).grid(row=0, column=0, sticky=(W,E))
         
         pstat_frame = Frame(leftpanel)
-        pstat_frame.grid(row=0, column=0, sticky=(N,S,W,E))
+        pstat_frame.grid(row=1, column=0, sticky=(N,S,W,E))
         secm_frame = Frame(leftpanel)
-        secm_frame.grid(row=1, column=0, sticky=(N,S,W,E))
+        secm_frame.grid(row=2, column=0, sticky=(N,S,W,E))
         piezo_frame = Frame(leftpanel)
-        piezo_frame.grid(row=2, column=0, sticky=(N,S,W,E))
+        piezo_frame.grid(row=3, column=0, sticky=(N,S,W,E))
         
                    
         ######################################
@@ -269,15 +280,12 @@ class GUI(Logger):
         # Label(rightpanel, text='right frame').grid(column=1, row=1)
         topfigframe = Frame(rightpanel)
         topfigframe.grid(row=0, column=0)
-        topfigframe.pack_propagate(0)
         
         Separator(rightpanel, 
                   orient='vertical').grid(row=0, column=1, sticky=(N,S))
         
         botfigframe = Frame(rightpanel)
         botfigframe.grid(row=0, column=2)
-        botfigframe.pack_propagate(0)
-        
         
         self.topfig = plt.Figure(figsize=(4.5,4.5), dpi=75)
         self.botfig = plt.Figure(figsize=(4.5,4.5), dpi=75)
@@ -424,6 +432,7 @@ class GUI(Logger):
         
         PIEZO_TABS = Notebook(piezo_frame)
         piezo_control = Frame(PIEZO_TABS)
+        z_piezo_control = Frame(PIEZO_TABS)
         piezo_control.grid(row=0, column=0, sticky=(W,E))
         
         self._x_display = StringVar()
@@ -451,7 +460,17 @@ class GUI(Logger):
         Entry(piezo_control, textvariable=self._piezo_msg, width=20).grid(row=2, column=0, columnspan=6, sticky=(W,E))
         Button(piezo_control, text='Send Cmd', command=self.piezo_msg_send).grid(row=2, column=6, sticky=(W,E))
         
+        
+        self._piezosteps = StringVar(value='0')
+        
+        Label(z_piezo_control, text='Steps:').grid(row=0, column=0, sticky=(W,E))
+        Entry(z_piezo_control, textvariable=self._piezosteps, width=8).grid(row=0, column=1, sticky=(W,E))
+        Button(z_piezo_control, text='Go', command=self.z_piezo_go).grid(row=0, column=2, sticky=(W,E))
+        Button(z_piezo_control, text='Stop', command=self.z_piezo_stop).grid(row=1, column=2, sticky=(W,E))
+        
+        
         PIEZO_TABS.add(piezo_control, text='Piezo')
+        PIEZO_TABS.add(z_piezo_control, text='Z Positioner')
         PIEZO_TABS.pack(expand=1, fill='both')
         
         
@@ -748,6 +767,22 @@ class GUI(Logger):
     def piezo_msg_send(self):
         msg = self._piezo_msg.get()
         self.master.Piezo.write_and_read(msg)
+        
+    
+    def z_piezo_go(self):
+        steps = self._piezosteps.get()
+        try:
+            steps = int(steps)
+        except:
+            print(f'Invalid input:"{steps}"')
+            return
+        # Send positioning command
+        return
+    
+    
+    def z_piezo_stop(self):
+        # Send stop command
+        return
         
             
     

@@ -81,13 +81,10 @@ def make_CV_window(gui, master_frame):
     
     Button(frame, text='Run CV', command=
            partial(run, gui.run_CV)).grid(column=2, row=8)
-    
-    Button(frame, text='Abort', command= 
-           partial(run, gui.master.abort)).grid(column=2, row=9)
-    
+        
     Button(frame, text='Test', command= 
            partial(run, gui.master.HekaWriter.test_btn)
-           ).grid(column=2, row=10)
+           ).grid(column=2, row=9)
     
     
     fig = plt.Figure(figsize=(3,2), dpi=50)
