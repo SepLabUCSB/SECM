@@ -26,7 +26,7 @@ default_stderr = sys.stderr
 matplotlib.use('TkAgg')
 plt.style.use('secm.mplstyle')
 
-TEST_MODE = False
+TEST_MODE = True
 
 
     
@@ -432,6 +432,7 @@ class GUI(Logger):
         
         PIEZO_TABS = Notebook(piezo_frame)
         piezo_control = Frame(PIEZO_TABS)
+        z_piezo_control = Frame(PIEZO_TABS)
         piezo_control.grid(row=0, column=0, sticky=(W,E))
         
         self._x_display = StringVar()
@@ -459,7 +460,17 @@ class GUI(Logger):
         Entry(piezo_control, textvariable=self._piezo_msg, width=20).grid(row=2, column=0, columnspan=6, sticky=(W,E))
         Button(piezo_control, text='Send Cmd', command=self.piezo_msg_send).grid(row=2, column=6, sticky=(W,E))
         
+        
+        self._piezosteps = StringVar(value='0')
+        
+        Label(z_piezo_control, text='Steps:').grid(row=0, column=0, sticky=(W,E))
+        Entry(z_piezo_control, textvariable=self._piezosteps, width=8).grid(row=0, column=1, sticky=(W,E))
+        Button(z_piezo_control, text='Go', command=self.z_piezo_go).grid(row=0, column=2, sticky=(W,E))
+        Button(z_piezo_control, text='Stop', command=self.z_piezo_stop).grid(row=1, column=2, sticky=(W,E))
+        
+        
         PIEZO_TABS.add(piezo_control, text='Piezo')
+        PIEZO_TABS.add(z_piezo_control, text='Z Positioner')
         PIEZO_TABS.pack(expand=1, fill='both')
         
         
@@ -756,6 +767,22 @@ class GUI(Logger):
     def piezo_msg_send(self):
         msg = self._piezo_msg.get()
         self.master.Piezo.write_and_read(msg)
+        
+    
+    def z_piezo_go(self):
+        steps = self._piezosteps.get()
+        try:
+            steps = int(steps)
+        except:
+            print(f'Invalid input:"{steps}"')
+            return
+        # Send positioning command
+        return
+    
+    
+    def z_piezo_stop(self):
+        # Send stop command
+        return
         
             
     

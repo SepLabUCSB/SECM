@@ -270,7 +270,6 @@ class Plotter(Logger):
             self.set_echemdata(closest_datapoint, sample_freq=10000)
             x0, y0, z0 = closest_datapoint.loc
             val = self.data1.flatten()[idx]
-            # data = self.master.expt.data.flatten()
             print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {val}')
         return 
     
