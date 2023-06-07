@@ -1,6 +1,7 @@
 import usb.core
 import usb.util
 import re
+from utils.utils import Logger
 
 
 '''
@@ -19,7 +20,7 @@ MOTOR_TYPE = {
         }
 
 
-class PicoMotor():
+class PicoMotor(Logger):
     """Picomotor Controller
     Example:
         >>> controller = Controller(idProduct=0x4000, idVendor=0x104d)
@@ -29,23 +30,29 @@ class PicoMotor():
     """
 
 
-    def __init__(self, idProduct=0x4000, idVendor=0x104d):
+    def __init__(self, master, idProduct=0x4000, idVendor=0x104d):
         """Initialize the Picomotor class with the spec's of the attached device
         Call self._connect to set up communication with usb device and endpoints 
         
         Args:
-            idProduct (hex): Product ID of picomotor controller
+            idProduct (hex): Product ID of picomotor controller (from device manager)
             idVendor (hex): Vendor ID of picomotor controller
         """
+        self.willStop = False
+        self.master = master
+        self.master.register(self)
+        
         self.idProduct = idProduct
         self.idVendor = idVendor
         self._connect()
         
-    def close(self):
-        print(f'clearing: {id(self)}')
+        
+    def stop(self):
         self.dev.reset()
         usb.util.dispose_resources(self.dev)
         del self.dev
+        self.log('USB interface closed')
+
 
     def _connect(self):
         """Connect class to USB device 
@@ -57,7 +64,6 @@ class PicoMotor():
             Assert False: if the input and outgoing endpoints can't be established
         """
         # find the device
-        print(f'locating device: {id(self)}')
         self.dev = usb.core.find(
                         idProduct=self.idProduct,
                         idVendor=self.idVendor
@@ -95,15 +101,15 @@ class PicoMotor():
         
         # Confirm connection to user
         resp = self.command('VE?')
-        print("Connected to Motor Controller Model {}. Firmware {} {} {}\n".format(
+        self.log("Connected to Motor Controller Model {}. Firmware {} {} {}\n".format(
                                                     *resp.split(' ')
                                                     ))
-        for m in range(1,5):
-            resp = self.command("{}QM?".format(m))
-            print("Motor #{motor_number}: {status}".format(
-                                                    motor_number=m,
-                                                    status=MOTOR_TYPE[resp[-1]]
-                                                    ))
+        # for m in range(1,5):
+        #     resp = self.command("{}QM?".format(m))
+        #     print("Motor #{motor_number}: {status}".format(
+        #                                             motor_number=m,
+        #                                             status=MOTOR_TYPE[resp[-1]]
+        #                                             ))
 
 
 
@@ -161,7 +167,7 @@ class PicoMotor():
 
             return usb_command
         else:
-            print("ERROR! Command {} was not a valid format".format(
+            self.log("ERROR! Command {} was not a valid format".format(
                                                             newfocus_command
                                                             ))
 
@@ -200,6 +206,27 @@ class PicoMotor():
         # if a reply is expected, parse it
         if get_reply:
             return self.parse_reply(reply)
+                           
+    
+    def step(self, n_steps):
+        '''
+        Step pico motor the requested number of steps
+        Args:
+            n_steps: signed int
+        '''
+        if not type(n_steps) == int:
+            print('Invalid input to PicoMotor')
+            return
+        
+        self.command(f'1PR{n_steps}')
+        
+        
+    def halt(self):
+        '''
+        Send a halt command immediately
+        '''
+        self.command('AB')
+        
         
     def start_console(self):
         """Continuously ask user for a command
@@ -223,6 +250,8 @@ class PicoMotor():
                 rep = self.command(command)
                 if rep:
                     print("Output: {}".format(rep))
+        
+        
         
 
 

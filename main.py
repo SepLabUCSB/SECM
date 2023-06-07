@@ -16,6 +16,7 @@ from modules.Piezo import Piezo
 from modules.FeedbackController import FeedbackController
 from modules.Plotter import Plotter
 from modules.DataStorage import Experiment, load_from_file
+from modules.PicoMotor import PicoMotor
 from utils.utils import run, Logger
 from gui import *
 
@@ -26,7 +27,7 @@ default_stderr = sys.stderr
 matplotlib.use('TkAgg')
 plt.style.use('secm.mplstyle')
 
-TEST_MODE = True
+TEST_MODE = False
 
 
     
@@ -776,12 +777,12 @@ class GUI(Logger):
         except:
             print(f'Invalid input:"{steps}"')
             return
-        # Send positioning command
+        self.master.PicoMotor.step(steps)
         return
     
     
     def z_piezo_stop(self):
-        # Send stop command
+        self.master.PicoMotor.halt()
         return
         
             
@@ -800,28 +801,32 @@ if __name__ == '__main__':
     writer = HekaWriter(master)
     adc    = ADC(master)
     piezo  = Piezo(master)
+    motor  = PicoMotor(master)
     fbc    = FeedbackController(master) # must be loaded last
     
     root = Tk()
     
-    # try:
-    gui = GUI(root, master)
-    
-    gui._update_piezo_display()
-    root.after(1000, master.Plotter.update_figs)
-    # root.after(1000, master.malloc_snapshot)
-    root.mainloop()
-    root.quit()
-    gui.willStop = True
-    
-    sys.stdout = default_stdout
-    sys.stdin  = default_stdin
-    sys.stderr = default_stderr
+    try:
+        gui = GUI(root, master)
         
-    # except Exception as e:
-    #     # Catch exceptions to make sure adc port closes and 
-    #     # stdout resets to default
-    #     print(traceback.format_exc())
+        gui._update_piezo_display()
+        root.after(1000, master.Plotter.update_figs)
+        # root.after(1000, master.malloc_snapshot)
+        root.mainloop()
+        root.quit()
+        gui.willStop = True
+        
+        sys.stdout = default_stdout
+        sys.stdin  = default_stdin
+        sys.stderr = default_stderr
+        
+    except Exception as e:
+        # Catch exceptions to make sure adc port closes and 
+        # stdout resets to default
+        sys.stdout = default_stdout
+        sys.stdin  = default_stdin
+        sys.stderr = default_stderr
+        print(traceback.format_exc())
 
     if not master.TEST_MODE:
         adc.stop()
