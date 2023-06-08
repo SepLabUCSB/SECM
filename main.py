@@ -33,7 +33,6 @@ TEST_MODE = True
 '''
 TODO:
     
-    3. set all amp settings every time
     4. update stored cv params without clicking run cv button
         - steamline echem running process    
     
@@ -666,8 +665,8 @@ class GUI(Logger):
         for key, val in new_params.items():
             if key == 'float_gain':
                 continue
-            if val != self.amp_params.get(key, None):
-                cmds.append(f'Set {key} {val}')
+            # if val != self.amp_params.get(key, None):
+            cmds.append(f'Set {key} {val}')
         
         self.master.HekaWriter.send_multiple_cmds(cmds)
         
