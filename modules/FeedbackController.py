@@ -134,12 +134,15 @@ class FeedbackController(Logger):
 
     def potentiostat_setup(self, expt_type):
         if self.master.TEST_MODE:
-            return
+            return True
         if expt_type == 'CV':
             self.master.GUI.set_amplifier()
             CV_vals = self.master.GUI.get_CV_params()
+            if CV_vals == (0,0,0,0,0,0):
+                return False
             self.master.HekaWriter.setup_CV(*CV_vals)
-        return
+            return True
+        return False
     
     def run_echems(self, expt_type, expt, loc, i):
         '''
@@ -177,7 +180,9 @@ class FeedbackController(Logger):
         
         
         # Setup potentiostat for experiment
-        self.potentiostat_setup(expt_type)
+        if not self.potentiostat_setup(expt_type):
+            self.log('Failed to set up potentiostat! Cannot run hopping mode')
+            return
                                 
         # Starts scan from Piezo.starting_coords
         points, order = self.Piezo.get_xy_coords(length, n_pts) 

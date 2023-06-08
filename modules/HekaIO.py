@@ -310,8 +310,8 @@ class HekaWriter(Logger):
         
         # Set CV parameters
         self.update_Values(values)
-        self.send_command('SelectSequence _reset')
-        self.send_command('SelectSequence _CV')
+        # self.send_command('SelectSequence _reset')
+        # self.send_command('SelectSequence _CV')
         
         self.CV_params   = values
         self.CV_duration = duration
@@ -341,51 +341,7 @@ class HekaWriter(Logger):
         
         cmd = cmds[mode]
         self.send_command(f'ExecuteSequence {cmd}')
-    
-        
-    # def run_CV_loop(self, save_path=None, name=''):
-    #     if self.isRunning():
-    #         self.log('Got new CV command, but already running!')
-    #         return
-        
-    #     if not self.isDataFile():
-    #         print('== Open a DataFile in PATCHMASTER before recording! ==')
-    #         return
-    
-    #     self.running()
-    #     self.run_CV()
-    #     st = time.time()
-        
-    #     # Start ADC polling
-    #     run(partial(self.master.ADC.polling, 
-    #                 timeout = self.CV_duration))
-        
-    #     # Measurement loop
-    #     while time.time() - st < self.CV_duration + 3:
-    #         if self.master.ABORT:
-    #             self.abort()
-    #             self.master.ADC.STOP_POLLING()
-    #             path = self.save_last_experiment(f'{save_path}/{name}.asc')
-    #             self.idle()
-    #             return path
-    #         self.send_command('Query')
-    #         try:
-    #             if self.master.HekaReader.last[1] == 'Query_Idle':
-    #                 break 
-    #         except:
-    #             pass
-    #         time.sleep(0.5)
-            
-    #     if not self.master.HekaReader.last[1] == 'Query_Idle':
-    #         self.log('CV failed!')
-    #         return
-        
-    #     self.master.ADC.STOP_POLLING()
-        
-    #     path = self.save_last_experiment(path=f'{save_path}/{name}.asc')
-    #     self.idle()
-    #     return path
-        
+      
 
     def setup_EIS(self):
         '''
