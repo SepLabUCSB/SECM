@@ -34,8 +34,25 @@ TEST_MODE = False
 '''
 TODO:
     
-    4. update stored cv params without clicking run cv button
-        - steamline echem running process    
+    - PicoMotor backend lib location
+    
+    - set retract speed in hopping mode
+    
+    - More approach curve options
+        - starting height based on last point
+        - approach speed
+    - do continuous approach/ sampling instead of stepping down
+    - handle not reaching surface in hopping mode
+    
+    - check on opening new file procedure (might overwrite/ not save)
+    - close ADC, Piezo controller, PicoMotor nicely
+    
+    - automatically do initial approach with PicoMotor
+    
+    - steamline echem running process    
+    
+    - adjust location of scalebar on heatmap
+        - handle negative numbers better
     
     
     
@@ -44,28 +61,13 @@ TODO:
     Write documentation
         
     HEKA control
-    - init to known state
-    - store current amplifier state for next time controller loads
-    - implement other echem funcs
     - EIS
     - run multiple echem experiments at each location
     
-    XYZ control
-    - create test module
     
     SECM
-    - controller
-        - point and click
-        - scanning protocols
-    
-    - approach curve
-    - const. distance scan
-    - hopping mode
-    - const. current, measure Z mode
-    
-    DISPLAY
-    - 
-    
+    - point and click to move to point
+        
     
 '''
 
@@ -455,7 +457,7 @@ class GUI(Logger):
         Entry(piezo_control, textvariable=self._x_set, width=6).grid(row=1, column=0, columnspan=2, sticky=(W,E))
         Entry(piezo_control, textvariable=self._y_set, width=6).grid(row=1, column=2, columnspan=2, sticky=(W,E))
         Entry(piezo_control, textvariable=self._z_set, width=6).grid(row=1, column=4, columnspan=2, sticky=(W,E))
-        Button(piezo_control, text='Go', command=self.piezo_goto).grid(row=1, column=6, sticky=(W,E))
+        Button(piezo_control, text='Set', command=self.piezo_goto).grid(row=1, column=6, sticky=(W,E))
         
         Entry(piezo_control, textvariable=self._piezo_msg, width=20).grid(row=2, column=0, columnspan=6, sticky=(W,E))
         Button(piezo_control, text='Send Cmd', command=self.piezo_msg_send).grid(row=2, column=6, sticky=(W,E))

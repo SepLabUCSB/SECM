@@ -65,8 +65,16 @@ class FeedbackController(Logger):
         Stop when measured i > i_cutoff
         '''
         
+        # TODO: clean this up
+        
         j = 0
         step = 0.2 # um
+        cutoff = self.master.GUI.params['approach']['cutoff'].get('1.0', 'end')
+        try:
+            i_cutoff = float(cutoff) * 1e-12
+        except:
+            print('Invalid approach cutoff: {cutoff}')
+            return
         if not start_coords:
             start_coords = (0,0,80)
         x, y, z_start = start_coords
@@ -90,10 +98,14 @@ class FeedbackController(Logger):
             t, V, I = self.ADC.pollingdata.get_data()
             I = np.array(I)
             I /= gain # convert V -> I
-            val = np.average(abs(I[-2:]))
-            if val > i_cutoff:
+            # val = np.average(abs(I[-2:]))
+            vals = abs(I[-10:])
+            if any([val > i_cutoff for val in vals]):
                 print('On surface')
-                break 
+                break
+            # if val > i_cutoff:
+            #     print('On surface')
+            #     break 
         self.ADC.STOP_POLLING()  
         self.Piezo.start_monitoring()
         self.master.make_ready()

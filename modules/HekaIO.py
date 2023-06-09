@@ -367,6 +367,7 @@ class HekaWriter(Logger):
         save_path: string, path to save to
         name: string, name to save as. save_path/{name}.asc
         '''
+        print(measurement_type)
         if measurement_type == 'CV':
             run_func = self.run_CV
             duration = self.CV_duration
