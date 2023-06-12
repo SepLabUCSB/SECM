@@ -15,6 +15,7 @@ class Piezo(Logger):
         self.y = 0
         self.z = 50
         self.starting_coords = (0,0)
+        self._halt = False
         self._piezo_on = False
         self._stop_monitoring = False
         
@@ -45,7 +46,7 @@ class Piezo(Logger):
         if not self._piezo_on:
             return
         self.port.write(f'{msg}\r'.encode('utf-8'))
-        # r = self.port.read_all()
+        r = self.port.read_all()
         # if r:
         #     self.log(r)
     
@@ -105,29 +106,120 @@ class Piezo(Logger):
         # output from controller terminates with '\r'
         location = self.port.read_until(b'\r').decode('utf-8')
         try:
+            location = location.split('aw')[1]
             _, x, y, z = location.strip('\r').split(',')
         except:
-            print(f'Error measuring location. Received: {location}')
+            # print(f'Error measuring location. Received: {location}')
             return (-10,-10,-10)
-        return x, y, z
+        
+        return float(x), float(y), float(z)
         
     
-    # Return current (software) x,y,z
-    # TODO: measure every time?
+    # Return current x,y,z
     def loc(self):
         return self.measure_loc()
     
     
     # Send piezo to (x,y,z)
-    # TODO: measure loc after setting?
     def goto(self, x, y, z):
+        
+        x, y, z = float(x), float(y), float(z)
+        '''
+        Requested coordinates aren't reached accurately. Each channel
+        has a different offset which was determined empirically. We
+        correct for this offset here so the coordinates we request
+        are the coordinates we get
+        '''
+        x = (x + 1.742)*(80/(82.090 + 1.742))
+        y = (y + 1.825)*(80/(81.980 + 1.825))
+        z = (z + 1.843)*(80/(82.001 + 1.843))
+        
         if self._piezo_on:
-            self.write(f'setall,{x},{y},{z}')
-            # self.x, self.y, self.z = x, y, z
-        self.x, self.y, self.z = self.measure_loc()
-        return self.loc()
+            cmd = f'setall,{x},{y},{z}'
+            self.write(cmd)
     
     
+    ########################################
+    ######                         #########
+    ######         MOVEMENTS       #########
+    ######                         #########
+    ########################################
+        
+    def halt(self):
+         '''
+         Immediately stop current approach/ retract
+         '''
+         self._halt = True
+        
+        
+    def approach(self, speed):
+        '''
+        Starting from the current location, reduce Z in small steps at
+        the given speed until Z = 0 (or external stop command is received)
+        
+        speed: float, approach speed in um/s
+        '''
+        
+        step_size  = 0.05            # step size um
+        step_delay = step_size/speed  # step time in s
+        
+        # Stop periodic location checks
+        self.stop_monitoring()
+        x,y,z = self.measure_loc()
+                
+        while z > 0:
+            if self._halt:
+                break
+            z -= step_size
+            self.goto(x,y,z)
+            self.x, self.y, self.z = x,y,z
+            time.sleep(step_delay)
+            
+        
+        self.start_monitoring()
+        self._halt = False
+        return
+    
+    
+    def retract(self, height, speed, relative=False):
+        '''
+        Starting from the current location, increase Z in small steps at
+        the given speed until Z = height
+        
+        If relative == True, instead increase Z until Z = height + starting height
+        
+        height: float, target z height
+        speed: float, approach speed in um/s
+        '''
+        step_size  = 0.05            # step size um
+        step_delay = step_size/speed  # step time in s
+        
+        # Stop periodic location checks
+        self.stop_monitoring()
+        x,y,z = self.measure_loc()
+        
+        if relative:
+            height += z
+                
+        while z < height:
+            if self._halt:
+                break
+            z += step_size
+            self.goto(x,y,z)
+            self.x, self.y, self.z = x,y,z
+            time.sleep(step_delay)
+            
+        self.start_monitoring()
+        self._halt = False
+        return
+    
+    
+    
+    ########################################
+    ######                         #########
+    ######     SCANNING METHODS    #########
+    ######                         #########
+    ########################################
     
     def get_xy_coords(self, length, n_points):
         # Generate ordered list of xy coordinates for a scan
@@ -189,6 +281,7 @@ class Piezo(Logger):
     
     
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
     class thismaster():
         def __init__(self):
             self.register = lambda x:0
@@ -197,3 +290,41 @@ if __name__ == '__main__':
     master = thismaster()
     piezo = Piezo(master)
     piezo.setup_piezo()
+    piezo.stop_monitoring()
+    
+    
+    # time.sleep(0.2)
+    # piezo.goto(0,0,0)
+    # time.sleep(0.3)
+        
+    # for i in range(50):
+    #     print(f'====== {i} ======')
+    #     coords = []
+    #     for n in (0, 80):
+    #         piezo.goto(n,n,n)
+    #         time.sleep(1)
+    #         x,y,z = piezo.measure_loc()
+    #         coords.append((x,y,z))
+    #     print(f'x: {coords[0][0]}, {coords[1][0]}')
+    #     print(f'y: {coords[0][1]}, {coords[1][1]}')
+    #     print(f'z: {coords[0][2]}, {coords[1][2]}')
+    
+    # piezo.stop()
+    
+    # zeros = [t for t in coords if t[0] < 50]
+    # maxes = [t for t in coords if t[0] >= 50]
+    
+    # xz, yz, zz = zip(*zeros)
+    # xm, ym, zm = zip(*maxes)
+    
+    # print(f'X: {np.mean(xz):0.3f} ± {np.std(xz):0.3f}, {np.mean(xm):0.3f} ± {np.std(xm):0.3f}')
+    # print(f'Y: {np.mean(yz):0.3f} ± {np.std(yz):0.3f}, {np.mean(ym):0.3f} ± {np.std(ym):0.3f}')
+    # print(f'Z: {np.mean(zz):0.3f} ± {np.std(zz):0.3f}, {np.mean(zm):0.3f} ± {np.std(zm):0.3f}')
+        
+    
+    
+    
+    
+    
+    
+    
