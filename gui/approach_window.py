@@ -12,24 +12,41 @@ def make_approach_window(gui, master_frame):
     frame.grid(column=1, row=1)
     
     ttk.Label(frame, text='    ').grid(column=1, row=1)
-    ttk.Label(frame, text='Cutoff = ').grid(column=2, row=2, sticky=(E))
+    ttk.Label(frame, text='Cutoff: ').grid(column=2, row=2, sticky=(E))
     ttk.Label(frame, text='    ').grid(column=5, row=3)
     ttk.Label(frame, text='    ').grid(column=5, row=4)
     
     I_field = Text(frame, height=1, width=1)
     I_field.grid(column=3, row=2, sticky=(E,W))
-    I_field.insert('1.0', '20')
+    I_field.insert('1.0', '10')
     I_field.bind('<Tab>', focus_next_widget)
     
     Label(frame, text='pA').grid(column=4, row=2, sticky=(W))
     
     
-    Button(frame, text='Acquire', 
-           command=gui.run_approach_curve).grid(column=3, row=4)
+    ttk.Label(frame, text='Height: ').grid(column=2, row=3, sticky=(E))
+    Z_field = Text(frame, height=1, width=1)
+    Z_field.grid(column=3, row=3, sticky=(E,W))
+    Z_field.insert('1.0', '80')
+    Z_field.bind('<Tab>', focus_next_widget)
+    Label(frame, text='um').grid(column=4, row=3, sticky=(W))
+    
+    
+    ttk.Label(frame, text='Speed: ').grid(column=2, row=4, sticky=(E))
+    speed_field = Text(frame, height=1, width=1)
+    speed_field.grid(column=3, row=4, sticky=(E,W))
+    speed_field.insert('1.0', '1')
+    speed_field.bind('<Tab>', focus_next_widget)
+    Label(frame, text='um/s').grid(column=4, row=4, sticky=(W))
+    
+    Button(frame, text='Approach', 
+           command=gui.run_approach_curve).grid(column=3, row=5)
     
     ttk.Label(frame, text='    ').grid(column=5, row=5)
     
-    approach_params = {'cutoff': I_field,}
+    approach_params = {'cutoff': I_field,
+                       'z_height': Z_field,
+                       'approach_speed': speed_field,}
     
     return approach_params
     

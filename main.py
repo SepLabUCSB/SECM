@@ -507,9 +507,9 @@ class GUI(Logger):
     
     
     def _update_piezo_display(self):
-        self._x_display.set(self.master.Piezo.x)
-        self._y_display.set(self.master.Piezo.y)
-        self._z_display.set(self.master.Piezo.z)
+        self._x_display.set(f'{self.master.Piezo.x:0.3f}')
+        self._y_display.set(f'{self.master.Piezo.y:0.3f}')
+        self._z_display.set(f'{self.master.Piezo.z:0.3f}')
         self.root.after(250, self._update_piezo_display)
         
     ########## GUI CALLBACKS ###########    
@@ -718,12 +718,16 @@ class GUI(Logger):
     def run_approach_curve(self):
         self.set_amplifier()
         cutoff = self.params['approach']['cutoff'].get('1.0', 'end')
+        height = self.params['approach']['z_height'].get('1.0', 'end')
+        speed  = self.params['approach']['approach_speed'].get('1.0', 'end')
         
         cutoff  = float(cutoff) * 1e-12
+        height  = float(height)
+        speed   = float(speed)
         voltage = 400
         
         func = partial(self.master.FeedbackController.approach,
-                       cutoff, voltage)
+                       voltage)
         run(func)
         
     

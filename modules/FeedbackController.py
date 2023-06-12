@@ -55,68 +55,70 @@ class FeedbackController(Logger):
         self.HekaWriter = self.master.HekaWriter
 
     
-    def approach(self, i_cutoff:float=20e-12, voltage:float=400, start_coords:tuple=None):
+    def approach(self, voltage:float=400, start_coords:tuple=None):
         '''
-        start_coords: (x,y,z)
         voltage: float, mV
-        i_cutoff: float, A
+        start_coords: tuple, (x,y,z). Starting point to approach from
         
         Step probe closer to surface starting at point (x,y,z). 
         Stop when measured i > i_cutoff
         '''
         
-        # TODO: clean this up
-        
-        j = 0
-        step = 0.2 # um
+        # Get cutoff current from GUI
         cutoff = self.master.GUI.params['approach']['cutoff'].get('1.0', 'end')
+        speed  = self.master.GUI.params['approach']['approach_speed'].get('1.0', 'end')
         try:
             i_cutoff = float(cutoff) * 1e-12
         except:
             print('Invalid approach cutoff: {cutoff}')
             return
+        
+        try:
+            speed = float(speed)
+        except:
+            print('Invalid approach speed: {speed}')
+            return
+        
+        # Setup piezo
         if not start_coords:
             start_coords = (0,0,80)
         x, y, z_start = start_coords
         self.Piezo.goto(x, y, z_start)
         self.Piezo.stop_monitoring()
+        
+        # Setup potentiostat and ADC
         self.HekaWriter.macro(f'E Vhold {voltage}')
         gain = 1e9 * self.master.GUI.amp_params['float_gain']
         self.ADC.set_sample_rate(200)
         run(partial(self.ADC.polling, 60))
-        time.sleep(0.2)
-        for j in range(1000):
+        time.sleep(0.1)
+
+        # Start it
+        run(partial(self.Piezo.approach, speed))
+        
+        on_surface = False
+        while True:
             if self.master.ABORT:
                 break
-            z = z_start - j*step
-            if z <= 0:
-                print('Did not hit surface')
-                break
-            self.Piezo.goto(x, y, z)
-            # Collect some data at this loc
-            time.sleep(0.05)
-            t, V, I = self.ADC.pollingdata.get_data()
-            I = np.array(I)
+            
+            _, _, I = self.ADC.pollingdata.get_data()
+            I = np.abs(np.array(I[-10:]))
             I /= gain # convert V -> I
-            # val = np.average(abs(I[-2:]))
-            vals = abs(I[-10:])
-            if any([val > i_cutoff for val in vals]):
-                print('On surface')
+            if any([val > i_cutoff for val in I]):
+                self.Piezo.halt()
+                on_surface = True
                 break
-            # if val > i_cutoff:
-            #     print('On surface')
-            #     break 
+            time.sleep(0.001)
+        
+        if on_surface:
+            self.log('Found surface')
+        else:
+            self.log('Did not find surface')
+        
         self.ADC.STOP_POLLING()  
         self.Piezo.start_monitoring()
         self.master.make_ready()
-        return z
-
-
-    def do_approach_curve(self, i_cutoff):
-        
-        # current = self.ADC.get_current()
-        current = np.random.rand()
-        return current
+        return self.Piezo.z
     
     
     def fake_CV(self, i):
@@ -215,6 +217,8 @@ class FeedbackController(Logger):
         z = z_max
         for i, (x, y) in enumerate(points):
             curr_x, curr_y, curr_z = self.Piezo.measure_loc()
+            if i != 0:
+                self.Piezo.retract(height=10, speed=1, relative=True)
             self.Piezo.goto(curr_x, curr_y, z_max) # retract
             if self.master.ABORT:
                 self.log('Hopping mode aborted')
