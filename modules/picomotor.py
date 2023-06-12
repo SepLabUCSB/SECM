@@ -44,10 +44,13 @@ class PicoMotor(Logger):
         
         self.idProduct = idProduct
         self.idVendor = idVendor
-        self._connect()
+        if not self.master.TEST_MODE:
+            self._connect()
         
         
     def stop(self):
+        if self.master.TEST_MODE:
+            return
         self.dev.reset()
         usb.util.dispose_resources(self.dev)
         del self.dev
