@@ -34,12 +34,12 @@ TEST_MODE = False
 '''
 TODO:
         
-    - set retract speed in hopping mode
+    - Make FeedbackController threadsafe
     
     - More approach curve options
         - starting height based on last point
         - approach speed
-    - do continuous approach/ sampling instead of stepping down
+    
     - handle not reaching surface in hopping mode
     
     - check on opening new file procedure (might overwrite/ not save)
@@ -144,6 +144,7 @@ class MasterModule(Logger):
         # submodule should call master.make_ready() after
         # aborting process
         self.ABORT = True
+        self.PicoMotor.halt()
         run(self.make_ready)
     
     
@@ -466,6 +467,7 @@ class GUI(Logger):
         Label(z_piezo_control, text='Steps:').grid(row=0, column=0, sticky=(W,E))
         Entry(z_piezo_control, textvariable=self._piezosteps, width=8).grid(row=0, column=1, sticky=(W,E))
         Button(z_piezo_control, text='Go', command=self.z_piezo_go).grid(row=0, column=2, sticky=(W,E))
+        Label(z_piezo_control, text='(1 step = ~30 nm)').grid(row=0, column=3, sticky=(W))
         Button(z_piezo_control, text='Stop', command=self.z_piezo_stop).grid(row=1, column=2, sticky=(W,E))
         
         
@@ -727,11 +729,17 @@ class GUI(Logger):
         voltage = 400
         
         func = partial(self.master.FeedbackController.approach,
-                       voltage)
+                       height)
         run(func)
+        
+        
+    def run_automatic_approach(self):
+        self.set_amplifier()
+        run(self.master.FeedbackController.automatic_approach)
         
     
     def run_hopping(self):
+        self.set_amplifier()
         func = partial(self.master.FeedbackController.hopping_mode,
                         self.params['hopping'])
         run(func)

@@ -53,9 +53,42 @@ class FeedbackController(Logger):
         self.Piezo = self.master.Piezo
         self.ADC = self.master.ADC
         self.HekaWriter = self.master.HekaWriter
-
+        
+        self._is_running = False
     
-    def approach(self, voltage:float=400, start_coords:tuple=None):
+    
+    def automatic_approach(self):
+        '''
+        Procedure which runs approach curve using XYZ piezo. If the surface
+        is not reached, step the PicoMotor up ~60 nm. Continue running approach
+        curves until the surface is found.
+        '''
+        height = 10
+        if self._is_running:
+            self.log('Received another command but already running!')
+            return
+        while True:
+            if self.master.ABORT:
+                break
+
+            _, on_surface = self.approach(height=height)
+            
+            if self.master.ABORT:
+                break
+            
+            if on_surface:
+                break
+            
+            self.Piezo.goto(0,0,height)
+            time.sleep(0.05)
+            self.master.PicoMotor.step(2000) # 2000 steps ~= 60 um
+            time.sleep(3)      
+        self.Piezo.start_monitoring()
+        return
+    
+    
+    def approach(self, height:float=None, voltage:float=400, 
+                 start_coords:tuple=None):
         '''
         voltage: float, mV
         start_coords: tuple, (x,y,z). Starting point to approach from
@@ -83,6 +116,9 @@ class FeedbackController(Logger):
         if not start_coords:
             start_coords = (0,0,80)
         x, y, z_start = start_coords
+        if height:
+            z_start = height
+            
         self.Piezo.goto(x, y, z_start)
         self.Piezo.stop_monitoring()
         
@@ -91,14 +127,18 @@ class FeedbackController(Logger):
         gain = 1e9 * self.master.GUI.amp_params['float_gain']
         self.ADC.set_sample_rate(200)
         run(partial(self.ADC.polling, 60))
-        time.sleep(0.1)
+        time.sleep(0.005)
+        
 
         # Start it
         run(partial(self.Piezo.approach, speed))
         
         on_surface = False
+        time.sleep(0.1)
         while True:
             if self.master.ABORT:
+                break
+            if not self.Piezo._is_running:
                 break
             
             _, _, I = self.ADC.pollingdata.get_data()
@@ -117,8 +157,7 @@ class FeedbackController(Logger):
         
         self.ADC.STOP_POLLING()  
         self.Piezo.start_monitoring()
-        self.master.make_ready()
-        return self.Piezo.z
+        return self.Piezo.z, on_surface
     
     
     def fake_CV(self, i):
@@ -222,7 +261,6 @@ class FeedbackController(Logger):
             self.Piezo.goto(curr_x, curr_y, z_max) # retract
             if self.master.ABORT:
                 self.log('Hopping mode aborted')
-                self.master.make_ready()
                 return
             if not self.master.TEST_MODE:
                 z = self.approach(start_coords = (x, y, z_max))
@@ -239,6 +277,7 @@ class FeedbackController(Logger):
             expt.save()
             time.sleep(0.01)
         
+        self.Piezo.goto(curr_x, curr_y, z_max)
         self.master.expt = expt
             
         return 

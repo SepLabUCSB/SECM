@@ -41,6 +41,11 @@ def make_approach_window(gui, master_frame):
     
     Button(frame, text='Approach', 
            command=gui.run_approach_curve).grid(column=3, row=5)
+   
+    Label(frame, text=' ').grid(column=0, row=6)
+    Button(frame, text='Automatic Approach',
+           command=gui.run_automatic_approach).grid(
+               row=7, column = 3, columnspan=2, sticky=(W))
     
     ttk.Label(frame, text='    ').grid(column=5, row=5)
     

@@ -19,6 +19,7 @@ class Piezo(Logger):
         self._piezo_on = False
         self._is_monitoring = False
         self._stop_monitoring = False
+        self._is_running = False
         
         if not self.master.TEST_MODE:
             self.setup_piezo()
@@ -165,7 +166,7 @@ class Piezo(Logger):
         
         step_size  = 0.05            # step size um
         step_delay = step_size/speed  # step time in s
-        while step_delay < 0.25:
+        while step_delay < 0.025:
             step_size *= 2
             step_delay = step_size/speed
         self.log(f'Running approach curve with step size {step_size} um, dwell time {step_delay} s')
@@ -175,6 +176,7 @@ class Piezo(Logger):
         x,y,z = self.measure_loc()
                 
         while z > 0:
+            self._is_running = True
             if self.master.ABORT:
                 break
             if self._halt:
@@ -187,6 +189,7 @@ class Piezo(Logger):
         self.x, self.y, self.z = self.measure_loc()
         self.start_monitoring()
         self._halt = False
+        self._is_running = False
         return
     
     
