@@ -16,7 +16,7 @@ from modules.Piezo import Piezo
 from modules.FeedbackController import FeedbackController
 from modules.Plotter import Plotter
 from modules.DataStorage import Experiment, load_from_file
-from modules.PicoMotor import PicoMotor
+from modules.Picomotor import PicoMotor
 from utils.utils import run, Logger
 from gui import *
 
