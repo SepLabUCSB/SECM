@@ -33,9 +33,7 @@ TEST_MODE = False
     
 '''
 TODO:
-    
-    - PicoMotor backend lib location
-    
+        
     - set retract speed in hopping mode
     
     - More approach curve options

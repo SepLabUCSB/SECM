@@ -1,5 +1,6 @@
 import usb.core
 import usb.util
+from usb.backend import libusb1
 import re
 from utils.utils import Logger
 
@@ -67,7 +68,8 @@ class PicoMotor(Logger):
             Assert False: if the input and outgoing endpoints can't be established
         """
         # find the device
-        backend = usb.backend.libusb1.get_backend(find_library=lambda x: "C:/Users/BRoehrich/Desktop/git/SECM/modules/libusb-1.0.dll")
+        backend = libusb1.get_backend(find_library=lambda x: "modules/libusb-1.0.dll")
+        
         # TODO: Fix backend path!! ^^
         self.dev = usb.core.find(
                         backend=backend,
@@ -80,7 +82,6 @@ class PicoMotor(Logger):
 
         # set the active configuration. With no arguments, the first
         # configuration will be the active one
-        # self.dev.reset()
         self.dev.set_configuration()
 
         # get an endpoint instance
