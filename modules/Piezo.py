@@ -15,11 +15,12 @@ class Piezo(Logger):
         self.y = 0
         self.z = 50
         self.starting_coords = (0,0)
+        self.counter = 0
         self._halt = False
         self._piezo_on = False
         self._is_monitoring = False
         self._stop_monitoring = False
-        self._is_running = False
+        self._moving = False
         
         if not self.master.TEST_MODE:
             self.setup_piezo()
@@ -94,9 +95,10 @@ class Piezo(Logger):
         while True:
             if self._stop_monitoring:
                 self._stop_monitoring = False
+                self._is_monitoring = False
                 return
             self._is_monitoring = True
-            self.x, self.y, self.z = self.measure_loc()
+            self.measure_loc()
             time.sleep(0.5)
             
         
@@ -104,19 +106,27 @@ class Piezo(Logger):
     def measure_loc(self):
         if not self._piezo_on:
             return (-1,-1,-1)
+        
+        # Don't try to measure during movement
+        if self._moving:
+            return (self.x, self.y, self.z)
+        
         self.port.read_all()
         self.write('measure')
         time.sleep(0.001)
+        
         # output from controller terminates with '\r'
         location = self.port.read_until(b'\r').decode('utf-8')
         try:
             location = location.split('aw')[1]
             _, x, y, z = location.strip('\r').split(',')
+            self.x, self.y, self.z = float(x), float(y), float(z)
+            return (self.x, self.y, self.z)
         except:
-            # print(f'Error measuring location. Received: {location}')
-            return (-10,-10,-10)
+            self.log(f'Error measuring location. Received: {location}')
+            return (self.x, self.y, self.z)
         
-        return float(x), float(y), float(z)
+        
         
     
     # Return current x,y,z
@@ -140,7 +150,9 @@ class Piezo(Logger):
         
         if self._piezo_on:
             cmd = f'setall,{x},{y},{z}'
+            self._moving = True
             self.write(cmd)
+            self._moving = False
     
     
     ########################################
@@ -163,7 +175,6 @@ class Piezo(Logger):
         
         speed: float, approach speed in um/s
         '''
-        
         step_size  = 0.05            # step size um
         step_delay = step_size/speed  # step time in s
         while step_delay < 0.025:
@@ -176,7 +187,7 @@ class Piezo(Logger):
         x,y,z = self.measure_loc()
                 
         while z > 0:
-            self._is_running = True
+            self._moving = True
             if self.master.ABORT:
                 break
             if self._halt:
@@ -185,11 +196,11 @@ class Piezo(Logger):
             self.goto(x,y,z)
             self.x, self.y, self.z = x,y,z
             time.sleep(step_delay)
-            
+        
         self.x, self.y, self.z = self.measure_loc()
-        self.start_monitoring()
+        self.counter += 1
         self._halt = False
-        self._is_running = False
+        self._moving = False
         return
     
     
@@ -203,6 +214,7 @@ class Piezo(Logger):
         height: float, target z height
         speed: float, approach speed in um/s
         '''
+        
         step_size  = 0.05            # step size um
         step_delay = step_size/speed  # step time in s
         
@@ -212,8 +224,10 @@ class Piezo(Logger):
         
         if relative:
             height += z
-                
+        
+        self.log(f'Retracting to {height}, currently at {z}')
         while z < height:
+            self._moving = True
             if self.master.ABORT:
                 break
             if self._halt:
@@ -222,9 +236,11 @@ class Piezo(Logger):
             self.goto(x,y,z)
             self.x, self.y, self.z = x,y,z
             time.sleep(step_delay)
-            
-        self.start_monitoring()
+        
+        self.log(f'Finished retracting, current height {z}')
+        self.counter += 1
         self._halt = False
+        self._moving = False
         return
     
     
@@ -337,7 +353,7 @@ if __name__ == '__main__':
         
     
     
-    
+    piezo.stop()
     
     
     

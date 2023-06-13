@@ -195,6 +195,8 @@ class DataPoint:
         # Return requested value (for heatmap display)
         # Overwrite in subclasses
         if datatype == 'z':
+            if type(self.loc[2]) == tuple:
+                return self.loc[2][0]
             return self.loc[2]
         return self.data
     

@@ -731,7 +731,12 @@ class GUI(Logger):
         func = partial(self.master.FeedbackController.approach,
                        height)
         run(func)
-        
+    
+    
+    def run_retract(self):
+        func = partial(self.master.Piezo.retract, 10, 1, True)
+        run(func)
+    
         
     def run_automatic_approach(self):
         self.set_amplifier()
@@ -841,6 +846,8 @@ if __name__ == '__main__':
 
     if not master.TEST_MODE:
         adc.stop()
+        piezo.stop()
+        motor.stop()
     
     
     sys.stdout = default_stdout

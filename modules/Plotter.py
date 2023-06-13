@@ -280,15 +280,24 @@ class Plotter(Logger):
     def update_figs(self, **kwargs):
         
         pollingData = self.master.ADC.pollingdata
-        if checksum(self.data1) != self.last_data1checksum:
-            self.update_fig1()
+        try:
+            if checksum(self.data1) != self.last_data1checksum:
+                self.update_fig1()
+        except Exception as e:
+            self.log(f'Error updating heatmap!')
+            self.log(e)
+            # print(self.data1)
         
-        if checksum(pollingData) != self.last_data2checksum:
-            if (hasattr(self, 'fig2data') and 
-                id(pollingData) != id(self.fig2data) and
-                not self.FIG2_FORCED):
-                self.init_echem_fig()
-            self.update_fig2()        
+        try:
+            if checksum(pollingData) != self.last_data2checksum:
+                if (hasattr(self, 'fig2data') and 
+                    id(pollingData) != id(self.fig2data) and
+                    not self.FIG2_FORCED):
+                    self.init_echem_fig()
+                self.update_fig2()       
+        except Exception as e:
+            self.log(f'Error updating echem figure!')
+            self.log(e)
         
         self.master.GUI.root.after(100, self.update_figs)
         return

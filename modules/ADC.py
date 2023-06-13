@@ -192,7 +192,7 @@ class ADC(Logger):
         self.port.reset_input_buffer()
         self.port.write(b"start\r")
         self.polling_on()
-        self.log('Starting polling', quiet=False)
+        self.log('Starting polling', quiet=True)
         
         
         idx = 0

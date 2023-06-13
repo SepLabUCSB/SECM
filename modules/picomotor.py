@@ -52,10 +52,11 @@ class PicoMotor(Logger):
     def stop(self):
         if self.master.TEST_MODE:
             return
-        self.dev.reset()
-        usb.util.dispose_resources(self.dev)
-        del self.dev
-        self.log('USB interface closed')
+        if hasattr(self, 'dev'):
+            self.dev.reset()
+            usb.util.dispose_resources(self.dev)
+            del self.dev
+            self.log('USB interface closed')
 
 
     def _connect(self):
