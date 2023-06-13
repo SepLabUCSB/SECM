@@ -195,8 +195,6 @@ class DataPoint:
         # Return requested value (for heatmap display)
         # Overwrite in subclasses
         if datatype == 'z':
-            if type(self.loc[2]) == tuple:
-                return self.loc[2][0]
             return self.loc[2]
         return self.data
     
@@ -254,6 +252,9 @@ class CVDataPoint(DataPoint):
             etc
         '''
         if datatype == 'z':
+            # Handle early bug in some saved data
+            if type(self.loc[2]) == tuple:
+                return self.loc[2][0]
             return self.loc[2]
         if datatype=='max':
             return max(self.data[2])

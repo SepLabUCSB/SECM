@@ -19,7 +19,10 @@ def checksum(data):
     
     if type(data) == np.ndarray:
         # Heatmap type data
-        return data.sum()
+        try:
+            return data.flatten().sum()
+        except:
+            return 0
     if type(data) == list:
         # CV curve type data
         # From polling ADC, of form [ [idxs], [times], [*data] ]
@@ -269,6 +272,8 @@ class Plotter(Logger):
             idx, closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
             self.set_echemdata(closest_datapoint, sample_freq=10000)
             x0, y0, z0 = closest_datapoint.loc
+            if type(z0) == tuple:
+                z0 = z0[0] # Handle early bug in some saved data
             val = self.data1.flatten()[idx]
             print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {val}')
         return 
@@ -286,7 +291,6 @@ class Plotter(Logger):
         except Exception as e:
             self.log(f'Error updating heatmap!')
             self.log(e)
-            # print(self.data1)
         
         try:
             if checksum(pollingData) != self.last_data2checksum:
