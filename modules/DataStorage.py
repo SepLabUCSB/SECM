@@ -177,6 +177,17 @@ class Experiment:
                 idx = i
         return idx, closest
     
+    
+    def save_to_folder(self, path):
+        '''
+        Export all data to the specified path
+        '''
+        os.makedirs(path, exist_ok = True)
+        for j, row in enumerate(self.data):
+            for i, pt in enumerate(row):
+                fname = os.path.join(path, f'{i:02}_{j:02}.csv')
+                pt.save(path=fname)
+    
   
     
 # Base DataPoint class
@@ -200,7 +211,18 @@ class DataPoint:
     
     def get_data(self):
         # Return all data
-        return self.data    
+        return self.data  
+    
+    def save(self, path):
+        # Write contents of self to given path
+        with open(path, 'w') as f:
+            f.write(f'Coordinates:{self.loc}\n')
+        self._save(path)
+    
+    def _save(self, path):
+        # Overwrite in subclasses
+        pass
+            
 
 
 class ADCDataPoint(DataPoint):
@@ -239,6 +261,10 @@ class SinglePoint(DataPoint):
         if datatype == 'z':
             return self.loc[2]
         return self.data
+    
+    def _save(self, path):
+        with open(path, 'a') as f:
+            f.write(self.data)
 
 
 
@@ -268,6 +294,12 @@ class CVDataPoint(DataPoint):
     
     def get_data(self):
         return self.data
+    
+    def _save(self, path):
+        with open(path, 'a') as f:
+            f.write('t,V,I')
+            for t, V, I in zip(self.data[0], self.data[1], self.data[2]):
+                f.write(f'{t},{V},{I}\n')
     
     
 
