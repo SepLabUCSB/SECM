@@ -132,6 +132,8 @@ class PicoMotor(Logger):
             Character representation of returned hex values if a reply is 
                 requested
         """
+        if self.master.TEST_MODE:
+            return
         self.ep_out.write(usb_command)
         if get_reply:
             return self.ep_in.read(100)
@@ -200,6 +202,8 @@ class PicoMotor(Logger):
         Returns:
             reply (str): Human readable reply from controller
         """
+        if self.master.TEST_MODE:
+            return
         usb_command = self.parse_command(newfocus_command)
 
         # if there is a '?' in the command, the user expects a response from

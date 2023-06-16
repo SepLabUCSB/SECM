@@ -175,6 +175,7 @@ class Piezo(Logger):
         
         speed: float, approach speed in um/s
         '''
+        
         step_size  = 0.05            # step size um
         step_delay = step_size/speed  # step time in s
         while step_delay < 0.025:

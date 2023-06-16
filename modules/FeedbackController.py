@@ -98,6 +98,10 @@ class FeedbackController(Logger):
     def approach(self, height:float=None, voltage:float=400, 
                  start_coords:tuple=None):
         '''
+        Run an approach curve. If no parameters are given, start from 
+        the current position. Otherwise, start from the set height, or
+        from the set coordinates.
+        
         voltage: float, mV
         start_coords: tuple, (x,y,z). Starting point to approach from
         
@@ -122,10 +126,11 @@ class FeedbackController(Logger):
         
         # Setup piezo
         if not start_coords:
-            start_coords = (0,0,80)
+            start_coords = self.Piezo.measure_loc()
         x, y, z_start = start_coords
         if height:
             z_start = height
+            
         self.log(f'Starting approach curve from {x}, {y}, {z_start}')
         self.Piezo.stop_monitoring()
         # self.Piezo.goto(x, y, z_start)
@@ -146,12 +151,15 @@ class FeedbackController(Logger):
         on_surface = False
         time.sleep(0.1)
         while True:
+            '''
+            Loop checks if approach curve is finished due to
+            1. global abort
+            2. piezo at movement limit
+            3. current > cutoff criterium
+            '''
             if self.master.ABORT:
                 self.log('stopped approach on abort')
                 break
-            # if not self.Piezo._moving:
-            #     self.log('Piezo stopped moving')
-            #     break
             if self.Piezo.counter != self._piezo_counter:
                 self.log('piezo stopped')
                 break
@@ -273,7 +281,7 @@ class FeedbackController(Logger):
         self.log(f'Starting approach curves from {height}')
         for i, (x, y) in enumerate(points):
             curr_x, curr_y, curr_z = self.Piezo.measure_loc()
-            if i != 0:
+            if (i != 0) and (not self.master.TEST_MODE):
                 self.Piezo.retract(height=10, speed=1, relative=True)
             # time.sleep(0.3)
             self.Piezo.goto(x, y, z_max) # retract
