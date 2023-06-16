@@ -35,24 +35,10 @@ TEST_MODE = False
 TODO:
         
     - Make FeedbackController threadsafe
-    
-    - More approach curve options
-        - starting height based on last point
-        - approach speed
-    
-    - handle not reaching surface in hopping mode
-    
+        
     - check on opening new file procedure (might overwrite/ not save)
-    - close ADC, Piezo controller, PicoMotor nicely
-    
-    - automatically do initial approach with PicoMotor
     
     - steamline echem running process    
-    
-    - adjust location of scalebar on heatmap
-        - handle negative numbers better
-    
-    
     
     Make separate data viewer to make high quality figures
     
@@ -839,6 +825,10 @@ if __name__ == '__main__':
     except Exception as e:
         # Catch exceptions to make sure adc port closes and 
         # stdout resets to default
+        try:
+            root.quit()
+        except:
+            pass
         sys.stdout = default_stdout
         sys.stdin  = default_stdin
         sys.stderr = default_stderr
