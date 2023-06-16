@@ -332,8 +332,10 @@ class Plotter(Logger):
         self.image1 = self.ax1.imshow(np.array([
             np.array([0 for _ in range(10)]) for _ in range(10)
             ], dtype=np.float32), cmap='afmhot', origin='upper')
-        self.fig1.colorbar(self.image1, ax=self.ax1, shrink=0.5,
-                           pad=0.02, )
+        cb = self.fig1.colorbar(self.image1, ax=self.ax1, shrink=0.5,
+                                pad=0.02, format="%0.1e")
+        cb.ax.tick_params(labelsize=14)
+        
         self.ax1.set_xlabel(r'$\mu$m')
         self.ax1.set_ylabel(r'$\mu$m')
         self.ax1.spines['right'].set_visible(True)
