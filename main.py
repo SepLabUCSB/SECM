@@ -6,6 +6,7 @@ import traceback
 import tracemalloc
 import json
 import sys
+import os
 from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -222,6 +223,7 @@ class GUI(Logger):
         menu_file.add_command(label='Open...', command=self.openFile)
         menu_file.add_command(label='Save', command=self.save)
         menu_file.add_command(label='Save as...', command=self.saveAs)
+        menu_file.add_command(label='Export...', command=self.export)
         menu_file.add_command(label='Quit', command=self.Quit)
         
         menu_settings.add_command(label='Save settings...', command=self.save_settings)
@@ -530,6 +532,25 @@ class GUI(Logger):
                 defaultextension='.secmdata', initialdir='D:\SECM\Data')
             if not f: return
             self.master.expt.save(f)
+            
+    # export current file to folder of CSV's for each data point
+    def export(self):
+        if self.master.expt:
+            f = filedialog.askdirectory(
+                title='Select folder to save to',
+                initialdir='D:\SECM\Data', mustexist=False,
+                multiple=False)
+            if not f: return
+            
+            if os.path.exists(f):
+                if len(os.listdir(f)) > 0:
+                    confirm = messagebox.askyesno('Save to existing folder?',
+                              'Warning! Folder already exists and is not empty. Data in folder may be overwritten.')
+                    if not confirm:
+                        return
+            
+            self.master.expt.save_to_folder(f)
+            
     
     def savePrevious(self):
         if self.master.TEST_MODE: return
