@@ -138,6 +138,8 @@ class MasterModule(Logger):
     def make_ready(self):
         time.sleep(2) # wait for other threads to abort
         self.ABORT = False
+        # Manual restarts
+        self.Piezo.start_monitoring()
         
     
     def endState(self):
