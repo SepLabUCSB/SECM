@@ -538,14 +538,13 @@ class GUI(Logger):
         if self.master.expt:
             f = filedialog.askdirectory(
                 title='Select folder to save to',
-                initialdir='D:\SECM\Data', mustexist=False,
-                multiple=False)
+                initialdir='D:\SECM\Data', mustexist=False)
             if not f: return
             
             if os.path.exists(f):
                 if len(os.listdir(f)) > 0:
                     confirm = messagebox.askyesno('Save to existing folder?',
-                              'Warning! Folder already exists and is not empty. Data in folder may be overwritten.')
+                              'Warning! Folder already exists and is not empty. Data in folder may be overwritten. Continue saving?')
                     if not confirm:
                         return
             

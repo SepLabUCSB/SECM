@@ -185,7 +185,9 @@ class Experiment:
         os.makedirs(path, exist_ok = True)
         for j, row in enumerate(self.data):
             for i, pt in enumerate(row):
-                fname = os.path.join(path, f'{i:02}_{j:02}.csv')
+                if 'SinglePoint' in pt.__repr__():
+                    continue
+                fname = os.path.join(path, f'{i:02}_{j:02}.asc')
                 pt.save(path=fname)
     
   
@@ -216,7 +218,9 @@ class DataPoint:
     def save(self, path):
         # Write contents of self to given path
         with open(path, 'w') as f:
-            f.write(f'Coordinates:{self.loc}\n')
+            x, y, z = self.loc
+            f.write(f'xyz (um):\n')
+            f.write(f'{x:0.3f}\t{y:0.3f}\t{z:0.3f}\n')
         self._save(path)
     
     def _save(self, path):
@@ -263,8 +267,9 @@ class SinglePoint(DataPoint):
         return self.data
     
     def _save(self, path):
-        with open(path, 'a') as f:
-            f.write(self.data)
+        # Don't save data of this type 
+        # (used as placeholder in scanning grid)
+        pass
 
 
 
@@ -297,9 +302,9 @@ class CVDataPoint(DataPoint):
     
     def _save(self, path):
         with open(path, 'a') as f:
-            f.write('t,V,I')
+            f.write('t/s\tE/V\tI/A\n')
             for t, V, I in zip(self.data[0], self.data[1], self.data[2]):
-                f.write(f'{t},{V},{I}\n')
+                f.write(f'{t}\t{V}\t{I}\n')
     
     
 
