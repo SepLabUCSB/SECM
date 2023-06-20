@@ -218,9 +218,11 @@ class HekaWriter(Logger):
         current DataFile path) and copy the file to the desired path
         '''
         self.send_command('GetParameters DataFile')
-        # while True:
-        response = self.master.HekaReader.last[1]
-            # if response[1].startswith('Reply'): break
+        st = time.time()
+        while time.time() - st < 1:
+            response = self.master.HekaReader.last[1]
+            if response[1].startswith('Reply_GetParameters'): 
+                break
         
         savepath = response.lstrip('Reply_GetParameters ').strip('"')
         savepath = savepath.replace('.dat', '')
