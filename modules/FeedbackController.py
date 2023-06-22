@@ -184,60 +184,6 @@ class FeedbackController(Logger):
         return self.Piezo.z, on_surface
     
     
-    def fake_CV(self, i):
-        # Generate fake data for testing piezo
-        voltage = np.linspace(0, 0.5, 50)
-        max_I = 100*np.random.rand()
-        current = np.linspace(0, i*1e-9, 50)
-        return voltage, current
-    
-    
-    def run_CV(self, save_path, name):
-        if self.master.TEST_MODE:
-            return self.fake_CV(name)
-        
-        if save_path.endswith('.secmdata'):
-            save_path = save_path.replace('.secmdata', '')
-            
-        path = self.master.HekaWriter.run_measurement_loop(
-                                           'CV',
-                                           save_path=save_path,
-                                           name=name
-                                           )
-        output = read_heka_data(path)
-        _, t, i, _, v = output
-        return v, i
-    
-
-    def potentiostat_setup(self, expt_type):
-        if self.master.TEST_MODE:
-            return True
-        if expt_type == 'CV':
-            self.master.GUI.set_amplifier()
-            CV_vals = self.master.GUI.get_CV_params()
-            if CV_vals == (0,0,0,0,0,0):
-                return False
-            self.master.HekaWriter.setup_CV(*CV_vals)
-            return True
-        return False
-    
-    def run_echems(self, expt_type, expt, loc, i):
-        '''
-        Run echem experiments defined by expt_type at loc (x,y,z).
-        
-        Save .asc(s) to appropriate folder
-        
-        Return         
-        '''
-        if expt_type == 'CV':
-            voltage, current = self.run_CV(expt.path, i)
-                
-            data = CVDataPoint(loc = loc, data = [np.linspace(0,1,len(voltage)),
-                                                   voltage, current])
-                        
-        return data
-    
-    
     def hopping_mode(self, params, expt_type='CV'):
         '''
         Run a hopping mode scan.
@@ -309,6 +255,90 @@ class FeedbackController(Logger):
             
         return 
 
+    ###############################
+    #### POTENTIOSTAT CONTROLS ####
+    ###############################
+    
+    def potentiostat_setup(self, expt_type):
+        if self.master.TEST_MODE:
+            return True
+        if expt_type == 'CV':
+            self.master.GUI.set_amplifier()
+            CV_vals = self.master.GUI.get_CV_params()
+            if CV_vals == (0,0,0,0,0,0):
+                return False
+            self.master.HekaWriter.setup_CV(*CV_vals)
+            return True
+        return False
+    
+    
+    def run_echems(self, expt_type, expt, loc, i):
+        '''
+        Run echem experiments defined by expt_type at loc (x,y,z).
+        
+        Save .asc(s) to appropriate folder
+        
+        Return         
+        '''
+        if expt_type == 'CV':
+            voltage, current = self.run_CV(expt.path, i)
+                
+            data = CVDataPoint(loc = loc, data = [np.linspace(0,1,len(voltage)),
+                                                   voltage, current])
+        
+        if expt_type == 'Custom':
+            output = self.run_custom(expt.path, i)
+            
+            data = CVDataPoint(loc = loc, data = output)
+                        
+        return data
+    
+    def fake_CV(self, i):
+        # Generate fake data for testing piezo
+        voltage = np.linspace(0, 0.5, 50)
+        max_I = 100*np.random.rand()
+        current = np.linspace(0, i*1e-9, 50)
+        return voltage, current
+    
+    
+    def run_CV(self, save_path, name):
+        '''
+        Send command to run CV with the current parameters and save the data
+        '''
+        if self.master.TEST_MODE:
+            return self.fake_CV(name)
+        
+        if save_path.endswith('.secmdata'):
+            save_path = save_path.replace('.secmdata', '')
+            
+        path = self.master.HekaWriter.run_measurement_loop(
+                                           'CV',
+                                           save_path=save_path,
+                                           name=name
+                                           )
+        output = read_heka_data(path)
+        _, t, i, _, v = output
+        return v, i
+    
+    
+    def run_custom(self, save_path, name):
+        if self.master.TEST_MODE:
+            return self.fake_CV(name)
+        
+        if save_path.endswith('.secmdata'):
+            save_path = save_path.replace('.secmdata', '')
+            
+        path = self.master.HekaWriter.run_measurement_loop(
+            'Custom', save_path = save_path, name=name)
+        
+        output = read_heka_data(path)
+        return output
+    
+
+    
+    
+    
+    
     
 
 
