@@ -5,7 +5,7 @@ from functools import partial
 
 from utils.utils import focus_next_widget, run
 
-methods = ['CV', ]
+methods = ['CV', 'Custom']
 
 
 def make_hopping_window(gui, master_frame):
@@ -57,8 +57,6 @@ def make_hopping_window(gui, master_frame):
         }
     return hopping_params
     
-    
-def func(): print('running')
 
 if __name__ == '__main__':
     root = Tk()

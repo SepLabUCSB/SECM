@@ -363,6 +363,13 @@ class HekaWriter(Logger):
         return
     
     
+    def run_custom(self):
+        '''
+        Run the custom, user-set PGF file
+        '''
+        return
+    
+    
     def run_measurement_loop(self, measurement_type, save_path=None, name=''):
         '''
         measurement_type: 'CV', 'CA', 'EIS'. Defines what to run
@@ -379,6 +386,9 @@ class HekaWriter(Logger):
         elif measurement_type == 'EIS':
             run_func = self.run_EIS
             duration = self.EIS_duration
+        elif measurement_type == 'Custom':
+            run_func = self.run_custom
+            duration = 3600
         else:
             print('Internal error: invalid measurement_type')
             return
