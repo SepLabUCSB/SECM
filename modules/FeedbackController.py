@@ -184,7 +184,7 @@ class FeedbackController(Logger):
         return self.Piezo.z, on_surface
     
     
-    def hopping_mode(self, params, expt_type='CV'):
+    def hopping_mode(self, params):
         '''
         Run a hopping mode scan.
         
@@ -195,7 +195,7 @@ class FeedbackController(Logger):
         length = params['size'].get('1.0', 'end')
         height = params['Z'].get('1.0', 'end')
         n_pts  = params['n_pts'].get('1.0', 'end')
-        method = params['method'].get()
+        expt_type = params['method'].get()
         
         length = float(length) 
         z_max  = float(height)
@@ -251,7 +251,7 @@ class FeedbackController(Logger):
             z, _ = self.approach(forced_step_size=forced_step_size)
             
             # Run echem experiment on surface
-            data = self.run_echems('CV', expt, (x, y, z), i) # TODO: run variable echem experiment(s) at each pt
+            data = self.run_echems(expt_type, expt, (x, y, z), i) # TODO: run variable echem experiment(s) at each pt
             
             # Save data
             grid_i, grid_j = order[i]  
@@ -277,6 +277,7 @@ class FeedbackController(Logger):
     def potentiostat_setup(self, expt_type):
         if self.master.TEST_MODE:
             return True
+        
         if expt_type == 'CV':
             self.master.GUI.set_amplifier()
             CV_vals = self.master.GUI.get_CV_params()
@@ -284,6 +285,11 @@ class FeedbackController(Logger):
                 return False
             self.master.HekaWriter.setup_CV(*CV_vals)
             return True
+        
+        if expt_type == 'Custom':
+            self.master.GUI.set_amplifier()
+            return True
+        
         return False
     
     
@@ -302,9 +308,10 @@ class FeedbackController(Logger):
                                                    voltage, current])
         
         if expt_type == 'Custom':
-            output = self.run_custom(expt.path, i)
+            voltage, current = self.run_custom(expt.path, i)
             
-            data = CVDataPoint(loc = loc, data = output)
+            data = CVDataPoint(loc = loc, data = [np.linspace(0,1,len(voltage)),
+                                                   voltage, current])
                         
         return data
     
@@ -347,7 +354,8 @@ class FeedbackController(Logger):
             'Custom', save_path = save_path, name=name)
         
         output = read_heka_data(path)
-        return output
+        _, t, i, _, v = output
+        return v, i
     
 
     

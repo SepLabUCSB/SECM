@@ -32,6 +32,7 @@ class Piezo(Logger):
         self.stop_monitoring()
         self.port.close()
         self.log('Serial port closed')
+        self._piezo_on = False
     
     
     def write_and_read(self, msg):

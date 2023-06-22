@@ -229,6 +229,16 @@ class HekaWriter(Logger):
         savepath += '.asc'
         if os.path.exists(savepath):
             os.remove(savepath)
+        
+        # Select Series level for full export
+        self.send_command('GetTarget')
+        while True:
+            if self.master.HekaReader.last[1].startswith('Reply_GetTarget'):
+                dat = self.master.HekaReader.last[1].split('  ')[1]
+                group, ser, sweep, trace, target = dat.split(',')
+                self.send_command(f'SetTarget {group},{ser},{sweep},{trace},2,TRUE,TRUE')
+                break
+        
         self.send_command(f'Export overwrite, {savepath}')
         
         st = time.time()
@@ -367,6 +377,7 @@ class HekaWriter(Logger):
         '''
         Run the custom, user-set PGF file
         '''
+        self.send_command('ExecuteSequence _custom')
         return
     
     
@@ -427,7 +438,7 @@ class HekaWriter(Logger):
             
         if not self.master.HekaReader.last[1] == 'Query_Idle':
             self.log(f'Experiment {measurement_type} failed!')
-            return
+            return          
         
         self.master.ADC.STOP_POLLING()
         

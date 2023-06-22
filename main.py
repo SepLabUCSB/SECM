@@ -850,10 +850,6 @@ if __name__ == '__main__':
     except Exception as e:
         # Catch exceptions to make sure adc port closes and 
         # stdout resets to default
-        try:
-            root.quit()
-        except:
-            pass
         sys.stdout = default_stdout
         sys.stdin  = default_stdin
         sys.stderr = default_stderr
@@ -864,7 +860,7 @@ if __name__ == '__main__':
         piezo.stop()
         motor.stop()
     
-    
+    root.quit()
     sys.stdout = default_stdout
     sys.stdin  = default_stdin
     sys.stderr = default_stderr
