@@ -55,7 +55,7 @@ class PicoMotor(Logger):
         if hasattr(self, 'dev'):
             self.dev.reset()
             usb.util.dispose_resources(self.dev)
-            del self.dev
+            # del self.dev
             self.log('USB interface closed')
 
 

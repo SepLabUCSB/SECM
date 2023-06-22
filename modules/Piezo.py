@@ -49,7 +49,7 @@ class Piezo(Logger):
         if not self._piezo_on:
             return
         self.port.write(f'{msg}\r'.encode('utf-8'))
-        r = self.port.read_all()
+        # r = self.port.read_all()
         # if r:
         #     self.log(r)
     
@@ -168,12 +168,14 @@ class Piezo(Logger):
          self._halt = True
         
         
-    def approach(self, speed):
+    def approach(self, speed, forced_step_size=None):
         '''
         Starting from the current location, reduce Z in small steps at
         the given speed until Z = 0 (or external stop command is received)
         
         speed: float, approach speed in um/s
+        forced_step_size: (Optional) float, step size in um. If given, step_size is 
+                          prioritized over speed
         '''
         
         step_size  = 0.05            # step size um
@@ -181,12 +183,17 @@ class Piezo(Logger):
         while step_delay < 0.025:
             step_size *= 2
             step_delay = step_size/speed
+        
+        if forced_step_size:
+            step_size = forced_step_size
+            step_delay = 0.001
+        
         self.log(f'Running approach curve with step size {step_size} um, dwell time {step_delay} s')
         
         # Stop periodic location checks
         self.stop_monitoring()
         x,y,z = self.measure_loc()
-                
+        # st = time.time()
         while z > 0:
             self._moving = True
             if self.master.ABORT:
@@ -195,6 +202,7 @@ class Piezo(Logger):
                 break
             z -= step_size
             self.goto(x,y,z)
+            # print(f'{time.time() - st:0.5f}, {z:0.5f}')
             self.x, self.y, self.z = x,y,z
             time.sleep(step_delay)
         
@@ -216,7 +224,7 @@ class Piezo(Logger):
         speed: float, approach speed in um/s
         '''
         
-        step_size  = 0.05            # step size um
+        step_size  = 0.01            # step size um
         step_delay = step_size/speed  # step time in s
         
         # Stop periodic location checks
@@ -233,6 +241,8 @@ class Piezo(Logger):
                 break
             if self._halt:
                 break
+            if z > 80:
+                break
             z += step_size
             self.goto(x,y,z)
             self.x, self.y, self.z = x,y,z
@@ -242,7 +252,7 @@ class Piezo(Logger):
         self.counter += 1
         self._halt = False
         self._moving = False
-        return
+        return z
     
     
     

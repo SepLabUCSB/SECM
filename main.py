@@ -52,7 +52,10 @@ TODO:
     
     SECM
     - point and click to move to point
-        
+
+Bugs:
+    - Running approach curve when PATCHMASTER isn't open raises an error
+    because master.GUI.amp_params doesn't have key 'float_gain'
     
 '''
 

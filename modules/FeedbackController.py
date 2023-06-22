@@ -96,7 +96,7 @@ class FeedbackController(Logger):
     
     
     def approach(self, height:float=None, voltage:float=400, 
-                 start_coords:tuple=None):
+                 start_coords:tuple=None, forced_step_size=None):
         '''
         Run an approach curve. If no parameters are given, start from 
         the current position. Otherwise, start from the set height, or
@@ -140,13 +140,13 @@ class FeedbackController(Logger):
         self.HekaWriter.macro(f'E Vhold {voltage}')
         gain = 1e9 * self.master.GUI.amp_params['float_gain']
         self.ADC.set_sample_rate(200)
-        run(partial(self.ADC.polling, 3000))
+        run(partial(self.ADC.polling, 5000))
         time.sleep(0.005)
         
 
         # Start it
         self._piezo_counter = self.Piezo.counter # Counter tracks when piezo stops
-        run(partial(self.Piezo.approach, speed))
+        run(partial(self.Piezo.approach, speed, forced_step_size))
         
         on_surface = False
         time.sleep(0.1)
@@ -164,8 +164,8 @@ class FeedbackController(Logger):
                 self.log('piezo stopped')
                 break
             
-            _, _, I = self.ADC.pollingdata.get_data()
-            I = np.abs(np.array(I[-10:]))
+            _, _, I = self.ADC.pollingdata.get_data(10)
+            I = np.abs(np.array(I))
             I /= gain # convert V -> I
             if any([val > i_cutoff for val in I]):
                 self.Piezo.halt()
@@ -275,26 +275,39 @@ class FeedbackController(Logger):
                                       xlim=(0,length),
                                       ylim=(0,length)
                                       )
-        
+        x,y,z = self.Piezo.measure_loc()
         self.log(f'Starting hopping mode {expt_type} scan')
-        z = z_max
         self.log(f'Starting approach curves from {height}')
+        
+        # height == -1 means retract the minimum amount at each point
+        if z_max == -1:
+            forced_step_size = 0.01
+        else:
+            forced_step_size = None
+        
         for i, (x, y) in enumerate(points):
-            curr_x, curr_y, curr_z = self.Piezo.measure_loc()
-            if (i != 0) and (not self.master.TEST_MODE):
-                self.Piezo.retract(height=10, speed=1, relative=True)
-            # time.sleep(0.3)
-            self.Piezo.goto(x, y, z_max) # retract
-            time.sleep(0.3)
+            
+            # Retract from surface
+            if (i !=0) and (not self.master.TEST_MODE):
+                z = self.Piezo.retract(height=6, speed=1, relative=True)
+            
+            # Retract to the given z_max, otherwise start from next (x,y) but current z
+            if z_max != -1:
+                z = z_max
+            self.Piezo.goto(x, y, z)
+            
+            time.sleep(0.1)
             if self.master.ABORT:
                 self.log('Hopping mode aborted')
                 return
-            if not self.master.TEST_MODE:
-                z, _ = self.approach(start_coords = (x, y, z_max))
             
-            # TODO: run variable echem experiment(s) at each pt
-            data = self.run_echems('CV', expt, (x, y, z), i)
-                
+            # Run approach at this point
+            z, _ = self.approach(forced_step_size=forced_step_size)
+            
+            # Run echem experiment on surface
+            data = self.run_echems('CV', expt, (x, y, z), i) # TODO: run variable echem experiment(s) at each pt
+            
+            # Save data
             grid_i, grid_j = order[i]  
             expt.set_datapoint( (grid_i, grid_j), data)
             
@@ -304,8 +317,10 @@ class FeedbackController(Logger):
             expt.save()
             time.sleep(0.01)
         
-        self.Piezo.goto(curr_x, curr_y, z_max)
-        self.master.expt = expt
+        
+        
+        # self.Piezo.goto(curr_x, curr_y, z_max)
+        # self.master.expt = expt
             
         return 
 

@@ -242,6 +242,14 @@ class ADCDataPoint(DataPoint):
             self.data[2].append(I)
         return     
 
+    def get_data(self, n=None):
+        '''
+        n: int, optional. Return last n data points
+        '''
+        if n:
+            return [l[-n:] for l in self.data]
+        return self.data
+
     def set_HEKA_gain(self, gain):
         self.gain = gain
         
