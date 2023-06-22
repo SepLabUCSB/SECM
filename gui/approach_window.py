@@ -11,6 +11,15 @@ def make_approach_window(gui, master_frame):
     frame = Frame(master_frame)
     frame.grid(column=1, row=1)
     
+    ttk.Label(frame, text='Voltage: ').grid(column=2, row=1, sticky=(E))
+    
+    V_field = Text(frame, height=1, width=1)
+    V_field.grid(column=3, row=1, sticky=(E,W))
+    V_field.insert('1.0', '400')
+    V_field.bind('<Tab>', focus_next_widget)
+    
+    Label(frame, text='mV').grid(column=4, row=1, sticky=(W))
+    
     ttk.Label(frame, text='    ').grid(column=1, row=1)
     ttk.Label(frame, text='Cutoff: ').grid(column=2, row=2, sticky=(E))
     ttk.Label(frame, text='    ').grid(column=5, row=3)
@@ -18,7 +27,7 @@ def make_approach_window(gui, master_frame):
     
     I_field = Text(frame, height=1, width=1)
     I_field.grid(column=3, row=2, sticky=(E,W))
-    I_field.insert('1.0', '10')
+    I_field.insert('1.0', '3')
     I_field.bind('<Tab>', focus_next_widget)
     
     Label(frame, text='pA').grid(column=4, row=2, sticky=(W))
@@ -35,7 +44,7 @@ def make_approach_window(gui, master_frame):
     ttk.Label(frame, text='Speed: ').grid(column=2, row=4, sticky=(E))
     speed_field = Text(frame, height=1, width=1)
     speed_field.grid(column=3, row=4, sticky=(E,W))
-    speed_field.insert('1.0', '1')
+    speed_field.insert('1.0', '2')
     speed_field.bind('<Tab>', focus_next_widget)
     Label(frame, text='um/s').grid(column=4, row=4, sticky=(W))
     
@@ -51,7 +60,8 @@ def make_approach_window(gui, master_frame):
     
     ttk.Label(frame, text='    ').grid(column=5, row=5)
     
-    approach_params = {'cutoff': I_field,
+    approach_params = {'voltage': V_field,
+                       'cutoff': I_field,
                        'z_height': Z_field,
                        'approach_speed': speed_field,}
     

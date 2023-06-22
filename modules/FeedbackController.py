@@ -110,19 +110,18 @@ class FeedbackController(Logger):
         '''
         
         # Get cutoff current from GUI
-        cutoff = self.master.GUI.params['approach']['cutoff'].get('1.0', 'end')
-        speed  = self.master.GUI.params['approach']['approach_speed'].get('1.0', 'end')
+        voltage = self.master.GUI.params['approach']['voltage'].get('1.0', 'end')
+        cutoff  = self.master.GUI.params['approach']['cutoff'].get('1.0', 'end')
+        speed   = self.master.GUI.params['approach']['approach_speed'].get('1.0', 'end')
         try:
+            voltage = float(voltage)
             i_cutoff = float(cutoff) * 1e-12
-        except:
-            print('Invalid approach cutoff: {cutoff}')
+            speed = float(speed)
+        except Exception as e:
+            print('Invalid approach curve entry!')
+            print(e)
             return
         
-        try:
-            speed = float(speed)
-        except:
-            print('Invalid approach speed: {speed}')
-            return
         
         # Setup piezo
         if not start_coords:

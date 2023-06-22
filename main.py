@@ -411,7 +411,7 @@ class GUI(Logger):
         SECM_TABS.add(const_current, text=' Constant I ')
         SECM_TABS.add(const_height, text=' Constant Z ')
         SECM_TABS.pack(expand=1, fill='both')
-        SECM_TABS.select(hopping_mode)
+        SECM_TABS.select(approach_curve)
         
         
         self.params['approach'] = make_approach_window(self, approach_curve)
@@ -730,15 +730,10 @@ class GUI(Logger):
     
     def run_approach_curve(self):
         self.set_amplifier()
-        cutoff = self.params['approach']['cutoff'].get('1.0', 'end')
+        
         height = self.params['approach']['z_height'].get('1.0', 'end')
-        speed  = self.params['approach']['approach_speed'].get('1.0', 'end')
-        
-        cutoff  = float(cutoff) * 1e-12
         height  = float(height)
-        speed   = float(speed)
-        voltage = 400
-        
+
         func = partial(self.master.FeedbackController.approach,
                        height)
         run(func)
