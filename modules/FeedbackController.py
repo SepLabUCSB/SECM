@@ -247,7 +247,10 @@ class FeedbackController(Logger):
                 return
             
             # Run approach at this point
-            z, _ = self.approach(forced_step_size=forced_step_size)
+            z, on_surf = self.approach(forced_step_size=forced_step_size)
+            if not on_surf:
+                self.log('Hopping mode ended due to not reaching surface')
+                return
             
             # Run echem experiment on surface
             data = self.run_echems(expt_type, expt, (x, y, z), i) # TODO: run variable echem experiment(s) at each pt
