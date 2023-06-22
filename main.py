@@ -745,7 +745,7 @@ class GUI(Logger):
     
     
     def run_retract(self):
-        func = partial(self.master.Piezo.retract, 10, 1, True)
+        func = partial(self.master.Piezo.retract, 10, True)
         run(func)
     
         

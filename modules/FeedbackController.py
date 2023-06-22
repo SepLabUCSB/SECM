@@ -235,7 +235,7 @@ class FeedbackController(Logger):
             
             # Retract from surface
             if (i !=0) and (not self.master.TEST_MODE):
-                z = self.Piezo.retract(height=6, speed=1, relative=True)
+                z = self.Piezo.retract(height=6, relative=True)
             
             # Retract to the given z_max, otherwise start from next (x,y) but current z
             if z_max != -1:

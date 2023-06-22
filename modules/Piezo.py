@@ -214,7 +214,7 @@ class Piezo(Logger):
         return
     
     
-    def retract(self, height, speed, relative=False):
+    def retract(self, height, relative=False):
         '''
         Starting from the current location, increase Z in small steps at
         the given speed until Z = height
@@ -222,11 +222,10 @@ class Piezo(Logger):
         If relative == True, instead increase Z until Z = height + starting height
         
         height: float, target z height
-        speed: float, approach speed in um/s
+        speed: float, retract speed in um/s
         '''
         
         step_size  = 0.01            # step size um
-        step_delay = step_size/speed  # step time in s
         
         # Stop periodic location checks
         self.stop_monitoring()
@@ -247,7 +246,7 @@ class Piezo(Logger):
             z += step_size
             self.goto(x,y,z)
             self.x, self.y, self.z = x,y,z
-            time.sleep(step_delay)
+            time.sleep(0.001)
         
         self.log(f'Finished retracting, current height {z}')
         self.counter += 1
