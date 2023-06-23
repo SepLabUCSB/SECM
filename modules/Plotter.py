@@ -65,6 +65,16 @@ def get_clim(arr):
     return minval, maxval
 
 
+def set_cbar_ticklabels(cbar, clim):
+    # m0=int(np.floor(arr.min()))            # colorbar min value
+    # m1=int(np.ceil(arr.max()))             # colorbar max value
+    m0 = min(clim)
+    m1 = max(clim)
+    num_ticks = 5
+    ticks = np.linspace(m0, m1, num_ticks)
+    cbar.set_ticks(ticks)
+    cbar.set_ticklabels([f'{t:0.1e}' for t in ticks])
+
 
 def get_axval_axlabels(expt_type):
     #TODO: fix this or make sure it never happens
@@ -390,12 +400,14 @@ class Plotter(Logger):
             maxval = float(self.maxval.get())
         else:
             minval, maxval = get_clim(arr)
+            
         self.image1.set(clim=( minval, maxval) )
+        set_cbar_ticklabels(self.image1.colorbar, [minval, maxval])
+        
         left, right = self.ax1lim[0][0], self.ax1lim[0][1]
         bottom, top = self.ax1lim[1][0], self.ax1lim[1][1]
         self.image1.set_extent((left, right, bottom, top))
         self.ax1.draw_artist(self.image1)
-        # self.fig1.canvas.blit(self.fig1.bbox)
         self.fig1.canvas.draw_idle()
         self.last_data1checksum = checksum(self.data1)
         plt.pause(0.001)
@@ -417,8 +429,8 @@ class Plotter(Logger):
         
         minval, maxval = get_clim(self.data1[::-1])
         
-        self.minval = StringVar(value=f'{minval:0.3e}')
-        self.maxval = StringVar(value=f'{maxval:0.3e}')
+        self.minval = StringVar(value=f'{minval:0.2e}')
+        self.maxval = StringVar(value=f'{maxval:0.2e}')
         
         Label(frame, text='Scale: ').grid(row=0, column=0, sticky=(W,E))
         Button(frame, text='-', command=self.zoom_out).grid(row=0, column=1, sticky=(W,E))
