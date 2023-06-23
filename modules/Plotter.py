@@ -1,6 +1,8 @@
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from tkinter import *
+from tkinter.ttk import *
 from utils.utils import Logger, nearest
 from modules.DataStorage import (ADCDataPoint, CVDataPoint, 
                                  SinglePoint)
@@ -232,6 +234,8 @@ class Plotter(Logger):
         self.last_data1checksum = checksum(self.data1)
         self.last_data2checksum = checksum(self.data2)
         
+        self.minval = None    # Min/ max values for heatmap
+        self.maxval = None    # Set as tk.StringVar in popup window
 
         self.init_heatmap()
         self.init_echem_fig()
@@ -399,7 +403,61 @@ class Plotter(Logger):
         # Plotter regains control of mouse inputs 
         # on RectangleSelector.disconnect()
         return
-     
+    
+    # Popup to set min/max scale, colormap
+    def heatmap_scale_popup(self):
+        self.popup_window = Toplevel()
+        frame  = Frame(self.popup_window)
+        frame.grid(row=0, column=0)
+        
+        minval, maxval = get_clim(self.data1[::-1])
+        
+        self.minval = StringVar(value=f'{minval:0.3e}')
+        self.maxval = StringVar(value=f'{maxval:0.3e}')
+        
+        Label(frame, text='Scale: ').grid(row=0, column=0, sticky=(W,E))
+        Button(frame, text='-', command=self.zoom_out).grid(row=0, column=1, sticky=(W,E))
+        Button(frame, text='+', command=self.zoom_in).grid(row=0, column=2, sticky=(W,E))
+        
+        Entry(frame, textvariable=self.minval, width=5).grid(row=1, column=1, sticky=(W,E))
+        Entry(frame, textvariable=self.maxval, width=5).grid(row=1, column=2, sticky=(W,E))
+        
+        Button(frame, text='Apply', command=self.destroy_popup).grid(row=3, column=1, sticky=(W,E))
+        Button(frame, text='Cancel', command=self.cancel_popup).grid(row=3, column=2, sticky=(W,E))
+        
+        
+    def zoom_in(self):
+        minval = float(self.minval.get())
+        maxval = float(self.maxval.get())
+        mean = (maxval + minval) / 2
+        diff =  maxval - minval
+        diff *= 0.95
+        new_minval = mean - diff
+        new_maxval = mean + diff
+        self.minval.set(f'{new_minval:0.3e}')
+        self.maxval.set(f'{new_maxval:0.3e}')       
+    
+    def zoom_out(self):
+        minval = float(self.minval.get())
+        maxval = float(self.maxval.get())
+        mean = (maxval + minval) / 2
+        diff =  maxval - minval
+        diff *= 1.05
+        new_minval = mean - diff
+        new_maxval = mean + diff
+        self.minval.set(f'{new_minval:0.3e}')
+        self.maxval.set(f'{new_maxval:0.3e}') 
+    
+    def destroy_popup(self):
+        if hasattr(self, 'popup_window'):
+            self.popup_window.destroy()
+    
+    def cancel_popup(self):
+        # Reset minval and maxval to None
+        self.minval = None
+        self.maxval = None
+        self.destroy_popup()
+        
 
     
 
