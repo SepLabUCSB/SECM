@@ -384,7 +384,12 @@ class Plotter(Logger):
     def update_fig1(self, **kwargs):
         arr = self.data1[::-1]
         self.image1.set_data(arr)
-        minval, maxval = get_clim(arr)
+        
+        if self.minval and self.maxval:
+            minval = float(self.minval.get())
+            maxval = float(self.maxval.get())
+        else:
+            minval, maxval = get_clim(arr)
         self.image1.set(clim=( minval, maxval) )
         left, right = self.ax1lim[0][0], self.ax1lim[0][1]
         bottom, top = self.ax1lim[1][0], self.ax1lim[1][1]
@@ -423,32 +428,35 @@ class Plotter(Logger):
         Entry(frame, textvariable=self.maxval, width=5).grid(row=1, column=2, sticky=(W,E))
         
         Button(frame, text='Apply', command=self.destroy_popup).grid(row=3, column=1, sticky=(W,E))
-        Button(frame, text='Cancel', command=self.cancel_popup).grid(row=3, column=2, sticky=(W,E))
+        Button(frame, text='Reset', command=self.cancel_popup).grid(row=3, column=2, sticky=(W,E))
         
         
     def zoom_in(self):
         minval = float(self.minval.get())
         maxval = float(self.maxval.get())
         mean = (maxval + minval) / 2
-        diff =  maxval - minval
-        diff *= 0.95
+        diff = (maxval - minval) / 2
+        diff *= 0.5
         new_minval = mean - diff
         new_maxval = mean + diff
         self.minval.set(f'{new_minval:0.3e}')
-        self.maxval.set(f'{new_maxval:0.3e}')       
+        self.maxval.set(f'{new_maxval:0.3e}')   
+        self.update_fig1()
     
     def zoom_out(self):
         minval = float(self.minval.get())
         maxval = float(self.maxval.get())
         mean = (maxval + minval) / 2
-        diff =  maxval - minval
-        diff *= 1.05
+        diff = (maxval - minval) / 2
+        diff *= 1.5
         new_minval = mean - diff
         new_maxval = mean + diff
         self.minval.set(f'{new_minval:0.3e}')
         self.maxval.set(f'{new_maxval:0.3e}') 
+        self.update_fig1()
     
     def destroy_popup(self):
+        self.update_fig1()
         if hasattr(self, 'popup_window'):
             self.popup_window.destroy()
     
