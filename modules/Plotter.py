@@ -74,21 +74,21 @@ def set_cbar_ticklabels(cbar, clim):
     num_ticks = 5
     ticks = np.linspace(m0, m1, num_ticks)
     cbar.set_ticks(ticks)
-    cbar.set_ticklabels([f'{t:0.3g}' for t in ticks])
+    cbar.set_ticklabels([unit_label(t) for t in ticks])
 
 
-def unit_label(d:float, unit:str):
+def unit_label(d:float):
     '''
     Returns value as string with SI unit prefix
     
-    e.g. unit_label(1e-9, 'A') --> '1 nA'
-         unit_label(7.7e-10, 'V'): --> '770 pV'
+    e.g. unit_label(1e-9) --> '1 n'
+         unit_label(7.7e-10): --> '770 p'
     '''
     inc_prefixes = ['k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
     dec_prefixes = ['m', 'µ', 'n', 'p', 'f', 'a', 'z', 'y']
 
     if d == 0:
-        return str(0)
+        return f'0.0'
 
     degree = int(np.floor(np.log10(np.fabs(d)) / 3))
 
@@ -110,15 +110,12 @@ def unit_label(d:float, unit:str):
                 prefix = dec_prefixes[-1]
                 degree = -len(dec_prefixes)
 
-        scaled = float(d * math.pow(1000, -degree))
+        scaled = float(d * pow(1000, -degree))
 
-        s = "{scaled}{sep}{prefix}".format(scaled=scaled,
-                                           sep=sep,
-                                           prefix=prefix)
+        s = f"{scaled:0.1f} {prefix}"
 
     else:
-        s = "{d}".format(d=d)
-
+        s = f"{d:0.1f}"
     return s
 
 
