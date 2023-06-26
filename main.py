@@ -28,7 +28,7 @@ default_stderr = sys.stderr
 matplotlib.use('TkAgg')
 plt.style.use('secm.mplstyle')
 
-TEST_MODE = True
+TEST_MODE = False
 
 
     
@@ -40,9 +40,7 @@ TODO:
     - check on opening new file procedure (might overwrite/ not save)
     
     - steamline echem running process    
-    
-    Make separate data viewer to make high quality figures
-    
+        
     Write documentation
         
     HEKA control
@@ -216,12 +214,14 @@ class GUI(Logger):
         
         
         # Menu bar
-        menubar = Menu(root)
-        root['menu'] = menubar
-        menu_file = Menu(menubar)
-        menu_settings = Menu(menubar)
+        menubar         = Menu(root)
+        root['menu']    = menubar
+        menu_file       = Menu(menubar)
+        menu_settings   = Menu(menubar)
+        menu_heatmap    = Menu(menubar)
         menubar.add_cascade(menu=menu_file, label='File')
         menubar.add_cascade(menu=menu_settings, label='Settings')
+        menubar.add_cascade(menu=menu_heatmap, label='Heatmap')
         
         
         menu_file.add_command(label='New', command=self.newFile)
@@ -233,6 +233,11 @@ class GUI(Logger):
         
         menu_settings.add_command(label='Save settings...', command=self.save_settings)
         menu_settings.add_command(label='Load settings...', command=self.load_settings)
+        
+        menu_heatmap.add_command(label='Set scale...', command=self.set_heatmap_scale)
+        menu_heatmap.add_command(label='Set colors...', command=self.set_heatmap_colors)
+        menu_heatmap.add_command(label='Line scan', command=self.heatmap_line_scan)
+        
         
                 
         # Left panel: potentiostat/ SECM parameters
@@ -316,9 +321,6 @@ class GUI(Logger):
         self.HeatMapDisplayParam = Text(topfigframe, height=1, width=5)
         self.HeatMapDisplayParam.insert('1.0', '')
         self.HeatMapDisplayParam.grid(column=3, row=1, sticky=(W,E))
-        
-        Button(topfigframe, text='Set scale', 
-               command=self.set_heatmap_scale).grid(column=1, row=0, sticky=(W,E))
         
         Button(topfigframe, text='Zoom to grid...', 
                command=self.heatmap_rect_zoom).grid(column=0, row=1,
@@ -661,12 +663,24 @@ class GUI(Logger):
         self.master.Plotter.heatmap_zoom()
     
     
+    def heatmap_line_scan(self):
+        self.master.Plotter.heatmap_line_scan()
+        
+    
     def set_heatmap_scale(self):
         '''
         Open popup for user to adjust max/min value and colormap for heatmap
         '''
         self.master.Plotter.heatmap_scale_popup()
         
+        
+    def set_heatmap_colors(self):
+        '''
+        Open popup for user to set the color map
+        '''
+        self.master.Plotter.heatmap_color_popup()
+        
+    
     
     def set_new_area(self):
         corners = self.master.Plotter.RectangleSelector.get_coords()

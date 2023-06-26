@@ -1,5 +1,6 @@
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize
 import numpy as np
 from tkinter import *
 from tkinter.ttk import *
@@ -73,7 +74,7 @@ def set_cbar_ticklabels(cbar, clim):
     num_ticks = 5
     ticks = np.linspace(m0, m1, num_ticks)
     cbar.set_ticks(ticks)
-    cbar.set_ticklabels([f'{t:0.1e}' for t in ticks])
+    cbar.set_ticklabels([f'{t:0.3g}' for t in ticks])
 
 
 def get_axval_axlabels(expt_type):
@@ -421,16 +422,72 @@ class Plotter(Logger):
         # on RectangleSelector.disconnect()
         return
     
-    # Popup to set min/max scale, colormap
+    # Heatmap line scan mode
+    def heatmap_line_scan(self):
+        pass
+    
+    
+    # Popup to set color map
+    def heatmap_color_popup(self):
+        cmaps = ['afmhot', 'hot', 'gist_gray', 'viridis', 'plasma', 'inferno', 
+                 'magma', 'cividis','Greys', 'Purples', 'Blues', 'Greens', 
+                 'Oranges', 'Reds', 'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 
+                 'BuPu','GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn']
+        
+        popup = Toplevel()
+        frame = Frame(popup)
+        frame.grid(row=0, column=0)
+        
+        self.cmap = StringVar()
+        OptionMenu(frame, self.cmap, cmaps[0], *cmaps, 
+                   command=self.update_cmap).grid(row=0, column=1, columnspan=2)
+        
+        self.cmap_minval = StringVar(value='0')
+        self.cmap_maxval = StringVar(value='1')
+        Label(frame, text='Min: ').grid(row=1, column=0, sticky=(W,E))
+        Entry(frame, textvariable=self.cmap_minval, width=3).grid(row=1, column=1, sticky=(W,E))
+        Label(frame, text='Max: ').grid(row=1, column=2, sticky=(W,E))
+        Entry(frame, textvariable=self.cmap_maxval, width=3).grid(row=1, column=3, sticky=(W,E))
+        Button(frame, text='Apply', command=self.update_cmap).grid(row=2, column=1, columnspan=2)
+    
+    
+    def update_cmap(self, _=None):
+        cmap = self.cmap.get()
+        base_cmap = matplotlib.cm.get_cmap(cmap, 1024)
+        
+        vmin = float(self.cmap_minval.get())
+        vmax = float(self.cmap_maxval.get())
+        
+        if (vmin < 0) or (vmin > 1) or (vmax < 0) or (vmax > 1):
+            print('\nInvalid input! Min and max must be between 0 and 1.\n')
+            return
+        
+        new_cmap = matplotlib.colors.ListedColormap(
+            base_cmap(
+                np.linspace(vmin, vmax, 512)
+                )
+            )
+            
+        self.image1.set(cmap = new_cmap)
+        self.update_fig1()
+    
+    
+    # Popup to set min/max scale
     def heatmap_scale_popup(self):
+        data = self.data1.flatten()
+        print(f'\nMax: {max(data):0.4g}')
+        print(f'Min: {min(data):0.4g}')
+        print(f'Avg: {np.mean(data):0.4g}')
+        print(f'Std: {np.std(data):0.4g}\n')
+        
         self.popup_window = Toplevel()
         frame  = Frame(self.popup_window)
         frame.grid(row=0, column=0)
         
         minval, maxval = get_clim(self.data1[::-1])
         
-        self.minval = StringVar(value=f'{minval:0.2e}')
-        self.maxval = StringVar(value=f'{maxval:0.2e}')
+        self.minval = StringVar(value=f'{minval:0.2g}')
+        self.maxval = StringVar(value=f'{maxval:0.2g}')
         
         Label(frame, text='Scale: ').grid(row=0, column=0, sticky=(W,E))
         Button(frame, text='-', command=self.zoom_out).grid(row=0, column=1, sticky=(W,E))
@@ -439,7 +496,7 @@ class Plotter(Logger):
         Entry(frame, textvariable=self.minval, width=5).grid(row=1, column=1, sticky=(W,E))
         Entry(frame, textvariable=self.maxval, width=5).grid(row=1, column=2, sticky=(W,E))
         
-        Button(frame, text='Apply', command=self.destroy_popup).grid(row=3, column=1, sticky=(W,E))
+        Button(frame, text='Apply', command=self.update_fig1).grid(row=3, column=1, sticky=(W,E))
         Button(frame, text='Reset', command=self.cancel_popup).grid(row=3, column=2, sticky=(W,E))
         
         
@@ -451,8 +508,8 @@ class Plotter(Logger):
         diff *= 0.5
         new_minval = mean - diff
         new_maxval = mean + diff
-        self.minval.set(f'{new_minval:0.3e}')
-        self.maxval.set(f'{new_maxval:0.3e}')   
+        self.minval.set(f'{new_minval:0.3g}')
+        self.maxval.set(f'{new_maxval:0.3g}')   
         self.update_fig1()
     
     def zoom_out(self):
@@ -463,20 +520,18 @@ class Plotter(Logger):
         diff *= 1.5
         new_minval = mean - diff
         new_maxval = mean + diff
-        self.minval.set(f'{new_minval:0.3e}')
-        self.maxval.set(f'{new_maxval:0.3e}') 
+        self.minval.set(f'{new_minval:0.3g}')
+        self.maxval.set(f'{new_maxval:0.3g}') 
         self.update_fig1()
-    
-    def destroy_popup(self):
-        self.update_fig1()
-        if hasattr(self, 'popup_window'):
-            self.popup_window.destroy()
-    
+        
+        
     def cancel_popup(self):
         # Reset minval and maxval to None
         self.minval = None
         self.maxval = None
-        self.destroy_popup()
+        self.update_fig1()
+        if hasattr(self, 'popup_window'):
+            self.popup_window.destroy()
         
 
     
