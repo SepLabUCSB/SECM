@@ -77,6 +77,51 @@ def set_cbar_ticklabels(cbar, clim):
     cbar.set_ticklabels([f'{t:0.3g}' for t in ticks])
 
 
+def unit_label(d:float, unit:str):
+    '''
+    Returns value as string with SI unit prefix
+    
+    e.g. unit_label(1e-9, 'A') --> '1 nA'
+         unit_label(7.7e-10, 'V'): --> '770 pV'
+    '''
+    inc_prefixes = ['k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
+    dec_prefixes = ['m', 'µ', 'n', 'p', 'f', 'a', 'z', 'y']
+
+    if d == 0:
+        return str(0)
+
+    degree = int(np.floor(np.log10(np.fabs(d)) / 3))
+
+    prefix = ''
+
+    if degree != 0:
+        sign = degree / np.fabs(degree)
+        if sign == 1:
+            if degree - 1 < len(inc_prefixes):
+                prefix = inc_prefixes[degree - 1]
+            else:
+                prefix = inc_prefixes[-1]
+                degree = len(inc_prefixes)
+
+        elif sign == -1:
+            if -degree - 1 < len(dec_prefixes):
+                prefix = dec_prefixes[-degree - 1]
+            else:
+                prefix = dec_prefixes[-1]
+                degree = -len(dec_prefixes)
+
+        scaled = float(d * math.pow(1000, -degree))
+
+        s = "{scaled}{sep}{prefix}".format(scaled=scaled,
+                                           sep=sep,
+                                           prefix=prefix)
+
+    else:
+        s = "{d}".format(d=d)
+
+    return s
+
+
 def get_axval_axlabels(expt_type):
     #TODO: fix this or make sure it never happens
     if expt_type == '':
