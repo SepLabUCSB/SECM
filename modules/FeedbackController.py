@@ -70,6 +70,10 @@ class FeedbackController(Logger):
             return
         
         # Wait for potential to equilibrate
+        voltage = self.master.GUI.params['approach']['voltage'].get('1.0', 'end')
+        voltage = float(voltage) 
+        self.Piezo.goto(0,0,height)
+        self.HekaWriter.macro(f'E Vhold {voltage}')
         
         while True:
             if self.master.ABORT:
@@ -83,7 +87,7 @@ class FeedbackController(Logger):
             
             if on_surface:
                 # Slowly retract from surface by 10 um
-                self.Piezo.retract(10, 1, relative=True)
+                self.Piezo.retract(10, relative=True)
                 break
             
             self.Piezo.goto(0,0,height)
@@ -230,7 +234,7 @@ class FeedbackController(Logger):
         else:
             forced_step_size = None
         
-        for i, (x, y) in enumerate(points):
+        for i, (x, y) in enumerate(points[:-2]):
             
             # Retract from surface
             if (i !=0) and (not self.master.TEST_MODE):
@@ -251,6 +255,10 @@ class FeedbackController(Logger):
             if not on_surf:
                 self.log('Hopping mode ended due to not reaching surface')
                 return
+            
+            # TODO: Delete after this expt!!!
+            time.sleep(i)
+            
             
             # Run echem experiment on surface
             data = self.run_echems(expt_type, expt, (x, y, z), i) # TODO: run variable echem experiment(s) at each pt

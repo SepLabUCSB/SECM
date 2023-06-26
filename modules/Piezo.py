@@ -252,6 +252,7 @@ class Piezo(Logger):
         self.counter += 1
         self._halt = False
         self._moving = False
+        self.start_monitoring()
         return z
     
     

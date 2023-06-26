@@ -34,7 +34,9 @@ TEST_MODE = False
     
 '''
 TODO:
-        
+    
+    - handle forward/backwards CV scans in current @ view
+    
     - Make FeedbackController threadsafe
         
     - check on opening new file procedure (might overwrite/ not save)
@@ -52,6 +54,9 @@ TODO:
     - point and click to move to point
 
 Bugs:
+    - Doesn't stop running on window close
+    - Weird behavior running/ saving HEKA data. Possibly if aborting halfway through
+    or when saving on new file and changing target
     - Running approach curve when PATCHMASTER isn't open raises an error
     because master.GUI.amp_params doesn't have key 'float_gain'
     
@@ -880,6 +885,7 @@ if __name__ == '__main__':
         piezo.stop()
         motor.stop()
     
+    gui.willStop = True
     root.quit()
     sys.stdout = default_stdout
     sys.stdin  = default_stdin
