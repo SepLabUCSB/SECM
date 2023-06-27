@@ -54,7 +54,6 @@ TODO:
     - point and click to move to point
 
 Bugs:
-    - Approach curve settings not saving
     - Position tracking doesn't restart on abort
     - Doesn't stop running on window close
     - Weird behavior running/ saving HEKA data. Possibly if aborting halfway through
@@ -494,7 +493,8 @@ class GUI(Logger):
             'params': {
                 'CV': self.params['CV'],            # dict
                 'amp': self.params['amp'],          # dict
-                'hopping': self.params['hopping']   # dict
+                'hopping': self.params['hopping'],  # dict
+                'approach': self.params['approach']
                 },
             }
     
