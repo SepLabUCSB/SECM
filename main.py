@@ -55,7 +55,6 @@ TODO:
 
 Bugs:
     - Position tracking doesn't restart on abort
-    - Doesn't stop running on window close
     - Weird behavior running/ saving HEKA data. Possibly if aborting halfway through
     or when saving on new file and changing target
     - Running approach curve when PATCHMASTER isn't open raises an error
