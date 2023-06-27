@@ -109,7 +109,6 @@ class HekaWriter(Logger):
     each command. 
     
     '''
-    # TODO: sometimes double sends commands
     def __init__(self, master, input_file=input_file):
         self.master = master
         self.master.register(self)
@@ -137,12 +136,7 @@ class HekaWriter(Logger):
         
     def isRunning(self):
         return self.status == 'running'
-    
-    
-    def test_btn(self):
-        # self.save_last_experiment()
-        return
-     
+         
         
     def send_command(self, cmd):
         # print(f'Sending: {self.num} {cmd}')
@@ -383,11 +377,13 @@ class HekaWriter(Logger):
     
     def run_measurement_loop(self, measurement_type, save_path=None, name=''):
         '''
+        Runs measurement of the requested type. Starts ADC polling in another
+        thread. Saves the data.
+        
         measurement_type: 'CV', 'CA', 'EIS'. Defines what to run
         save_path: string, path to save to
         name: string, name to save as. save_path/{name}.asc
         '''
-        print(measurement_type)
         if measurement_type == 'CV':
             run_func = self.run_CV
             duration = self.CV_duration
