@@ -95,7 +95,7 @@ class FeedbackController(Logger):
             self.master.PicoMotor.step(2000) # 2000 steps ~= 60 um
             time.sleep(3)    
         # time.sleep(1)
-        # self.Piezo.start_monitoring()
+        self.Piezo.start_monitoring()
         return
     
     

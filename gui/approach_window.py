@@ -27,7 +27,7 @@ def make_approach_window(gui, master_frame):
     
     I_field = Text(frame, height=1, width=1)
     I_field.grid(column=3, row=2, sticky=(E,W))
-    I_field.insert('1.0', '3')
+    I_field.insert('1.0', '5')
     I_field.bind('<Tab>', focus_next_widget)
     
     Label(frame, text='pA').grid(column=4, row=2, sticky=(W))
