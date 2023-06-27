@@ -255,11 +255,7 @@ class FeedbackController(Logger):
             if not on_surf:
                 self.log('Hopping mode ended due to not reaching surface')
                 return
-            
-            # TODO: Delete after this expt!!!
-            time.sleep(i)
-            
-            
+                        
             # Run echem experiment on surface
             data = self.run_echems(expt_type, expt, (x, y, z), i) # TODO: run variable echem experiment(s) at each pt
             
