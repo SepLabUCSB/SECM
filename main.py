@@ -135,11 +135,11 @@ class MasterModule(Logger):
     
     def abort(self):
         # general callback for aborting an operation
-        # submodule should call master.make_ready() after
-        # aborting process
         self.ABORT = True
         self.PicoMotor.halt()
-        run(self.make_ready)
+        if not self.STOP:
+            # Reset
+            run(self.make_ready)
     
     
     def make_ready(self):
@@ -886,11 +886,10 @@ if __name__ == '__main__':
         piezo.stop()
         motor.stop()
     
-    gui.willStop = True
-    root.quit()
     sys.stdout = default_stdout
     sys.stdin  = default_stdin
     sys.stderr = default_stderr
+    
     
     
     

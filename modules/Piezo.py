@@ -94,6 +94,9 @@ class Piezo(Logger):
         Called in its own thread. 
         '''
         while True:
+            if self.master.ABORT:
+                self._is_monitoring = False
+                return
             if self._stop_monitoring:
                 self._stop_monitoring = False
                 self._is_monitoring = False
