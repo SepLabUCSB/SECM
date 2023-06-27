@@ -572,8 +572,6 @@ class Plotter(Logger):
         self.minval = None
         self.maxval = None
         self.update_fig1()
-        if hasattr(self, 'popup_window'):
-            self.popup_window.destroy()
         
 
     
