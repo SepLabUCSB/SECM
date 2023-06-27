@@ -517,6 +517,7 @@ class Plotter(Logger):
     # Popup to set min/max scale
     def heatmap_scale_popup(self):
         data = self.data1.flatten()
+        data = [d for d in data if d != 0]
         print(f'\nMax: {max(data):0.4g}')
         print(f'Min: {min(data):0.4g}')
         print(f'Avg: {np.mean(data):0.4g}')
