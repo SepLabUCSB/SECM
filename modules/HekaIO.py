@@ -192,8 +192,8 @@ class HekaWriter(Logger):
         self.send_command('GetParameters DataFile')
         st = time.time()
         while time.time() - st < 1:
-            response = self.master.HekaReader.last[1]
             try:
+                response = self.master.HekaReader.last[1]
                 if response.split(' ')[-1] == '""':
                     return False
                 return True
