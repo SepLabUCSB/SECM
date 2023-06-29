@@ -281,7 +281,8 @@ class SinglePoint(DataPoint):
 
 
 
-class CVDataPoint(DataPoint):
+class CVDataPoint(DataPoint):             
+        
     def get_val(self, datatype='max', arg=None):
         '''
         valtype: str, defines what to return
@@ -302,7 +303,27 @@ class CVDataPoint(DataPoint):
         if datatype == 'avg':
             return np.mean(self.data[2])
         if datatype == 'val_at':
-            idx, _ = nearest(self.data[1], arg)
+            # Return value from first, forward sweep
+            
+            idx    = 0
+            delta  = 1e6
+            deltas = []
+            # TODO: make this faster?
+            for i, v in enumerate(self.data[1]):
+                deltas.append(abs(v - arg))
+                if abs(v - arg) < delta:
+                    # Getting closer
+                    idx = i
+                    delta = abs(v - arg)
+                    continue
+                if len(deltas) < 5:
+                    continue
+                if all([deltas[-1] > deltas[j] for j in [-2,-3,-4,-5,-6]]):
+                    # Getting farther away from value. Return what we have
+                    return self.data[2][idx]
+            return self.data[2][idx]
+        if datatype == 'val_at_t':
+            idx, _ = nearest(self.data[0], arg)
             return self.data[2][idx]
     
     def get_data(self):

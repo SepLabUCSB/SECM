@@ -28,7 +28,7 @@ default_stderr = sys.stderr
 matplotlib.use('TkAgg')
 plt.style.use('secm.mplstyle')
 
-TEST_MODE = False
+TEST_MODE = True
 
 
     
@@ -313,6 +313,7 @@ class GUI(Logger):
         heatmapOptions = [
             'Max. current',
             'Current @ ... (V)',
+            'Current @ ... (t)',
             'Z height',
             'Avg. current'
             ]

@@ -419,8 +419,14 @@ class Plotter(Logger):
             pts = expt.get_heatmap_data('max')
         if option == 'Current @ ... (V)':
             try:
-                value = float(value)
+                value = float(value.replace('\n', ''))
                 pts = expt.get_heatmap_data('val_at', value)
+            except:
+                return
+        if option == 'Current @ ... (t)':
+            try:
+                value = float(value.replace('\n', ''))
+                pts = expt.get_heatmap_data('val_at_t', value)
             except:
                 return
         if option == 'Z height':
