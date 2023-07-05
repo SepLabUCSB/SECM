@@ -275,6 +275,7 @@ class FeedbackController(Logger):
             time.sleep(0.01)
         
         z = self.Piezo.retract(height=80, relative=False)
+        self.Piezo.goto(80,80,80)
         
         # self.Piezo.goto(curr_x, curr_y, z_max)
         # self.master.expt = expt
