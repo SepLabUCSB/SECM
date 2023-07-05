@@ -335,6 +335,41 @@ class CVDataPoint(DataPoint):
             for t, V, I in zip(self.data[0], self.data[1], self.data[2]):
                 f.write(f'{t}\t{V}\t{I}\n')
     
+
+    
+class EISDataPoint(DataPoint):
+     def __init__(self, loc: tuple, data:list):
+        self.loc      = loc
+        self.data     = data
+        self.FT() # do the Fourier transform
+        
+     def FT(self):
+        t, V, I = self.data
+        srate = 1/np.mean(np.diff(t))
+        
+        # Fourier transform
+        freqs = srate*np.fft.rfftfreq(len(V))[1:]
+        ft_V  = np.fft.rfft(V)
+        ft_I  = np.fft.rfft(I)
+        
+        # TODO: check this catches all frequencies/ amplitudes
+        idxs = [i for i, v in enumerate(abs(ft_V)) if v > 5]
+        
+        # Remove all frequencies not in perturbation signal
+        freqs = freqs[idxs]
+        ft_V  = ft_V[idxs]
+        ft_I  = ft_I[idxs]
+        Z = ft_V/ft_I
+        
+        # Re-save as self.data
+        self.data = [freqs, Z]
+        
+     def _save(self, path):
+        with open(path, 'a') as f:
+            f.write("f/Hz\tZ'/Ohm\tZ''/Ohm")
+            for f, Z in zip(self.data[0], self.data[1]):
+                f.write(f'{f}\t{np.real(Z)}\t{np.imag(Z)}')
+        
     
 
 
