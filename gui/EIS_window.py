@@ -16,13 +16,19 @@ def make_EIS_window(gui, master_frame):
     
     frame = master_frame
     
-    ttk.Label(frame, text='Scan from...').grid(column=1, row=1, sticky=(E))
+    Label(frame, text='DC bias:').grid(column=1, row=0, sticky=(E))
+    Label(frame, text='Scan from...').grid(column=1, row=1, sticky=(E))
     Label(frame, text='To...').grid(column=1, row=2, sticky=(E))
     Label(frame, text='Collect:').grid(column=1, row=3, sticky=(E))
     Label(frame, text='').grid(column=1, row=4) # blank space
     Label(frame, text='Amplitude:').grid(column=1, row=5, sticky=(E))
     Label(frame, text='').grid(column=1, row=6) # blank space
     
+    
+    DC_field = Text(frame, height=1, width=1)
+    DC_field.grid(column=2, row=0, sticky=(E,W))
+    DC_field.insert('1.0', '0')
+    DC_field.bind('<Tab>', focus_next_widget)
     
     f0_field = Text(frame, height=1, width=1)
     f0_field.grid(column=2, row=1, sticky=(E,W))
@@ -45,13 +51,14 @@ def make_EIS_window(gui, master_frame):
     amp_field.bind('<Tab>', focus_next_widget)
     
     
-    
+    Label(frame, text='mV').grid(column=3, row=0, sticky=(W))
     Label(frame, text='Hz').grid(column=3, row=1, sticky=(W))
     Label(frame, text='Hz').grid(column=3, row=2, sticky=(W))
     Label(frame, text='points').grid(column=3, row=3, sticky=(W))
     Label(frame, text='mVpp').grid(column=3, row=5, sticky=(W))
     
-    EIS_params = {'f0':f0_field,
+    EIS_params = {'E0':DC_field,
+                  'f0':f0_field,
                   'f1':f1_field,
                   'n_pts':n_pts_field,
                   'amp':amp_field}

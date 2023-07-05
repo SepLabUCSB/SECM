@@ -349,7 +349,7 @@ class HekaWriter(Logger):
         self.send_command(f'ExecuteSequence {cmd}')
       
 
-    def setup_EIS(self):
+    def setup_EIS(self, E0, f0, f1, n_pts, amp):
         '''
         Set amplifier to hold DC bias
         

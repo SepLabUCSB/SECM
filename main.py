@@ -746,6 +746,21 @@ class GUI(Logger):
         return path
     
     
+    def get_EIS_params(self):
+        eis_params = self.params['EIS'].copy()
+        E0      = eis_params['E0'].get('1.0', 'end')
+        f0      = eis_params['f0'].get('1.0', 'end')
+        f1      = eis_params['f1'].get('1.0', 'end')
+        n_pts   = eis_params['n_pts'].get('1.0', 'end')
+        amp     = eis_params['amp'].get('1.0', 'end')
+        vals = [E0, f0, f1, n_pts, amp]
+        try:
+            E0, f0, f1, n_pts, amp = [float(val) for val in vals]
+        except:
+            print('invalid EIS inputs')
+            return 0,0,0,0,0
+        return E0, f0, f1, n_pts, amp
+    
     def run_EIS(self):
         # TODO: implement EIS
         # validate EIS parameters

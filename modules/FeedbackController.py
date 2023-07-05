@@ -4,7 +4,7 @@ from io import StringIO
 import os
 from functools import partial
 from utils.utils import run, Logger
-from modules.DataStorage import Experiment, CVDataPoint
+from modules.DataStorage import Experiment, CVDataPoint, EISDataPoint
 
 
 
@@ -298,6 +298,15 @@ class FeedbackController(Logger):
             self.master.HekaWriter.setup_CV(*CV_vals)
             return True
         
+        if expt_type == 'EIS':
+            self.master.GUI.set_amplifier()
+            EIS_vals = self.master.GUI.get_EIS_params()
+            if EIS_vals == (0,0,0,0,0):
+                return False
+            self.master.HekaWriter.setup_EIS(*EIS_vals)
+            return True
+            
+        
         if expt_type == 'Custom':
             self.master.GUI.set_amplifier()
             return True
@@ -314,18 +323,19 @@ class FeedbackController(Logger):
         Return         
         '''
         if expt_type == 'CV':
-            voltage, current = self.run_CV(expt.path, i)
-                
-            data = CVDataPoint(loc = loc, data = [np.linspace(0,1,len(voltage)),
-                                                   voltage, current])
+            t, voltage, current = self.run_CV(expt.path, i)
+            data = CVDataPoint(loc = loc, data = [t, voltage, current])
+        
+        if expt_type == 'EIS':
+            t, voltage, current = self.run_EIS(expt.path, i)
+            data = EISDataPoint(loc = loc, data = [t, voltage, current])
         
         if expt_type == 'Custom':
-            voltage, current = self.run_custom(expt.path, i)
-            
-            data = CVDataPoint(loc = loc, data = [np.linspace(0,1,len(voltage)),
-                                                   voltage, current])
+            t, voltage, current = self.run_custom(expt.path, i)
+            data = CVDataPoint(loc = loc, data = [t, voltage, current])
                         
         return data
+    
     
     def fake_CV(self, i):
         # Generate fake data for testing piezo
@@ -352,7 +362,23 @@ class FeedbackController(Logger):
                                            )
         output = read_heka_data(path)
         _, t, i, _, v = output
-        return v, i
+        return t, v, i
+    
+    
+    def run_EIS(self, save_path, name):
+        if self.master.TEST_MODE:
+            t = np.arange(0,1,1000)
+            return [t, np.sin(t), np.cos(t)]
+        
+        if save_path.endswith('.secmdata'):
+            save_path = save_path.replace('.secmdata', '')
+            
+        path = self.master.HekaWriter.run_measurement_loop(
+            'EIS', save_path = save_path, name=name)
+        
+        output = read_heka_data(path)
+        _, t, i, _, v = output
+        return t, v, i
     
     
     def run_custom(self, save_path, name):
@@ -367,7 +393,7 @@ class FeedbackController(Logger):
         
         output = read_heka_data(path)
         _, t, i, _, v = output
-        return v, i
+        return t, v, i
     
 
     
