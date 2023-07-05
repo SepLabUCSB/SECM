@@ -332,7 +332,7 @@ class Plotter(Logger):
             if type(z0) == tuple:
                 z0 = z0[0] # Handle early bug in some saved data
             val = self.data1.flatten()[idx]
-            print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {val}')
+            print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {unit_label(val)}')
         return 
     
     
