@@ -352,11 +352,36 @@ class HekaWriter(Logger):
     def setup_EIS(self, E0, f0, f1, n_pts, amp):
         '''
         Set amplifier to hold DC bias
-        
         Set filters
-        
         Update EIS parameters in PATCHMASTER
         '''
+        if self.isRunning(): return
+        values, duration = generate_EIS_params(E0, min(f0, f1))
+        
+        self.running()
+        
+        # Set filters based on max frequency
+        cmds = get_filters(max(f0, f1))
+        
+        # Set stim filter to 2 us
+        cmds.append('E StimFilter 0')
+        
+        # Turn on external input for Stim-1
+        cmds.append('E TestDacToStim1 2')
+        
+        # Set external scale to 1
+        cmds.append('E ExtScale 1')
+        
+        # Set Vmon to DC bias
+        cmds.append(f'E Vhold {E0}')
+        
+        # Update pgf fields
+        self.update_Values(values)
+        
+        self.EIS_params   = values
+        self.EIS_duration = duration
+        self.idle()
+        self.log('Set EIS parameters')
         return
     
     
@@ -500,6 +525,35 @@ def generate_EIS_params(E_DC, duration):
     return values
 
 
+def get_filters(max_freq):
+    '''
+    Return appropriate setting for filter1 and filter2 based on the 
+    
+    maximum applied EIS freq
+    '''
+    
+    filt1s = [10, 30, 100]
+    best_filt1 = 100
+    for filt in filt1s:
+        if filt*1000 >= 3*max_freq:
+            best_filt1 = filt
+            break
+    best_filt2 = 2*max_freq
+    if best_filt2 > 8000:
+        f2_val  = 8000
+        f2_type = 2
+    else:
+        f2_val  = best_filt2
+        f2_type = 0 # Sets as Bessel filter
+        
+    filter1options = [100, 30, 10]    # Order filters appear in PATCHMASTER
+    f1_idx = [i for i, val in enumerate(filter1options) 
+              if val == best_filt1][0]
+    
+    
+    return (f'E Filter1 {f1_idx}', 
+            f'E F2Response {f2_type}', 
+            f'E Filter2 {f2_val}')
 
 
 
