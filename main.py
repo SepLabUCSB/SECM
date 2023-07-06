@@ -54,6 +54,7 @@ TODO:
     - point and click to move to point
 
 Bugs:
+    - Sometimes doesn't send run CV command to PATCHMASTER
     - SerialTimeOut for xyz piezo communications
     - Position tracking doesn't restart on abort
     - Weird behavior running/ saving HEKA data. Possibly if aborting halfway through
