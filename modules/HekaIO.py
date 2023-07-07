@@ -346,7 +346,9 @@ class HekaWriter(Logger):
             mode = '1kHz'
         
         cmd = cmds[mode]
+        self.log(f'CV {cmd}', quiet=True)
         self.send_command(f'ExecuteSequence {cmd}')
+        self.running()
       
 
     def setup_EIS(self, E0, f0, f1, n_pts, amp):
@@ -433,7 +435,7 @@ class HekaWriter(Logger):
             print('== Open a DataFile in PATCHMASTER before recording! ==')
             return
     
-        self.running()
+        
         run_func()
         st = time.time()
         
@@ -443,23 +445,24 @@ class HekaWriter(Logger):
         
         # Measurement loop
         while time.time() - st < duration + 3:
+            if not self.isRunning():
+                # Wait for run command to get sent to PATCHMASTER
+                self.log('waiting')
+                continue
+            time.sleep(0.5)
             if self.master.ABORT:
-                self.abort()
                 self.master.ADC.STOP_POLLING()
-                path = self.save_last_experiment(f'{save_path}/{name}.asc')
-                self.idle()
-                return path
+                self.abort()
+                break
             self.send_command('Query')
             try:
                 if self.master.HekaReader.last[1] == 'Query_Idle':
                     break 
             except:
                 pass
-            time.sleep(0.5)
             
         if not self.master.HekaReader.last[1] == 'Query_Idle':
-            self.log(f'Experiment {measurement_type} failed!')
-            return          
+            self.log(f'Experiment {measurement_type} failed!')         
         
         self.master.ADC.STOP_POLLING()
         
