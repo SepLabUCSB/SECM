@@ -333,6 +333,10 @@ class Plotter(Logger):
                 z0 = z0[0] # Handle early bug in some saved data
             val = self.data1.flatten()[idx]
             print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {unit_label(val)}')
+        if event.inaxes == self.ax2:
+            x, y = event.xdata, event.ydata
+            print(f'({x:0.3f}, {unit_label(y)})')
+        
         return 
     
     
