@@ -91,14 +91,14 @@ def make_time_domain(freqs, phases, mVpp):
     requested frequency.
     
     Number of points needd it duration*sample rate. For now, sample rate is 
-    fixed at 100 kHz. In the future the sample rate will be chosen based
+    fixed at 50 kHz. In the future the sample rate will be chosen based
     on the maximum requested frequency (srate >= 10* max(freqs) )
     '''
 
     if type(mVpp) not in (list, np.ndarray):
         mVpp = [mVpp for _ in freqs]
     
-    sample_rate = 100000 # TODO: set this dynamically, choose between i.e. 10, 25, 100kHz
+    sample_rate = 50000 # TODO: set this dynamically, choose between i.e. 10, 25, 100kHz
     
     N = (1/min(freqs)) * sample_rate
     N = int(np.ceil(N)) # collect 1 extra point if N is not an integer
