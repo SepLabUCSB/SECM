@@ -282,6 +282,21 @@ class HekaWriter(Logger):
         
      
     #### EXPERIMENT DEFINITIONS ####
+    
+    def reset_amplifier(self):
+        '''
+        Sends commands to set amplifier back to default (CV) state
+        '''
+        cmds = []
+        cmds.append('Set E StimFilter 1')
+        cmds.append('Set E TestDacToStim1 0')
+        cmds.append('Set E Mode 3')
+        cmds.append('Set E Filter1 2')
+        cmds.append('Set E F2Response 0')
+        cmds.append('Set E Filter2 0.5')
+        self.send_multiple_cmds(cmds)
+        
+        
         
     def update_Values(self, values):
         # Update Values which are used to define CV, CA, etc voltages, timings, ...
@@ -377,6 +392,8 @@ class HekaWriter(Logger):
         # Set external scale to 1
         cmds.append('Set E ExtScale 1')
         
+        cmds.append('Set E Mode 3')
+        
         # Set Vmon to DC bias
         cmds.append(f'Set E Vhold {E0}')
         
@@ -406,6 +423,7 @@ class HekaWriter(Logger):
         Send command to run single EIS scan
         '''
         self.send_command('ExecuteSequence _auto_eis')
+        self.running()
         return
     
     
@@ -414,6 +432,7 @@ class HekaWriter(Logger):
         Run the custom, user-set PGF file
         '''
         self.send_command('ExecuteSequence _custom')
+        self.running()
         return
     
     
@@ -426,6 +445,14 @@ class HekaWriter(Logger):
         save_path: string, path to save to
         name: string, name to save as. save_path/{name}.asc
         '''
+        if self.isRunning():
+            self.log('Got new CV command, but already running!')
+            return
+            
+        if not self.isDataFile():
+            print('== Open a DataFile in PATCHMASTER before recording! ==')
+            return
+        
         if measurement_type == 'CV':
             run_func = self.run_CV
             duration = self.CV_duration
@@ -441,15 +468,7 @@ class HekaWriter(Logger):
         else:
             print('Internal error: invalid measurement_type')
             return
-        
-        if self.isRunning():
-            self.log('Got new CV command, but already running!')
-            return
-            
-        if not self.isDataFile():
-            print('== Open a DataFile in PATCHMASTER before recording! ==')
-            return
-    
+
         
         run_func()
         st = time.time()
@@ -570,7 +589,7 @@ def get_filters(max_freq):
     
     return [f'Set E Filter1 {f1_idx}', 
             f'Set E F2Response {f2_type}', 
-            f'Set E Filter2 {f2_val}']
+            f'Set E Filter2 {f2_val/1000}']
 
 
 

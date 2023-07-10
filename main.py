@@ -46,7 +46,7 @@ TODO:
     Write documentation
         
     HEKA control
-    - EIS
+    - choose EIS sample rate based on max freq.
     - run multiple echem experiments at each location
     
     
@@ -768,7 +768,6 @@ class GUI(Logger):
         # check saved waveform
         # write waveform file
         # send command to HEKA
-        print('running EIS')
         eis_params = self.get_EIS_params()
         self.master.HekaWriter.setup_EIS(*eis_params)
         path = self.master.HekaWriter.run_measurement_loop('EIS')

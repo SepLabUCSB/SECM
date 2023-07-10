@@ -34,13 +34,17 @@ def generate_tpl(f0, f1, n_pts, mVpp, fname, Z=None):
     assert(f1 > n_pts*f0), f'EIS input error: cannot fit {n_pts} points between {f0} and {f1} Hz because for FFT-EIS, all frequencies must be integer multiples of the lowest frequency ({f0} Hz).'
     assert(mVpp > 0),       'EIS input error: amplitude must be positive'
     
+    mVpp /= 1000 # PATCHMASTER actually needs it in V
+    mVpp *= 10   # PATCHMASTER divides voltages from tpl by 10 for some reason...
+    mVpp /= 2    # Make it peak-to-peak instead of amplitude
+    
     freqs, phases, mVpp = generate_waveform(f0, f1, n_pts, mVpp)
     
     if Z is None:
         v = make_time_domain(freqs, phases, mVpp)
     else:
         v = optimize_waveform(freqs, phases, mVpp, Z)
-    
+        
     write_tpl_file(v, fname)
     print(f'Wrote waveform to {fname}')
     return
@@ -108,6 +112,8 @@ def make_time_domain(freqs, phases, mVpp):
         v += amp*np.sin(2*np.pi*freq*t + phase)
     
     v *= max(mVpp)/max(v) # rescale to set max Vpp
+    
+    v = amp*np.sin(2*np.pi*min(freqs)*t)
     
     return v
         
