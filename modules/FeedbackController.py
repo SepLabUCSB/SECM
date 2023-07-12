@@ -240,13 +240,13 @@ class FeedbackController(Logger):
             
             # Retract from surface
             if (i !=0) and (not self.master.TEST_MODE):
-                z = self.Piezo.retract(height=retract_distance, 
-                                        relative=True)
-                # tx, ty, tz = self.Piezo.measure_loc()
-                # self.Piezo.goto(tx, ty, tz+retract_distance)
-                # time.sleep(1)
-                # _,_,z = self.Piezo.measure_loc()
-                # time.sleep(2)
+                # z = self.Piezo.retract(height=retract_distance, 
+                #                         relative=True)
+                tx, ty, tz = self.Piezo.measure_loc()
+                self.Piezo.goto_z(tz+retract_distance)
+                time.sleep(0.5)
+                _,_,z = self.Piezo.measure_loc()
+                time.sleep(0.5)
             
             # Retract to the given z_max, otherwise start from next (x,y) but current z
             if z_max > 0:

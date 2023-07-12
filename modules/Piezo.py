@@ -216,7 +216,8 @@ class Piezo(Logger):
             if self._halt:
                 break
             z -= step_size
-            self.goto(x,y,z)
+            # self.goto(x,y,z)
+            self.goto_z(z)
             # print(f'{time.time() - st:0.5f}, {z:0.5f}')
             self.x, self.y, self.z = x,y,z
             time.sleep(step_delay)
@@ -258,7 +259,8 @@ class Piezo(Logger):
             if z > 80:
                 break
             z += step_size
-            self.goto(x,y,z)
+            self.goto_z(z)
+            # self.goto(x,y,z)
             self.x, self.y, self.z = x,y,z
             time.sleep(0.001)
         
