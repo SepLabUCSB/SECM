@@ -28,7 +28,7 @@ default_stderr = sys.stderr
 matplotlib.use('TkAgg')
 plt.style.use('secm.mplstyle')
 
-TEST_MODE = True
+TEST_MODE = False
 
 
     
@@ -46,12 +46,10 @@ TODO:
     Write documentation
         
     HEKA control
-    - EIS
+    - choose EIS sample rate based on max freq.
     - run multiple echem experiments at each location
     
     
-    SECM
-    - point and click to move to point
 
 Bugs:
     - Sometimes doesn't send run CV command to PATCHMASTER
@@ -757,6 +755,7 @@ class GUI(Logger):
         vals = [E0, f0, f1, n_pts, amp]
         try:
             E0, f0, f1, n_pts, amp = [float(val) for val in vals]
+            n_pts = int(n_pts)
         except:
             print('invalid EIS inputs')
             return 0,0,0,0,0
@@ -769,7 +768,10 @@ class GUI(Logger):
         # check saved waveform
         # write waveform file
         # send command to HEKA
-        eis_params = self.params['EIS'].copy()
+        eis_params = self.get_EIS_params()
+        self.master.HekaWriter.setup_EIS(*eis_params)
+        path = self.master.HekaWriter.run_measurement_loop('EIS')
+        self.master.make_ready()
         return
     
     

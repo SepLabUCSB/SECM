@@ -228,25 +228,28 @@ class FeedbackController(Logger):
         self.log(f'Starting hopping mode {expt_type} scan')
         self.log(f'Starting approach curves from {height}')
         
-        # height == -1 means retract the minimum amount at each point
-        if z_max == -1:
+        # height < 0 means retract that amount at each point
+        if z_max < 0:
+            retract_distance = -z_max
             forced_step_size = 0.01
         else:
+            retract_distance = 6
             forced_step_size = None
         
         for i, (x, y) in enumerate(points[:-2]):
             
             # Retract from surface
             if (i !=0) and (not self.master.TEST_MODE):
-                z = self.Piezo.retract(height=6, relative=True)
+                z = self.Piezo.retract(height=retract_distance, 
+                                        relative=True)
                 # tx, ty, tz = self.Piezo.measure_loc()
-                # self.Piezo.goto(tx, ty, tz+6)
-                # time.sleep(0.5)
+                # self.Piezo.goto(tx, ty, tz+retract_distance)
+                # time.sleep(1)
                 # _,_,z = self.Piezo.measure_loc()
-                # time.sleep(3)
+                # time.sleep(2)
             
             # Retract to the given z_max, otherwise start from next (x,y) but current z
-            if z_max != -1:
+            if z_max > 0:
                 z = z_max
             self.Piezo.goto(x, y, z)
             

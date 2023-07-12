@@ -123,6 +123,9 @@ class HekaWriter(Logger):
         self.send_command('SetSleep 0.01')
         
         self.pgf_params = {}
+        self.CV_params  = None
+        self.EIS_params = None
+        self.EIS_WF_params = None
         
     
         
@@ -279,6 +282,21 @@ class HekaWriter(Logger):
         
      
     #### EXPERIMENT DEFINITIONS ####
+    
+    def reset_amplifier(self):
+        '''
+        Sends commands to set amplifier back to default (CV) state
+        '''
+        cmds = []
+        cmds.append('Set E StimFilter 1')
+        cmds.append('Set E TestDacToStim1 0')
+        cmds.append('Set E Mode 3')
+        cmds.append('Set E Filter1 2')
+        cmds.append('Set E F2Response 0')
+        cmds.append('Set E Filter2 0.5')
+        self.send_multiple_cmds(cmds)
+        
+        
         
     def update_Values(self, values):
         # Update Values which are used to define CV, CA, etc voltages, timings, ...
@@ -366,31 +384,46 @@ class HekaWriter(Logger):
         cmds = get_filters(max(f0, f1))
         
         # Set stim filter to 2 us
-        cmds.append('E StimFilter 0')
+        cmds.append('Set E StimFilter 0')
         
         # Turn on external input for Stim-1
-        cmds.append('E TestDacToStim1 2')
+        cmds.append('Set E TestDacToStim1 2')
         
         # Set external scale to 1
-        cmds.append('E ExtScale 1')
+        cmds.append('Set E ExtScale 1')
+        
+        cmds.append('Set E Mode 3')
         
         # Set Vmon to DC bias
-        cmds.append(f'E Vhold {E0}')
+        cmds.append(f'Set E Vhold {E0}')
+        
+        self.send_multiple_cmds(cmds)
         
         # Update pgf fields
         self.update_Values(values)
         
+        EIS_WF_params = {'E0':E0, 'f0':f0, 'f1':f1, 'n_pts':n_pts, 'amp':amp}
+        
+        if EIS_WF_params != self.EIS_WF_params:
+            self.make_EIS_waveform(E0, f0, f1, n_pts, amp)
+        
+        self.EIS_WF_params = EIS_WF_params
         self.EIS_params   = values
         self.EIS_duration = duration
         self.idle()
         self.log('Set EIS parameters')
         return
     
+    def make_EIS_waveform(self, E0, f0, f1, n_pts, amp):
+        generate_tpl(f0, f1, n_pts, amp, 'D:/SECM/_auto_eis_1.tpl')
+    
     
     def run_EIS(self):
         '''
         Send command to run single EIS scan
         '''
+        self.send_command('ExecuteSequence _auto_eis')
+        self.running()
         return
     
     
@@ -399,6 +432,7 @@ class HekaWriter(Logger):
         Run the custom, user-set PGF file
         '''
         self.send_command('ExecuteSequence _custom')
+        self.running()
         return
     
     
@@ -411,6 +445,14 @@ class HekaWriter(Logger):
         save_path: string, path to save to
         name: string, name to save as. save_path/{name}.asc
         '''
+        if self.isRunning():
+            self.log('Got new CV command, but already running!')
+            return
+            
+        if not self.isDataFile():
+            print('== Open a DataFile in PATCHMASTER before recording! ==')
+            return
+        
         if measurement_type == 'CV':
             run_func = self.run_CV
             duration = self.CV_duration
@@ -426,15 +468,7 @@ class HekaWriter(Logger):
         else:
             print('Internal error: invalid measurement_type')
             return
-        
-        if self.isRunning():
-            self.log('Got new CV command, but already running!')
-            return
-            
-        if not self.isDataFile():
-            print('== Open a DataFile in PATCHMASTER before recording! ==')
-            return
-    
+
         
         run_func()
         st = time.time()
@@ -447,7 +481,6 @@ class HekaWriter(Logger):
         while time.time() - st < duration + 3:
             if not self.isRunning():
                 # Wait for run command to get sent to PATCHMASTER
-                self.log('waiting')
                 continue
             time.sleep(0.5)
             if self.master.ABORT:
@@ -482,14 +515,14 @@ def generate_CV_params(E0, E1, E2, E3, scan_rate, quiet_time):
     4. Ramp to E3 (end potential) at scan_rate
     
     Parameter assignments:
-            0: Holding potential (V)
-            1: Holding time      (s)
-            2: E1 potential      (V)
-            3: E1 ramp time      (s)
-            4: E2 potential      (V)
-            5: E2 ramp time      (s)
-            6: End potential     (V)
-            7: End ramp time     (s)
+            0: Holding potential (V) (p1)
+            1: Holding time      (s) (p2)
+            2: E1 potential      (V) (p3)
+            3: E1 ramp time      (s) (p4)
+            4: E2 potential      (V) (p5)
+            5: E2 ramp time      (s) (p6)
+            6: End potential     (V) (p7)
+            7: End ramp time     (s) (p8)
     '''
     rt1 = abs(E1 - E0) / scan_rate
     rt2 = abs(E2 - E1) / scan_rate
@@ -516,8 +549,8 @@ def generate_EIS_params(E_DC, duration):
     *** POTENTIALS IN V, ***
     
     Parameter assignments:
-        0: DC bias   (V)
-        1: scan time (s)
+        0: DC bias   (V) (p1)
+        1: scan time (s) (p2)
     '''
     
     values = {
@@ -525,7 +558,7 @@ def generate_EIS_params(E_DC, duration):
         1: duration,
         }
     
-    return values
+    return values, duration
 
 
 def get_filters(max_freq):
@@ -554,9 +587,9 @@ def get_filters(max_freq):
               if val == best_filt1][0]
     
     
-    return (f'E Filter1 {f1_idx}', 
-            f'E F2Response {f2_type}', 
-            f'E Filter2 {f2_val}')
+    return [f'Set E Filter1 {f1_idx}', 
+            f'Set E F2Response {f2_type}', 
+            f'Set E Filter2 {f2_val/1000}']
 
 
 
