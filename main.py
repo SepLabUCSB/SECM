@@ -52,6 +52,8 @@ TODO:
     
 
 Bugs:
+    - If startup fails, ask if user wants to use 'Testmode'
+    - Starting hopping mode scan doesn't go to correct spot??
     - Sometimes doesn't send run CV command to PATCHMASTER
     - SerialTimeOut for xyz piezo communications
     - Position tracking doesn't restart on abort
@@ -869,13 +871,28 @@ class GUI(Logger):
 
 if __name__ == '__main__':
     tracemalloc.start()
-    master = MasterModule(TEST_MODE = TEST_MODE)
-    reader = HekaReader(master)
-    writer = HekaWriter(master)
-    adc    = ADC(master)
-    piezo  = Piezo(master)
-    motor  = PicoMotor(master)
-    fbc    = FeedbackController(master) # must be loaded last
+    try:
+        master = MasterModule(TEST_MODE = TEST_MODE)
+        reader = HekaReader(master)
+        writer = HekaWriter(master)
+        adc    = ADC(master)
+        piezo  = Piezo(master)
+        motor  = PicoMotor(master)
+        fbc    = FeedbackController(master) # must be loaded last
+    
+    except Exception as e:
+        print('Error loading modules: ')
+        print(e)
+        sel = input('Load in test mode? (y/n) >>>')
+        if sel != 'y':
+            sys.exit()
+        master = MasterModule(TEST_MODE = True)
+        reader = HekaReader(master)
+        writer = HekaWriter(master)
+        adc    = ADC(master)
+        piezo  = Piezo(master)
+        motor  = PicoMotor(master)
+        fbc    = FeedbackController(master) # must be loaded last
     
     root = Tk()
     
