@@ -158,6 +158,17 @@ class Piezo(Logger):
             self.write(cmd)
             self._moving = False
     
+    def goto_z(self, z):
+        '''
+        Set z to the requested value. Doesn't change x or y
+        '''
+        z = float(z)
+        z = (z + 1.843)*(80/(82.001 + 1.843))
+        if self._piezo_on:
+            cmd = f'set,2,{z}'
+            self._moving = True
+            self.write(cmd)
+            self._moving = False
     
     ########################################
     ######                         #########
