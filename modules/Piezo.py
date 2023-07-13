@@ -158,6 +158,17 @@ class Piezo(Logger):
             self.write(cmd)
             self._moving = False
     
+    def goto_z(self, z):
+        '''
+        Set z to the requested value. Doesn't change x or y
+        '''
+        z = float(z)
+        z = (z + 1.843)*(80/(82.001 + 1.843))
+        if self._piezo_on:
+            cmd = f'set,2,{z}'
+            self._moving = True
+            self.write(cmd)
+            self._moving = False
     
     ########################################
     ######                         #########
@@ -205,7 +216,8 @@ class Piezo(Logger):
             if self._halt:
                 break
             z -= step_size
-            self.goto(x,y,z)
+            # self.goto(x,y,z)
+            self.goto_z(z)
             # print(f'{time.time() - st:0.5f}, {z:0.5f}')
             self.x, self.y, self.z = x,y,z
             time.sleep(step_delay)
@@ -247,7 +259,8 @@ class Piezo(Logger):
             if z > 80:
                 break
             z += step_size
-            self.goto(x,y,z)
+            self.goto_z(z)
+            # self.goto(x,y,z)
             self.x, self.y, self.z = x,y,z
             time.sleep(0.001)
         
