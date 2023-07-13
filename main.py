@@ -52,7 +52,6 @@ TODO:
     
 
 Bugs:
-    - If startup fails, ask if user wants to use 'Testmode'
     - Starting hopping mode scan doesn't go to correct spot??
     - Sometimes doesn't send run CV command to PATCHMASTER
     - SerialTimeOut for xyz piezo communications
@@ -776,7 +775,14 @@ class GUI(Logger):
         self.master.make_ready()
         return
     
-    
+    def run_custom(self):
+        ''' Run custom, user-set PGF file '''
+        self.set_amplifier()
+        E0, E1, E2, E3, v, t0 = self.get_CV_params()
+        self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
+        path = self.master.HekaWriter.run_measurement_loop('Custom')
+        self.master.make_ready()
+        return path
     
     
     ########## SECM SCAN CALLBACKS ###########

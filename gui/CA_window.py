@@ -16,6 +16,9 @@ def make_CA_window(gui, master_frame):
     Button(frame, text='Poll ADC',
            command=partial(run, gui.master.ADC.polling)
            ).grid(column=2, row=8)
+    Button(frame, text='Run Custom',
+           command=partial(run, gui.run_custom)
+           ).grid(column=2, row=9)
         
     return
 

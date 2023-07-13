@@ -293,7 +293,7 @@ class FeedbackController(Logger):
         if self.master.TEST_MODE:
             return True
         
-        if expt_type == 'CV':
+        if expt_type in ('CV', 'Custom'):
             self.master.GUI.set_amplifier()
             CV_vals = self.master.GUI.get_CV_params()
             if CV_vals == (0,0,0,0,0,0):
@@ -310,9 +310,9 @@ class FeedbackController(Logger):
             return True
             
         
-        if expt_type == 'Custom':
-            self.master.GUI.set_amplifier()
-            return True
+        # if expt_type == 'Custom':
+        #     self.master.GUI.set_amplifier()
+        #     return True
         
         return False
     
