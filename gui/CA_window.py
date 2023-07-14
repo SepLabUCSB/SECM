@@ -11,7 +11,7 @@ def make_CA_window(gui, master_frame):
     frame = Frame(master_frame)
     frame.grid(column=1, row=1)
     
-    ttk.Label(frame, text='Test').grid(column=2, row=2, sticky=(E))
+    Label(frame, text='Test').grid(column=2, row=2, sticky=(E))
     
     Button(frame, text='Poll ADC',
            command=partial(run, gui.master.ADC.polling)

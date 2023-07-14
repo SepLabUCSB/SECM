@@ -11,7 +11,7 @@ def make_approach_window(gui, master_frame):
     frame = Frame(master_frame)
     frame.grid(column=1, row=1)
     
-    ttk.Label(frame, text='Voltage: ').grid(column=2, row=1, sticky=(E))
+    Label(frame, text='Voltage: ').grid(column=2, row=1, sticky=(E))
     
     V_field = Text(frame, height=1, width=1)
     V_field.grid(column=3, row=1, sticky=(E,W))
@@ -20,10 +20,10 @@ def make_approach_window(gui, master_frame):
     
     Label(frame, text='mV').grid(column=4, row=1, sticky=(W))
     
-    ttk.Label(frame, text='    ').grid(column=1, row=1)
-    ttk.Label(frame, text='Cutoff: ').grid(column=2, row=2, sticky=(E))
-    ttk.Label(frame, text='    ').grid(column=5, row=3)
-    ttk.Label(frame, text='    ').grid(column=5, row=4)
+    Label(frame, text='    ').grid(column=1, row=1)
+    Label(frame, text='Cutoff: ').grid(column=2, row=2, sticky=(E))
+    Label(frame, text='    ').grid(column=5, row=3)
+    Label(frame, text='    ').grid(column=5, row=4)
     
     I_field = Text(frame, height=1, width=1)
     I_field.grid(column=3, row=2, sticky=(E,W))
@@ -33,7 +33,7 @@ def make_approach_window(gui, master_frame):
     Label(frame, text='pA').grid(column=4, row=2, sticky=(W))
     
     
-    ttk.Label(frame, text='Height: ').grid(column=2, row=3, sticky=(E))
+    Label(frame, text='Height: ').grid(column=2, row=3, sticky=(E))
     Z_field = Text(frame, height=1, width=1)
     Z_field.grid(column=3, row=3, sticky=(E,W))
     Z_field.insert('1.0', '80')
@@ -41,7 +41,7 @@ def make_approach_window(gui, master_frame):
     Label(frame, text='um').grid(column=4, row=3, sticky=(W))
     
     
-    ttk.Label(frame, text='Speed: ').grid(column=2, row=4, sticky=(E))
+    Label(frame, text='Speed: ').grid(column=2, row=4, sticky=(E))
     speed_field = Text(frame, height=1, width=1)
     speed_field.grid(column=3, row=4, sticky=(E,W))
     speed_field.insert('1.0', '2')
@@ -58,7 +58,7 @@ def make_approach_window(gui, master_frame):
            command=gui.run_automatic_approach).grid(
                row=7, column = 3, columnspan=2, sticky=(W))
     
-    ttk.Label(frame, text='    ').grid(column=5, row=5)
+    Label(frame, text='    ').grid(column=5, row=5)
     
     approach_params = {'voltage': V_field,
                        'cutoff': I_field,

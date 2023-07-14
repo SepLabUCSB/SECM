@@ -290,12 +290,17 @@ class Plotter(Logger):
         self.minval = None    # Min/ max values for heatmap
         self.maxval = None    # Set as tk.StringVar in popup window
 
+        self.rect = matplotlib.patches.Rectangle((0,0), 0, 0, fill=0,
+                                                 edgecolor='red', lw=2)
+        self.ax1.add_artist(self.rect)
+
         self.init_heatmap()
         self.init_echem_fig()
 
         self.connect_cids()
         self.RectangleSelector = RectangleSelector(self, self.fig1, self.ax1)
-       
+        
+        
      
        
      
@@ -325,8 +330,8 @@ class Plotter(Logger):
         # Clicking on pixel in SECM histogram displays that CV ( or
         # CA, or EIS, ...) in the lower figure
         if event.inaxes == self.ax1:
-            x, y = event.xdata, event.ydata            
-            idx, closest_datapoint = self.master.expt.get_nearest_datapoint(x, y)
+            x, y = event.xdata, event.ydata
+            idx, closest_datapoint = self.select_datapoint(x, y)
             self.set_echemdata(closest_datapoint, sample_freq=10000)
             x0, y0, z0 = closest_datapoint.loc
             if type(z0) == tuple:
@@ -404,7 +409,9 @@ class Plotter(Logger):
         self.fig1.canvas.draw()
         self.fig1.tight_layout()
         self.ax1bg = self.fig1.canvas.copy_from_bbox(self.ax1.bbox)
+        self.rect.set_bounds(0,0,0,0)
         self.ax1.draw_artist(self.image1)
+        self.ax1.draw_artist(self.rect)
         plt.pause(0.001)
         return
     
@@ -464,6 +471,55 @@ class Plotter(Logger):
         self.fig1.canvas.draw_idle()
         self.last_data1checksum = checksum(self.data1)
         plt.pause(0.001)
+    
+    
+    def select_datapoint(self, event_x, event_y):
+        '''
+        Data point locations are offset from pixel locations and
+        get stretched to fit the image grid
+        
+        Returns selected Datapoint object and draws a box on the heatmap
+        '''
+        
+        datapts = self.master.expt.get_loc_data()
+        
+        left, right = self.ax1lim[0][0], self.ax1lim[0][1]
+        pts_in_row = len(datapts[0]) + 1
+        x_bounds = [n for n in np.linspace(left, right, pts_in_row)]
+        y_bounds = [n for n in np.linspace(left, right, pts_in_row)]
+        delta = x_bounds[1] - x_bounds[0]
+        
+        for xline in x_bounds:
+            if event_x >= xline:
+                continue
+            break
+        
+        for yline in y_bounds:
+            if event_y >= yline:
+                continue
+            break
+        
+        # xline is top and yline is left side of pixel
+        # Draw rectangle around the selected point
+        self.rect.set_x(xline - delta)
+        self.rect.set_y(yline - delta)
+        self.rect.set_width(delta)
+        self.rect.set_height(delta)
+        self.ax1.draw_artist(self.rect)
+        self.fig1.canvas.draw_idle()
+        
+        
+        def pt_in_rect(x, y, xline, yline, delta):
+            if (x <= xline) and (x >= xline-delta):
+                if (y <= yline) and (y >= yline-delta):
+                    return True
+            return False
+        
+        for row in datapts:
+            for (x, y) in row:
+                if pt_in_rect(x, y, xline, yline, delta):
+                    return self.master.expt.get_nearest_datapoint(x, y)
+
     
     
     # Enter heatmap zoom mode
@@ -629,6 +685,11 @@ class Plotter(Logger):
             t, V, I = DATAPOINT.get_data()
             V = np.array(V)/10
             I = np.array(I)/DATAPOINT.gain
+            if not self.rect.get_width() == 0:
+                # Unselect last point
+                self.rect.set_bounds(0,0,0,0)
+                self.ax1.draw_artist(self.rect)
+                self.fig1.canvas.draw_idle()
             
         elif isinstance(DATAPOINT, CVDataPoint):
             t, V, I = DATAPOINT.get_data()

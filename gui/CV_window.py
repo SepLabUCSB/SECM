@@ -16,7 +16,7 @@ def make_CV_window(gui, master_frame):
     frame.grid(column=1, row=1)
     figframe.grid(column=2, row=1)
     
-    ttk.Label(frame, text='E0 = ').grid(column=1, row=1, sticky=(E))
+    Label(frame, text='E0 = ').grid(column=1, row=1, sticky=(E))
     
     e1 = Label(frame, text='t0 = ')
     e1.grid(column=1, row=2, sticky=(E))

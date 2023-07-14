@@ -13,12 +13,12 @@ def make_hopping_window(gui, master_frame):
     frame = Frame(master_frame)
     frame.grid(column=1, row=1)
     
-    ttk.Label(frame, text='    ').grid(column=1, row=0)
-    ttk.Label(frame, text='Length: ').grid(column=2, row=1)
-    ttk.Label(frame, text='Z height: ').grid(column=2, row=2, sticky=(E))
-    ttk.Label(frame, text='Points per line: ').grid(column=2, row=3, sticky=(E))
-    ttk.Label(frame, text='    ').grid(column=5, row=4)
-    ttk.Label(frame, text='    ').grid(column=5, row=5)
+    Label(frame, text='    ').grid(column=1, row=0)
+    Label(frame, text='Length: ').grid(column=2, row=1)
+    Label(frame, text='Z height: ').grid(column=2, row=2, sticky=(E))
+    Label(frame, text='Points per line: ').grid(column=2, row=3, sticky=(E))
+    Label(frame, text='    ').grid(column=5, row=4)
+    Label(frame, text='    ').grid(column=5, row=5)
     
     size_field = Text(frame, height=1, width=1)
     size_field.grid(column=3, row=1, sticky=(E,W))
@@ -47,7 +47,7 @@ def make_hopping_window(gui, master_frame):
     Button(frame, text='Hopping mode scan', 
            command=gui.run_hopping).grid(column=3, row=5)
     
-    ttk.Label(frame, text='    ').grid(column=5, row=6)
+    Label(frame, text='    ').grid(column=5, row=6)
     
     hopping_params = {
         'size': size_field,
