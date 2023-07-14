@@ -114,6 +114,8 @@ class HekaWriter(Logger):
         self.master.register(self)
         self.willStop = False
         self.status = 'idle'
+        if self.master.TEST_MODE:
+            return
         
         self.file = input_file   # For EPC10 batch communication
         self.num = 0
