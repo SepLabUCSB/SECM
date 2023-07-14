@@ -204,7 +204,14 @@ class HekaWriter(Logger):
                 continue
         self.log('Timed out waiting for PATCHMASTER to respond with current data file')
         return False
+    
+
+    def set_ascii_export(self):
+        self.send_command('Set @  ExportTarget  "ASCII"')
         
+        
+    def set_matlab_export(self):
+        self.send_command('Set @  ExportTarget  "MatLab"')
                
     
     def save_last_experiment(self, path=None):
@@ -214,6 +221,7 @@ class HekaWriter(Logger):
         save to the default path (which is the same as the 
         current DataFile path) and copy the file to the desired path
         '''
+        print(f'recieved path: {path}')
         self.send_command('GetParameters DataFile')
         st = time.time()
         while time.time() - st < 1:
@@ -236,12 +244,22 @@ class HekaWriter(Logger):
                 self.send_command(f'SetTarget {group},{ser},{sweep},{trace},2,TRUE,TRUE')
                 break
         
+        # Hopping mode --> export as .mat
+        # Otherwise, as ascii
+        if (not path or path == 'None/.asc'):
+            self.set_ascii_export()
+        else:
+            self.set_matlab_export()
+            savepath = savepath.replace('.asc', '.mat')
+            path     = path.replace('.asc', '.mat')
+        
+        
         self.send_command(f'Export overwrite, {savepath}')
         
         st = time.time()
         while True: # Wait for file creation by PATCHMASTER
             response = self.master.HekaReader.last
-            if time.time() - st > 5:
+            if time.time() - st > 30:
                 self.log('save_last_experiment timed out waiting for PATCHMASTER!')
                 return ''
             try:
@@ -253,7 +271,10 @@ class HekaWriter(Logger):
                     break
             except: pass # Response may be None or a single '+000xx'
         
+        
         if (not path or path == 'None/.asc'): 
+            # Data was not recorded as part of a scanning experiment
+            # Save it with the timestamp
             self.send_command('GetParameters SeriesDate, SeriesTime')
             time.sleep(0.01)
             SeriesDate, SeriesTime = self.master.HekaReader.last[1].split(',')

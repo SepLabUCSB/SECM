@@ -18,6 +18,9 @@ def read_heka_data(file):
     Convert only floats to np arrays
     '''
     
+    if file.endswith('.mat'):
+        return extract_matlab_iv_data(file)
+    
     def isFloat(x):
         try: 
             float(x)
@@ -35,7 +38,8 @@ def read_heka_data(file):
         s.seek(0)
         array = np.genfromtxt(s, delimiter=',')
         array = array.T
-        return array
+        _, t, i, _, v = array
+        return t, v, i
     
 
 def extract_matlab_iv_data(file):
@@ -414,8 +418,7 @@ class FeedbackController(Logger):
                                            save_path=save_path,
                                            name=name
                                            )
-        output = read_heka_data(path)
-        _, t, i, _, v = output
+        t, v, i = read_heka_data(path)
         return t, v, i
     
     
@@ -430,8 +433,7 @@ class FeedbackController(Logger):
         path = self.master.HekaWriter.run_measurement_loop(
             'EIS', save_path = save_path, name=name)
         
-        output = read_heka_data(path)
-        _, t, i, _, v = output
+        t, v, i = read_heka_data(path)
         return t, v, i
     
     
@@ -445,8 +447,7 @@ class FeedbackController(Logger):
         path = self.master.HekaWriter.run_measurement_loop(
             'Custom', save_path = save_path, name=name)
         
-        output = read_heka_data(path)
-        _, t, i, _, v = output
+        t, v, i = read_heka_data(path)
         return t, v, i
     
 
