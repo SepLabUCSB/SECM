@@ -2,6 +2,7 @@ import numpy as np
 import time
 from io import StringIO
 import os
+import scipy.io
 from functools import partial
 from utils.utils import run, Logger
 from modules.DataStorage import Experiment, CVDataPoint, EISDataPoint
@@ -10,8 +11,12 @@ from modules.DataStorage import Experiment, CVDataPoint, EISDataPoint
 
 
 def read_heka_data(file):
-    # Use StringIO to parse through file (fastest method I've found)
-    # Convert only floats to np arrays
+    '''
+    Parse PATCHMASTER-output csv files.
+    
+    Use StringIO to parse through file (fastest method I've found)
+    Convert only floats to np arrays
+    '''
     
     def isFloat(x):
         try: 
@@ -31,6 +36,52 @@ def read_heka_data(file):
         array = np.genfromtxt(s, delimiter=',')
         array = array.T
         return array
+    
+
+def extract_matlab_iv_data(file):
+    '''
+    Extracts I-V type data from a PATHCMASTER-generated .mat file.
+    Assumes Trace 1 in PATCHMASTER is I (Current)
+    Assumes Trace 2 in PATCHMASTER is V (Voltage)
+    
+    Returns times, voltages, currents
+    
+    Exporting binary .mat files from PATCHMASTER is much, much faster
+    than exporting as csv files    
+    '''
+    d = scipy.io.loadmat(file)
+    
+    
+    sweeps = []
+    traces = []
+    for key in d.keys():
+        if not key.startswith('Trace'):
+            continue
+        a,b,c, sweep, trace = key.split('_')
+        sweeps.append(int(sweep))
+        traces.append(int(trace))
+        
+    sweeps = list(set(sweeps))
+    traces = list(set(traces))
+    
+    T = np.array([])
+    V = np.array([])
+    I = np.array([])
+    
+    for sweep in sweeps:
+        for trace in traces:
+            key = f'{a}_{b}_{c}_{sweep}_{trace}'
+            arr = d[key]                         # [ [t1, v1], [t2, v2], ...]
+            arr = arr.transpose()                # [ [t1, t2, ...], [v1, v2, ...] ]
+            ts, vals = arr
+            if trace == traces[0]:
+                T = np.append(T,ts)
+            if trace == 1:
+                I = np.append(I, vals)
+            elif trace == 2:
+                V = np.append(V, vals)
+                
+    return T, V, I
     
 
 
