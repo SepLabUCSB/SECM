@@ -28,7 +28,7 @@ default_stderr = sys.stderr
 matplotlib.use('TkAgg')
 plt.style.use('secm.mplstyle')
 
-TEST_MODE = False
+TEST_MODE = True
 
 
     
@@ -225,9 +225,11 @@ class GUI(Logger):
         menu_file       = Menu(menubar)
         menu_settings   = Menu(menubar)
         menu_heatmap    = Menu(menubar)
+        menu_analysis   = Menu(menubar)
         menubar.add_cascade(menu=menu_file, label='File')
         menubar.add_cascade(menu=menu_settings, label='Settings')
         menubar.add_cascade(menu=menu_heatmap, label='Heatmap')
+        menubar.add_cascade(menu=menu_analysis, label='Analysis')
         
         
         menu_file.add_command(label='New', command=self.newFile)
@@ -243,6 +245,8 @@ class GUI(Logger):
         menu_heatmap.add_command(label='Set scale...', command=self.set_heatmap_scale)
         menu_heatmap.add_command(label='Set colors...', command=self.set_heatmap_colors)
         menu_heatmap.add_command(label='Line scan', command=self.heatmap_line_scan)
+        
+        menu_analysis.add_command(label='Set analysis function...', command=self.set_analysis_func)
         
         
                 
@@ -316,7 +320,8 @@ class GUI(Logger):
             'Current @ ... (V)',
             'Current @ ... (t)',
             'Z height',
-            'Avg. current'
+            'Avg. current',
+            'Analysis func.'
             ]
         self.heatmapselection = StringVar(topfigframe)
         OptionMenu(topfigframe, self.heatmapselection, 
@@ -687,7 +692,13 @@ class GUI(Logger):
         Open popup for user to set the color map
         '''
         self.master.Plotter.heatmap_color_popup()
-        
+    
+    
+    def set_analysis_func(self):
+        '''
+        Open popup for user to select the analysis function
+        '''
+        self.master.Plotter.set_analysis_popup()
     
     
     def set_new_area(self):

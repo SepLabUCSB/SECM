@@ -1,7 +1,7 @@
 import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
 import numpy as np
+import os
 from tkinter import *
 from tkinter.ttk import *
 from utils.utils import Logger, nearest
@@ -94,7 +94,7 @@ def unit_label(d:float):
 
     prefix = ''
 
-    if degree != 0:
+    if abs(degree) > 1:
         sign = degree / np.fabs(degree)
         if sign == 1:
             if degree - 1 < len(inc_prefixes):
@@ -112,10 +112,10 @@ def unit_label(d:float):
 
         scaled = float(d * pow(1000, -degree))
 
-        s = f"{scaled:0.1f} {prefix}"
+        s = f"{scaled:.0f} {prefix}"
 
     else:
-        s = f"{d:0.1f}"
+        s = f"{d:.03f}"
     return s
 
 
@@ -275,6 +275,7 @@ class Plotter(Logger):
         self.adc_polling = True
         self.adc_polling_count = 0
         self.FIG2_FORCED = False
+        self.analysis_function = None
         
         self.fig1 = fig1
         self.fig2 = fig2
@@ -444,7 +445,21 @@ class Plotter(Logger):
             pts = expt.get_heatmap_data('z')
         if option == 'Avg. current':
             pts = expt.get_heatmap_data('avg')
-        
+        if option == 'Analysis func.':
+            if not self.analysis_function:
+                print('No analysis function selected!')
+                return
+            value = value.replace('\n', '')
+            pts = expt.data.copy()
+            for i,row in enumerate(pts):
+                for j,pt in enumerate(row):
+                    try:
+                        pts[i][j] = self.analysis_function(pt, value)
+                    except Exception as e:
+                        self.log(f'Heatmap error: {e}')
+                        pts[i][j] = float(0)
+            pts = pts.astype(float)
+                        
         if len(pts) > 0:
             self.data1 = pts #will update plot automatically
         return
@@ -639,6 +654,15 @@ class Plotter(Logger):
         self.minval = None
         self.maxval = None
         self.update_fig1()
+     
+    
+    def set_analysis_popup(self):
+        # Opens a window where user can choose what function to apply
+        # to each datapoint in the heatmap
+        # Functions are pulled from /analysis/
+        from analysis import CV_decay
+        functions = {'CV_decay.analysis': CV_decay.analysis,}
+        self.analysis_function = CV_decay.analysis
         
 
     
