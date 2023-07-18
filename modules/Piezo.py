@@ -78,6 +78,8 @@ class Piezo(Logger):
         # Output actuator position instead of voltage
         self.write_and_read('monwpa,0,1')
         
+        self.goto(0,0,80)
+        
         self.log('Setup complete')
         self.start_monitoring()
    
@@ -124,6 +126,8 @@ class Piezo(Logger):
         try:
             location = location.split('aw')[1]
             _, x, y, z = location.strip('\r').split(',')
+            x, y, z = float(x), float(y), float(z)
+            x = 80 - x
             self.x, self.y, self.z = float(x), float(y), float(z)
             return (self.x, self.y, self.z)
         except:
@@ -148,6 +152,9 @@ class Piezo(Logger):
         correct for this offset here so the coordinates we request
         are the coordinates we get
         '''
+        
+        x = 80 - x   # Piezo has left-hand coordinates, we want right-hand
+        
         x = (x + 1.742)*(80/(82.090 + 1.742))
         y = (y + 1.825)*(80/(81.980 + 1.825))
         z = (z + 1.843)*(80/(82.001 + 1.843))
@@ -351,33 +358,33 @@ if __name__ == '__main__':
     piezo.stop_monitoring()
     
     
-    # time.sleep(0.2)
-    # piezo.goto(0,0,0)
-    # time.sleep(0.3)
+    time.sleep(0.2)
+    piezo.goto(0,0,0)
+    time.sleep(0.3)
         
-    # for i in range(50):
-    #     print(f'====== {i} ======')
-    #     coords = []
-    #     for n in (0, 80):
-    #         piezo.goto(n,n,n)
-    #         time.sleep(1)
-    #         x,y,z = piezo.measure_loc()
-    #         coords.append((x,y,z))
-    #     print(f'x: {coords[0][0]}, {coords[1][0]}')
-    #     print(f'y: {coords[0][1]}, {coords[1][1]}')
-    #     print(f'z: {coords[0][2]}, {coords[1][2]}')
+    for i in range(15):
+        print(f'====== {i} ======')
+        coords = []
+        for n in (0, 80):
+            piezo.goto(n,n,n)
+            time.sleep(1)
+            x,y,z = piezo.measure_loc()
+            coords.append((x,y,z))
+        print(f'x: {coords[0][0]}, {coords[1][0]}')
+        print(f'y: {coords[0][1]}, {coords[1][1]}')
+        print(f'z: {coords[0][2]}, {coords[1][2]}')
     
-    # piezo.stop()
+    piezo.stop()
     
-    # zeros = [t for t in coords if t[0] < 50]
-    # maxes = [t for t in coords if t[0] >= 50]
+    zeros = [t for t in coords if t[0] < 50]
+    maxes = [t for t in coords if t[0] >= 50]
     
-    # xz, yz, zz = zip(*zeros)
-    # xm, ym, zm = zip(*maxes)
+    xz, yz, zz = zip(*zeros)
+    xm, ym, zm = zip(*maxes)
     
-    # print(f'X: {np.mean(xz):0.3f} ± {np.std(xz):0.3f}, {np.mean(xm):0.3f} ± {np.std(xm):0.3f}')
-    # print(f'Y: {np.mean(yz):0.3f} ± {np.std(yz):0.3f}, {np.mean(ym):0.3f} ± {np.std(ym):0.3f}')
-    # print(f'Z: {np.mean(zz):0.3f} ± {np.std(zz):0.3f}, {np.mean(zm):0.3f} ± {np.std(zm):0.3f}')
+    print(f'X: {np.mean(xz):0.3f} ± {np.std(xz):0.3f}, {np.mean(xm):0.3f} ± {np.std(xm):0.3f}')
+    print(f'Y: {np.mean(yz):0.3f} ± {np.std(yz):0.3f}, {np.mean(ym):0.3f} ± {np.std(ym):0.3f}')
+    print(f'Z: {np.mean(zz):0.3f} ± {np.std(zz):0.3f}, {np.mean(zm):0.3f} ± {np.std(zm):0.3f}')
         
     
     
