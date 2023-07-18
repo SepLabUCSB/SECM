@@ -17,6 +17,8 @@ def read_heka_data(file):
     Use StringIO to parse through file (fastest method I've found)
     Convert only floats to np arrays
     '''
+    if file == 'MEAS_ABORT':
+        return 0,0,0
     
     if file.endswith('.mat'):
         return extract_matlab_iv_data(file)
@@ -321,6 +323,10 @@ class FeedbackController(Logger):
                         
             # Run echem experiment on surface
             data = self.run_echems(expt_type, expt, (x, y, z), i) # TODO: run variable echem experiment(s) at each pt
+            if not data:
+                # Aborted during HEKA measurement
+                self.log('Hopping mode aborted')
+                return
             
             # Save data
             grid_i, grid_j = order[i]  
@@ -382,14 +388,20 @@ class FeedbackController(Logger):
         '''
         if expt_type == 'CV':
             t, voltage, current = self.run_CV(expt.path, i)
+            if type(t) == int:
+                return None
             data = CVDataPoint(loc = loc, data = [t, voltage, current])
         
         if expt_type == 'EIS':
             t, voltage, current = self.run_EIS(expt.path, i)
+            if type(t) == int:
+                return None
             data = EISDataPoint(loc = loc, data = [t, voltage, current])
         
         if expt_type == 'Custom':
             t, voltage, current = self.run_custom(expt.path, i)
+            if type(t) == int:
+                return None
             data = CVDataPoint(loc = loc, data = [t, voltage, current])
                         
         return data
