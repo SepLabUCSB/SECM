@@ -413,7 +413,7 @@ class Plotter(Logger):
         self.ax1.spines['top'].set_visible(True)
         self.fig1.canvas.draw()
         self.fig1.tight_layout()
-        self.ax1bg = self.fig1.canvas.copy_from_bbox(self.ax1.bbox)
+        # self.ax1bg = self.fig1.canvas.copy_from_bbox(self.ax1.bbox)
         self.rect.set_bounds(0,0,0,0)
         self.ax1.draw_artist(self.image1)
         self.ax1.draw_artist(self.rect)
@@ -463,7 +463,8 @@ class Plotter(Logger):
                         self.log(f'Heatmap error: {e}')
                         pts[i][j] = float(0)
             pts = pts.astype(float)
-                        
+        
+                      
         if len(pts) > 0:
             self.data1 = pts #will update plot automatically
         return
