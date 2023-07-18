@@ -116,7 +116,7 @@ def unit_label(d:float):
 
         scaled = float(d * pow(1000, -degree))
 
-        s = f"{scaled:.0f} {prefix}"
+        s = f"{scaled:0.2f} {prefix}"
 
     else:
         s = f"{d:.03f}"
@@ -402,7 +402,7 @@ class Plotter(Logger):
     def init_heatmap(self):
         self.image1 = self.ax1.imshow(np.array([
             np.array([0 for _ in range(10)]) for _ in range(10)
-            ], dtype=np.float32), cmap='afmhot', origin='upper')
+            ], dtype=np.float32), cmap='viridis', origin='upper')
         cb = self.fig1.colorbar(self.image1, ax=self.ax1, shrink=0.5,
                                 pad=0.02, format="%0.1e")
         cb.ax.tick_params(labelsize=14)
@@ -557,7 +557,7 @@ class Plotter(Logger):
     
     # Popup to set color map
     def heatmap_color_popup(self):
-        cmaps = ['afmhot', 'hot', 'gist_gray', 'viridis', 'plasma', 'inferno', 
+        cmaps = ['viridis', 'hot', 'gist_gray', 'afmhot', 'plasma', 'inferno', 
                  'magma', 'cividis','Greys', 'Purples', 'Blues', 'Greens', 
                  'Oranges', 'Reds', 'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 
                  'BuPu','GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn']

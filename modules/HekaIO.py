@@ -223,7 +223,6 @@ class HekaWriter(Logger):
         save to the default path (which is the same as the 
         current DataFile path) and copy the file to the desired path
         '''
-        print(f'recieved path: {path}')
         self.send_command('GetParameters DataFile')
         st = time.time()
         while time.time() - st < 1:
@@ -245,6 +244,13 @@ class HekaWriter(Logger):
                 group, ser, sweep, trace, target = dat.split(',')
                 self.send_command(f'SetTarget {group},{ser},{sweep},{trace},2,TRUE,TRUE')
                 break
+            
+        # Set oscilloscope to show full time, 0-> 100%. Otherwise,
+        # PATCHMASTER only exports the times displayed on the scope
+        time.sleep(0.1)
+        self.send_multiple_cmds([f'Set O Xmin 0',
+                                 f'Set O Xmax 100',
+                                 f'Set O AutoSweep'])
         
         # Hopping mode --> export as .mat
         # Otherwise, as ascii
@@ -501,6 +507,7 @@ class HekaWriter(Logger):
                     timeout = duration))
         
         # Measurement loop
+        success = False
         while time.time() - st < duration + 3:
             if not self.isRunning():
                 # Wait for run command to get sent to PATCHMASTER
@@ -509,15 +516,17 @@ class HekaWriter(Logger):
             if self.master.ABORT:
                 self.master.ADC.STOP_POLLING()
                 self.abort()
-                break
+                self.idle()
+                return 'MEAS_ABORT'
             self.send_command('Query')
             try:
                 if self.master.HekaReader.last[1] == 'Query_Idle':
+                    success = True
                     break 
             except:
                 pass
             
-        if not self.master.HekaReader.last[1] == 'Query_Idle':
+        if not success:
             self.log(f'Experiment {measurement_type} failed!')         
         
         self.master.ADC.STOP_POLLING()
