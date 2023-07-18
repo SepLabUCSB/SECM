@@ -8,6 +8,10 @@ from utils.utils import Logger, nearest
 from modules.DataStorage import (ADCDataPoint, CVDataPoint, 
                                  SinglePoint)
 
+# Import any analysis functions here and add to Plotter.set_analysis_popup()!
+from analysis import CV_decay, peak_analysis
+
+
 # For time domain plotting
 x_maxes = [5, 10, 30, 60] + [120*i for i in range(1, 60)]
 
@@ -659,11 +663,22 @@ class Plotter(Logger):
     def set_analysis_popup(self):
         # Opens a window where user can choose what function to apply
         # to each datapoint in the heatmap
-        # Functions are pulled from /analysis/
-        from analysis import CV_decay
-        functions = {'CV_decay.analysis': CV_decay.analysis,}
-        self.analysis_function = CV_decay.analysis
+        # Add any new functions to this dictionary to make them selectable
+        functions = {'CV_decay': CV_decay.analysis,
+                     # 'peak_analysis': peak_analysis.analysis,
+                     }
         
+        popup = Toplevel()
+        frame = Frame(popup)
+        frame.grid(row=0, column=0)
+        selection = StringVar()
+        OptionMenu(frame, selection, list(functions.keys())[0],
+                   *list(functions.keys())).grid(row=0, column=0)
+        Button(frame, text='Close', command=popup.destroy).grid(
+            row=1, column=0)
+        popup.wait_window()
+        
+        self.analysis_function = functions[selection.get()]
 
     
 

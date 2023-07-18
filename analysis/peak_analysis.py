@@ -5,8 +5,6 @@ from scipy.signal import find_peaks, savgol_filter
 from scipy.optimize import curve_fit
 
 
-plt.style.use('C:/Users/BRoehrich/Desktop/git/SECM/secm.mplstyle')
-
 
 class CV:
     def __init__(self, t, V, I):
@@ -148,24 +146,32 @@ def run(file):
     
     peaks, props = peak_integration(t, V, I)
     return
-    
-files = ["C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/05_01.asc",
-"C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/03_06.asc",
-"C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/03_07.asc",
-"C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/03_08.asc",
-"C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/03_09.asc",
-"C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_01.asc",
-"C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_02.asc",
-"C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_03.asc",
-"C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_04.asc",
-"C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_05.asc",
-"C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_06.asc",
-"C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_07.asc",
-"C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_08.asc",
-"C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_09.asc"]
 
-for file in files:
-    run(file)
+def analysis():
+    print('OK')
+    return
+ 
+
+if __name__ == '__main__':   
+    plt.style.use('C:/Users/BRoehrich/Desktop/git/SECM/secm.mplstyle')
+    files = ["C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/05_01.asc",
+    "C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/03_06.asc",
+    "C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/03_07.asc",
+    "C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/03_08.asc",
+    "C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/03_09.asc",
+    "C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_01.asc",
+    "C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_02.asc",
+    "C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_03.asc",
+    "C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_04.asc",
+    "C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_05.asc",
+    "C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_06.asc",
+    "C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_07.asc",
+    "C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_08.asc",
+    "C:/Users/BRoehrich/Desktop/SECCM data/20230706 region1/04_09.asc"]
+    
+    
+    for file in files:
+        run(file)
 
 
         
