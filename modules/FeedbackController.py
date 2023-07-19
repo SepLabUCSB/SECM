@@ -126,7 +126,7 @@ class FeedbackController(Logger):
         s = self.est_time_remaining
         hr  = int(np.floor(s/3600))
         mi  = int(np.floor((s - hr*3600)/60))
-        sec = s - hr*3600 - mi*60
+        sec = int(s - hr*3600 - mi*60)
         return f'{hr:02} hr, {mi:02} min, {sec:02} s'
     
     
@@ -358,7 +358,7 @@ class FeedbackController(Logger):
             # Recalculate remaining time
             point_times.append(time.time() - pt_st_time)
             avg_time = np.mean(point_times)
-            self.est_time_remaining = (len(points[::-2]) - i)/avg_time
+            self.est_time_remaining = (len(points[:-2]) - (i+1))*avg_time
         
         z = self.Piezo.retract(height=80, relative=False)
         self.Piezo.goto(80,80,80)
