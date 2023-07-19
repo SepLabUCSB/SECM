@@ -4,9 +4,10 @@ from tkinter import filedialog
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib
+from libtiff import TIFF
 
 from modules.DataStorage import Experiment, load_from_file
-from modules.Plotter import Plotter
+from modules.Plotter import Plotter, RectangleSelector
 
 matplotlib.use('TkAgg')
 plt.style.use('secm.mplstyle')
@@ -15,6 +16,58 @@ plt.style.use('secm.mplstyle')
 
 class viewerPlotter(Plotter):
     pass
+
+
+class viewerRectangleSelector(RectangleSelector):
+    def snap_to_grid(self):
+        return
+
+
+class ImageWindow():
+    def __init__(self, MainWindow, img_file):
+        self.master   = MainWindow
+        self.img_file = img_file
+        
+        self.window = Toplevel()        
+        self.window.title('Image')
+        self.window.attributes('-topmost', 1)
+        self.window.attributes('-topmost', 0)
+        
+        
+        
+        frame = Frame(self.window)
+        frame.grid(row=0, column=0)
+        Button(frame, text='Draw grid...', command=self.drag_grid).grid(
+            row=0, column=0, sticky=(W))
+        self.fig = plt.Figure(figsize=(5,5), dpi=100)
+        self.ax  = self.fig.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=frame)
+        self.canvas.get_tk_widget().grid(row=1, column=0)
+        self.fig.canvas.draw()
+        self.fig.tight_layout()
+        plt.pause(0.001)
+        
+        self.show_image()
+        self.RectangleSelector = viewerRectangleSelector(self, self.fig, self.ax)
+        
+    def show_image(self):
+        tif = TIFF.open(self.img_file)
+        self.img = tif.read_image()
+        self.image = self.ax.imshow(self.img, cmap='gist_gray')
+        self.ax.draw_artist(self.image)
+        plt.pause(0.01)
+        
+        
+    def drag_grid(self):
+        self.RectangleSelector.connect()
+        
+    def connect_cids(self):
+        pass
+        
+        
+        
+
+
 
 
 
@@ -35,6 +88,7 @@ class MainWindow():
         menubar.add_cascade(menu=menu_file, label='File')
         
         menu_file.add_command(label='Open...', command=self.open_file)
+        menu_file.add_command(label='Open SEM image...', command=self.open_image)
         menu_file.add_command(label='Save Settings', command=self.save_settings)
         menu_file.add_command(label='Quit', command=self.Quit)
         
@@ -119,6 +173,14 @@ class MainWindow():
         self.expt = load_from_file(f)
         self.Plotter.load_from_expt(self.expt)
         self.update()
+        
+    
+    def open_image(self):
+        f = filedialog.askopenfilename(initialdir='Z:\Projects\Brian\TEM and SEM')
+        if not f.endswith('.tif'):
+            return
+        self.ImageWindow = ImageWindow(self, f)
+        
     
     def save_settings(self):
         pass
