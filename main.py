@@ -275,10 +275,10 @@ class GUI(Logger):
         timeestframe = Frame(leftpanel)
         timeestframe.grid(row=1, column=0)
         Label(timeestframe, text='Estimated time remaining: ').grid(
-            row=0, column=0, sticky=(W,E))
+            row=0, column=0, sticky=(W))
         self._time_est = StringVar()
-        Entry(timeestframe, textvariable=self._time_est, width=10).grid(
-            row=0, column=0, sticky=(W,E))
+        Label(timeestframe, textvariable=self._time_est, width=20).grid(
+            row=0, column=1, sticky=(W), columnspan=2)
         
         pstat_frame = Frame(leftpanel)
         pstat_frame.grid(row=2, column=0, sticky=(N,S,W,E))

@@ -127,7 +127,7 @@ class FeedbackController(Logger):
         hr  = int(np.floor(s/3600))
         mi  = int(np.floor((s - hr*3600)/60))
         sec = s - hr*3600 - mi*60
-        return f'{hr:02} hr, {min:02} min, {sec:02} s'
+        return f'{hr:02} hr, {mi:02} min, {sec:02} s'
     
     
     def automatic_approach(self):
