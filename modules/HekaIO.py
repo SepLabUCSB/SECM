@@ -271,10 +271,10 @@ class HekaWriter(Logger):
                 self.log('save_last_experiment timed out waiting for PATCHMASTER!')
                 return ''
             try:
-                if response[1].startswith('error'):
-                    self.log('File export error!')
-                    print('file export error!')
-                    return ''
+                # if response[1].startswith('error'):
+                #     self.log('File export error!')
+                #     print('file export error!')
+                #     return ''
                 if response[1].startswith('Reply_Export'):
                     break
             except: pass # Response may be None or a single '+000xx'
