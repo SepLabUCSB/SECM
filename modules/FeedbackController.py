@@ -356,7 +356,7 @@ class FeedbackController(Logger):
             time.sleep(0.01)
             
             # Recalculate remaining time
-            point_times.append(time.time() - pt_start_time)
+            point_times.append(time.time() - pt_st_time)
             avg_time = np.mean(point_times)
             self.est_time_remaining = (len(points[::-2]) - i)/avg_time
         
