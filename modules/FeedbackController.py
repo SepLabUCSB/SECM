@@ -3,6 +3,7 @@ import time
 from io import StringIO
 import os
 import scipy.io
+import datetime
 from functools import partial
 from utils.utils import run, Logger
 from modules.DataStorage import Experiment, CVDataPoint, EISDataPoint
@@ -111,8 +112,22 @@ class FeedbackController(Logger):
         self.ADC = self.master.ADC
         self.HekaWriter = self.master.HekaWriter
         
+        self.est_time_remaining = 0
+        
         self._is_running = False
         self._piezo_counter = self.Piezo.counter
+    
+        
+    def get_time_remaining(self):
+        '''
+        Returns string with the estimated time remaining in the experiment
+        in format "00 hr 00 min 00 s"
+        '''
+        s = self.est_time_remaining
+        hr  = int(np.floor(s/3600))
+        mi  = int(np.floor((s - hr*3600)/60))
+        sec = s - hr*3600 - mi*60
+        return f'{hr:02} hr, {min:02} min, {sec:02} s'
     
     
     def automatic_approach(self):
@@ -293,8 +308,10 @@ class FeedbackController(Logger):
             retract_distance = 6
             forced_step_size = None
         
+        point_times = []
+        
         for i, (x, y) in enumerate(points[:-2]):
-            
+            pt_st_time = time.time()
             # Retract from surface
             if (i !=0) and (not self.master.TEST_MODE):
                 # z = self.Piezo.retract(height=retract_distance, 
@@ -337,9 +354,15 @@ class FeedbackController(Logger):
             
             expt.save()
             time.sleep(0.01)
+            
+            # Recalculate remaining time
+            point_times.append(time.time() - pt_start_time)
+            avg_time = np.mean(point_times)
+            self.est_time_remaining = (len(points[::-2]) - i)/avg_time
         
         z = self.Piezo.retract(height=80, relative=False)
         self.Piezo.goto(80,80,80)
+        self.est_time_remaining = 0
         
         # self.Piezo.goto(curr_x, curr_y, z_max)
         # self.master.expt = expt

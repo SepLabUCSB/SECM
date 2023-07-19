@@ -272,12 +272,20 @@ class GUI(Logger):
         Button(abortbuttonframe, text='Stop', command=self.master.abort,
                width=50).grid(row=0, column=0, sticky=(W,E))
         
+        timeestframe = Frame(leftpanel)
+        timeestframe.grid(row=1, column=0)
+        Label(timeestframe, text='Estimated time remaining: ').grid(
+            row=0, column=0, sticky=(W,E))
+        self._time_est = StringVar()
+        Entry(timeestframe, textvariable=self._time_est, width=10).grid(
+            row=0, column=0, sticky=(W,E))
+        
         pstat_frame = Frame(leftpanel)
-        pstat_frame.grid(row=1, column=0, sticky=(N,S,W,E))
+        pstat_frame.grid(row=2, column=0, sticky=(N,S,W,E))
         secm_frame = Frame(leftpanel)
-        secm_frame.grid(row=2, column=0, sticky=(N,S,W,E))
+        secm_frame.grid(row=3, column=0, sticky=(N,S,W,E))
         piezo_frame = Frame(leftpanel)
-        piezo_frame.grid(row=3, column=0, sticky=(N,S,W,E))
+        piezo_frame.grid(row=4, column=0, sticky=(N,S,W,E))
         
                    
         ######################################
@@ -520,9 +528,15 @@ class GUI(Logger):
     
     
     def _update_piezo_display(self):
+        # Update piezo position fields
         self._x_display.set(f'{self.master.Piezo.x:0.3f}')
         self._y_display.set(f'{self.master.Piezo.y:0.3f}')
         self._z_display.set(f'{self.master.Piezo.z:0.3f}')
+        
+        # Update time remaining estimate field
+        time_est = self.master.FeedbackController.get_time_remaining()
+        self._time_est.set(f'{time_est}')
+        
         self.root.after(250, self._update_piezo_display)
         
     ########## GUI CALLBACKS ###########    
