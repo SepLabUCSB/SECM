@@ -245,7 +245,7 @@ class ADC(Logger):
                 self.pollingdata.append_data(ts,
                                              data[0],
                                              data[1])
-                self.pollingdata.reset_times() # make time points evenly spaced
+                # self.pollingdata.reset_times() # make time points evenly spaced
                 
                 # Reset time counter
                 last_timepoint = this_timepoint

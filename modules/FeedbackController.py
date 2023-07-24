@@ -162,7 +162,7 @@ class FeedbackController(Logger):
                 self.Piezo.retract(10, relative=True)
                 break
             
-            self.Piezo.goto(0,0,height)
+            self.Piezo.goto(80,80,height)
             time.sleep(0.05)
             self.master.PicoMotor.step(2000) # 2000 steps ~= 60 um
             time.sleep(3)    
@@ -216,7 +216,7 @@ class FeedbackController(Logger):
         # Setup potentiostat and ADC
         self.HekaWriter.macro(f'E Vhold {voltage}')
         gain  = 1e9 * self.master.GUI.amp_params['float_gain']
-        srate = 200
+        srate = 500
         self.ADC.set_sample_rate(srate)
         run(partial(self.ADC.polling, 5000))
         time.sleep(0.005)
@@ -228,6 +228,7 @@ class FeedbackController(Logger):
             time.sleep(1)
             _,_,I = self.ADC.pollingdata.get_data(int(0.8*srate))
             baseline_I = np.mean(I)
+            self.log(f'Measured background current of {baseline_I/gain:0.2e}')
         
         
 
@@ -237,6 +238,7 @@ class FeedbackController(Logger):
         
         on_surface = False
         time.sleep(0.1)
+        self.master.Plotter.FIG2_FORCED = True # Don't draw ADC data
         while True:
             '''
             Loop checks if approach curve is finished due to
@@ -245,10 +247,10 @@ class FeedbackController(Logger):
             3. current > cutoff criterium
             '''
             if self.master.ABORT:
-                self.log('stopped approach on abort')
+                self.log('Stopped approach on abort')
                 break
             if self.Piezo.counter != self._piezo_counter:
-                self.log('piezo stopped')
+                self.log('Piezo stop detected')
                 break
             
             _, _, I = self.ADC.pollingdata.get_data(10)
@@ -267,6 +269,7 @@ class FeedbackController(Logger):
         
         self.ADC.STOP_POLLING()  
         self.Piezo.start_monitoring()
+        self.master.Plotter.FIG2_FORCED = False
         self._piezo_counter = self.Piezo.counter
         return self.Piezo.z, on_surface
     
