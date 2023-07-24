@@ -32,6 +32,10 @@ def make_approach_window(gui, master_frame):
     
     Label(frame, text='pA').grid(column=4, row=2, sticky=(W))
     
+    rel_current_option = StringVar(frame)
+    OptionMenu(frame, rel_current_option, 'Relative', 
+               *['Relative', 'Absolute']).grid(column=5,row=2,sticky=(W))
+    
     
     Label(frame, text='Height: ').grid(column=2, row=3, sticky=(E))
     Z_field = Text(frame, height=1, width=1)
@@ -62,6 +66,7 @@ def make_approach_window(gui, master_frame):
     
     approach_params = {'voltage': V_field,
                        'cutoff': I_field,
+                       'rel_current': rel_current_option,
                        'z_height': Z_field,
                        'approach_speed': speed_field,}
     

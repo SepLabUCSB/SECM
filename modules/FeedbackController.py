@@ -189,10 +189,12 @@ class FeedbackController(Logger):
         voltage = self.master.GUI.params['approach']['voltage'].get('1.0', 'end')
         cutoff  = self.master.GUI.params['approach']['cutoff'].get('1.0', 'end')
         speed   = self.master.GUI.params['approach']['approach_speed'].get('1.0', 'end')
+        rel_opt = self.master.GUI.params['approach']['rel_current'].get()
         try:
             voltage = float(voltage)
             i_cutoff = float(cutoff) * 1e-12
             speed = float(speed)
+            use_rel_I = True if rel_opt == 'Relative' else False
         except Exception as e:
             print('Invalid approach curve entry!')
             print(e)
@@ -213,10 +215,20 @@ class FeedbackController(Logger):
         
         # Setup potentiostat and ADC
         self.HekaWriter.macro(f'E Vhold {voltage}')
-        gain = 1e9 * self.master.GUI.amp_params['float_gain']
-        self.ADC.set_sample_rate(200)
+        gain  = 1e9 * self.master.GUI.amp_params['float_gain']
+        srate = 200
+        self.ADC.set_sample_rate(srate)
         run(partial(self.ADC.polling, 5000))
         time.sleep(0.005)
+        
+        
+        # Measure background current if needed
+        baseline_I = 0
+        if use_rel_I:
+            time.sleep(1)
+            _,_,I = self.ADC.pollingdata.get_data(int(0.8*srate))
+            baseline_I = np.mean(I)
+        
         
 
         # Start it
@@ -240,7 +252,7 @@ class FeedbackController(Logger):
                 break
             
             _, _, I = self.ADC.pollingdata.get_data(10)
-            I = np.abs(np.array(I))
+            I = np.abs(np.array(I) - baseline_I)
             I /= gain # convert V -> I
             if any([val > i_cutoff for val in I]):
                 self.Piezo.halt()
