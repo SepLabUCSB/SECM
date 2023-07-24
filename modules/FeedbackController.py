@@ -144,7 +144,7 @@ class FeedbackController(Logger):
         # Wait for potential to equilibrate
         voltage = self.master.GUI.params['approach']['voltage'].get('1.0', 'end')
         voltage = float(voltage) 
-        self.Piezo.goto(0,0,height)
+        self.Piezo.goto(80,80,height)
         self.HekaWriter.macro(f'E Vhold {voltage}')
         
         while True:
