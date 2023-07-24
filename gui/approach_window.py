@@ -66,9 +66,9 @@ def make_approach_window(gui, master_frame):
     
     approach_params = {'voltage': V_field,
                        'cutoff': I_field,
-                       'rel_current': rel_current_option,
                        'z_height': Z_field,
-                       'approach_speed': speed_field,}
+                       'approach_speed': speed_field,
+                       'rel_current': rel_current_option,}
     
     return approach_params
     
