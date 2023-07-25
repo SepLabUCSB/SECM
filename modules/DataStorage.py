@@ -158,10 +158,12 @@ class Experiment:
         return gridpts
     
     
-    def get_nearest_datapoint(self, x, y):
+    def get_nearest_datapoint(self, x, y, pt_idx=0):
         '''
         Returns DataPoint object with location nearest to the 
-        requested (x, y) coordinates
+        requested (x, y) coordinates.
+        
+        If the object is a PointsList, return PointsList[idx]
         '''
         min_dist = 1e10
         closest  = None
@@ -175,6 +177,9 @@ class Experiment:
                 min_dist = distance
                 closest = datapoint
                 idx = i
+        if 'PointsList' in closest.__repr__():
+            closest = closest[pt_idx]
+            
         return idx, closest
     
     
@@ -185,9 +190,15 @@ class Experiment:
         os.makedirs(path, exist_ok = True)
         for j, row in enumerate(self.data):
             for i, pt in enumerate(row):
-                if 'SinglePoint' in pt.__repr__():
+                if isinstance(pt, SinglePoint): 
                     continue
-                fname = os.path.join(path, f'{i:02}_{j:02}.asc')
+                if isinstance(pt, PointsList):
+                    for point in pt.points:
+                        fname = os.path.join(path, 
+                                             f'{i:02}_{j:02}_{str(pt)}.asc')
+                        pt.save(path=fname)
+                    continue
+                fname = os.path.join(path, f'{i:02}_{j:02}_{str(pt)}.asc')
                 pt.save(path=fname)
     
   
@@ -202,6 +213,9 @@ class DataPoint:
         #  * list: CV: [ [t], [V], [I] ]
         self.data = data
         self.gain = 1 # Used for ADCDataPoint
+        
+    def __str__(self):
+        return 'DataPoint'
     
         
     def get_val(self, datatype='max', arg=None):
@@ -230,6 +244,9 @@ class DataPoint:
 
 
 class ADCDataPoint(DataPoint):
+    
+    def __str__(self):
+        return 'ADCDataPoint'
     
     def append_data(self, t, V, I):
         try:
@@ -269,6 +286,10 @@ class ADCDataPoint(DataPoint):
         
 
 class SinglePoint(DataPoint):
+    
+    def __str__(self):
+        return 'SinglePoint'
+    
     def get_val(self, datatype=None, arg=None):
         if datatype == 'z':
             return self.loc[2]
@@ -281,8 +302,11 @@ class SinglePoint(DataPoint):
 
 
 
-class CVDataPoint(DataPoint):             
-        
+class CVDataPoint(DataPoint):   
+          
+    def __str__(self):
+        return 'CVDataPoint'  
+    
     def get_val(self, datatype='max', arg=None):
         '''
         valtype: str, defines what to return
@@ -337,13 +361,17 @@ class CVDataPoint(DataPoint):
     
 
     
-class EISDataPoint(DataPoint):
-     def __init__(self, loc: tuple, data:list):
+class EISDataPoint(DataPoint):    
+    def __init__(self, loc: tuple, data:list):
         self.loc      = loc
         self.data     = data
         self.FT() # do the Fourier transform
         
-     def FT(self):
+    def __str__(self):
+        return 'EISDataPoint'
+    
+        
+    def FT(self):
         t, V, I = self.data
         srate = 1/np.mean(np.diff(t))
         
@@ -364,12 +392,50 @@ class EISDataPoint(DataPoint):
         # Re-save as self.data
         self.data = [freqs, Z]
         
-     def _save(self, path):
+    def _save(self, path):
         with open(path, 'a') as f:
             f.write("f/Hz\tZ'/Ohm\tZ''/Ohm")
             for f, Z in zip(self.data[0], self.data[1]):
                 f.write(f'{f}\t{np.real(Z)}\t{np.imag(Z)}')
         
+
+class PointsList():
+    '''
+    Wraps a standard list of DataPoint objects with some helpful extra functions
+    
+    Overwites all DataPoint methods so it can be used cleanly in place of a DataPoint
+    object. By default, returns the appropriate value from the first DataPoint
+    in the PointsList.
+    '''
+    def __init__(self, loc:tuple, data:list):
+        '''
+        data: list of DataPoint type objects
+        '''
+        self.loc    = loc
+        self.points = data
+        
+    def __getitem__(self, i):
+        return self.points[i]
+    
+    def __str__(self):
+        return 'PointsList'
+        
+    def add_point(self, DataPoint):
+        self.points.append(DataPoint)
+        
+    
+    ### DataPoint method overwrites ###
+    def get_val(self, datatype='max', arg=None, idx=0):
+        return self.points[idx].get_val(datatype, arg)
+    
+    def get_data(self, idx=0, **kwargs):
+        return self.points[idx].get_data(**kwargs)
+    
+    def save(self, path, idx=0):
+        return self.points[idx].save(path)
+    
+    
+    
     
 
 
