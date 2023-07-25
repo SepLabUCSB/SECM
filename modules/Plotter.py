@@ -563,11 +563,6 @@ class Plotter(Logger):
                  'BuPu','GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn']
         
         popup = Toplevel()
-        x = self.master.GUI.root.winfo_x()
-        y = self.master.GUI.root.winfo_y()
-        w = popup.winfo_width()
-        h = popup_window.winfo_height()  
-        popup.geometry("%dx%d+%d+%d" % (w, h, x + 0, y + 0))
         frame = Frame(popup)
         frame.grid(row=0, column=0)
         
@@ -582,7 +577,10 @@ class Plotter(Logger):
         Label(frame, text='Max: ').grid(row=1, column=2, sticky=(W,E))
         Entry(frame, textvariable=self.cmap_maxval, width=3).grid(row=1, column=3, sticky=(W,E))
         Button(frame, text='Apply', command=self.update_cmap).grid(row=2, column=1, columnspan=2)
-    
+        x = self.master.GUI.root.winfo_x()
+        y = self.master.GUI.root.winfo_y()
+        popup.geometry("+%d+%d" % (x + 350, y))
+        
     
     def update_cmap(self, _=None):
         cmap = self.cmap.get()
@@ -615,11 +613,6 @@ class Plotter(Logger):
         print(f'Std: {np.std(data):0.4g}\n')
         
         self.popup_window = Toplevel()
-        x = self.master.GUI.root.winfo_x()
-        y = self.master.GUI.root.winfo_y()
-        w = self.popup_window.winfo_width()
-        h = self.popup_window.winfo_height()  
-        self.popup_window.geometry("%dx%d+%d+%d" % (w, h, x + w, y + 0))
         frame  = Frame(self.popup_window)
         frame.grid(row=0, column=0)
         
@@ -637,6 +630,9 @@ class Plotter(Logger):
         
         Button(frame, text='Apply', command=self.update_fig1).grid(row=3, column=1, sticky=(W,E))
         Button(frame, text='Reset', command=self.cancel_popup).grid(row=3, column=2, sticky=(W,E))
+        x = self.master.GUI.root.winfo_x()
+        y = self.master.GUI.root.winfo_y() 
+        self.popup_window.geometry("+%d+%d" % (x + 150, y))
         
         
     def zoom_in(self):
@@ -680,11 +676,6 @@ class Plotter(Logger):
                      }
         
         popup = Toplevel()
-        x = self.master.GUI.root.winfo_x()
-        y = self.master.GUI.root.winfo_y()
-        w = popup.winfo_width()
-        h = popup_window.winfo_height()  
-        popup.geometry("%dx%d+%d+%d" % (w, h, x, y))
         frame = Frame(popup)
         frame.grid(row=0, column=0)
         selection = StringVar()
@@ -692,6 +683,9 @@ class Plotter(Logger):
                    *list(functions.keys())).grid(row=0, column=0)
         Button(frame, text='Close', command=popup.destroy).grid(
             row=1, column=0)
+        x = self.master.GUI.root.winfo_x()
+        y = self.master.GUI.root.winfo_y()
+        popup.geometry("+%d+%d" % (x, y))
         popup.wait_window()
         
         self.analysis_function = functions[selection.get()]
