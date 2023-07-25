@@ -563,6 +563,11 @@ class Plotter(Logger):
                  'BuPu','GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn']
         
         popup = Toplevel()
+        x = self.master.GUI.root.winfo_x()
+        y = self.master.GUI.root.winfo_y()
+        w = popup.winfo_width()
+        h = popup_window.winfo_height()  
+        popup.geometry("%dx%d+%d+%d" % (w, h, x + 0, y + 0))
         frame = Frame(popup)
         frame.grid(row=0, column=0)
         
@@ -610,6 +615,11 @@ class Plotter(Logger):
         print(f'Std: {np.std(data):0.4g}\n')
         
         self.popup_window = Toplevel()
+        x = self.master.GUI.root.winfo_x()
+        y = self.master.GUI.root.winfo_y()
+        w = self.popup_window.winfo_width()
+        h = self.popup_window.winfo_height()  
+        self.popup_window.geometry("%dx%d+%d+%d" % (w, h, x + w, y + 0))
         frame  = Frame(self.popup_window)
         frame.grid(row=0, column=0)
         
@@ -670,6 +680,11 @@ class Plotter(Logger):
                      }
         
         popup = Toplevel()
+        x = self.master.GUI.root.winfo_x()
+        y = self.master.GUI.root.winfo_y()
+        w = popup.winfo_width()
+        h = popup_window.winfo_height()  
+        popup.geometry("%dx%d+%d+%d" % (w, h, x, y))
         frame = Frame(popup)
         frame.grid(row=0, column=0)
         selection = StringVar()
