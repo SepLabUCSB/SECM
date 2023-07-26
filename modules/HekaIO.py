@@ -316,13 +316,12 @@ class HekaWriter(Logger):
         '''
         Sends commands to set amplifier back to default (CV) state
         '''
-        cmds = []
-        cmds.append('Set E StimFilter 1')
-        cmds.append('Set E TestDacToStim1 0')
-        cmds.append('Set E Mode 3')
-        cmds.append('Set E Filter1 2')
-        cmds.append('Set E F2Response 0')
-        cmds.append('Set E Filter2 0.5')
+        cmds = ['Set E StimFilter 1',
+                'Set E TestDacToStim1 0',
+                'Set E Mode 3',
+                'Set E Filter1 2',
+                'Set E F2Response 0',
+                'Set E Filter2 0.5']
         self.send_multiple_cmds(cmds)
         
         
@@ -363,8 +362,6 @@ class HekaWriter(Logger):
         
         # Set CV parameters
         self.update_Values(values)
-        # self.send_command('SelectSequence _reset')
-        # self.send_command('SelectSequence _CV')
         
         self.CV_params   = values
         self.CV_duration = duration
@@ -409,22 +406,13 @@ class HekaWriter(Logger):
         
         self.running()
         
-        # Set filters based on max frequency
-        cmds = get_filters(max(f0, f1))
         
-        # Set stim filter to 2 us
-        cmds.append('Set E StimFilter 0')
-        
-        # Turn on external input for Stim-1
-        cmds.append('Set E TestDacToStim1 2')
-        
-        # Set external scale to 1
-        cmds.append('Set E ExtScale 1')
-        
+        cmds = get_filters(max(f0, f1))         # Set filters based on max frequency
+        cmds.append('Set E StimFilter 0')       # Set stim filter to 2 us
+        cmds.append('Set E TestDacToStim1 2')   # Turn on external input for Stim-1
+        cmds.append('Set E ExtScale 1')         # Set external scale to 1
         cmds.append('Set E Mode 3')
-        
-        # Set Vmon to DC bias
-        cmds.append(f'Set E Vhold {E0}')
+        cmds.append(f'Set E Vhold {E0}')        # Set Vmon to DC bias
         
         self.send_multiple_cmds(cmds)
         

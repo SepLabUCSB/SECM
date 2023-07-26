@@ -6,7 +6,8 @@ import scipy.io
 import datetime
 from functools import partial
 from utils.utils import run, Logger
-from modules.DataStorage import Experiment, CVDataPoint, EISDataPoint
+from modules.DataStorage import (Experiment, CVDataPoint, EISDataPoint,
+                                 PointsList)
 
 
 
@@ -407,7 +408,11 @@ class FeedbackController(Logger):
                 return False
             self.master.HekaWriter.setup_EIS(*EIS_vals)
             return True
-            
+        
+        if expt_type == 'CV then EIS':
+            # We setup potentiostat settings twice at each point:
+            # first for CV then for EIS. Done in run_echems()
+            return True
         
         # if expt_type == 'Custom':
         #     self.master.GUI.set_amplifier()
@@ -435,13 +440,33 @@ class FeedbackController(Logger):
             if type(t) == int:
                 return None
             data = EISDataPoint(loc = loc, data = [t, voltage, current])
-        
+         
         if expt_type == 'Custom':
             t, voltage, current = self.run_custom(expt.path, i)
             if type(t) == int:
                 return None
-            data = CVDataPoint(loc = loc, data = [t, voltage, current])
-                        
+            data = CVDataPoint(loc = loc, data = [t, voltage, current])   
+         
+        if expt_type == 'CV then EIS':
+            # Run CV
+            if not self.potentiostat_setup('CV'): 
+                return None
+            t, voltage, current = self.run_CV(expt.path, i)
+            if type(t) == int:
+                return None
+            CVdata = CVDataPoint(loc=loc, data=[t,voltage,current])
+            
+            # Run EIS
+            if not self.potentiostat_setup('EIS'): 
+                return None
+            t, voltage, current = self.run_EIS(expt.path, i)
+            if type(t) == int:
+                return None
+            EISdata = EISDataPoint(loc = loc, data = [t, voltage, current])
+            self.HekaWriter.reset_amplifier()
+            
+            data = PointsList(loc=loc, points = [CVdata, EISdata])
+    
         return data
     
     
