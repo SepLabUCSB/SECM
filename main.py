@@ -369,9 +369,9 @@ class GUI(Logger):
         self.fig2selection = StringVar(botfigframe)
         OptionMenu(botfigframe, self.fig2selection, fig2Options[2], 
                    *fig2Options, command=self.fig_opt_changed).grid(column=0, row=1, sticky=(W,E))
-        # option13 = StringVar(botfigframe)
-        # OptionMenu(botfigframe, option13, 'Option 3', 
-        #            *['Option 3', '']).grid(column=2, row=0, sticky=(W,E))                      
+        self.fig2ptselection = IntVar(botfigframe)
+        self.fig2ptoptmenu = OptionMenu(botfigframe, self.fig2ptselection, 0, 
+                    *[0,], command=self.fig_opt_changed).grid(column=1, row=1, sticky=(W,E))                      
                               
         FigureCanvasTkAgg(self.botfig, master=botfigframe
                           ).get_tk_widget().grid(
@@ -536,6 +536,15 @@ class GUI(Logger):
         # Update time remaining estimate field
         time_est = self.master.FeedbackController.get_time_remaining()
         self._time_est.set(f'{time_est}')
+        
+        # Update point selection dropdown field
+        max_pts = self.master.expt.max_points_per_loc()
+        if max_pts > 1:
+            menu = self.fig2ptoptmenu['menu']
+            menu.delete(0, 'end')
+            for i in range(max_pts):
+                menu.add_command(label=i, 
+                                 command=lambda x:self.fig2ptselection.set(x))
         
         self.root.after(250, self._update_piezo_display)
         

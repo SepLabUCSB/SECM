@@ -183,6 +183,20 @@ class Experiment:
         return idx, closest
     
     
+    def max_points_per_loc(self):
+        '''
+        Checks all DataPoints in this experiment. Returns the length of
+        the longest PointsList
+        '''
+        longest = 1
+        for row in self.data:
+            for pt in row:
+                if isinstance(pt, PointsList):
+                    if len(pt.data) > longest:
+                        longest = len(pt.data)
+        return longest
+    
+    
     def save_to_folder(self, path):
         '''
         Export all data to the specified path
@@ -392,6 +406,17 @@ class EISDataPoint(DataPoint):
         # Re-save as self.data
         self.data = [freqs, Z]
         
+    def get_val(self, datatype='max', arg=None):
+        if datatype == 'z':
+            return self.loc[2]
+        if datatype == 'val_at':
+            idx, _ = nearest(self.data[0], arg)
+            return abs(self.data[1][idx])
+        else:
+            return 0
+        
+    
+        
     def _save(self, path):
         with open(path, 'a') as f:
             f.write("f/Hz\tZ'/Ohm\tZ''/Ohm")
@@ -415,8 +440,14 @@ class PointsList():
         self.points = data
         
     def __getitem__(self, i):
-        return self.points[i]
-    
+        try:
+            return self.points[i]
+        except IndexError:
+            print(f'Invalid index: no {i}-th point. This spot has {len(self.points)} data points')
+        except:
+            print(f'Invalid index: {i}')
+        return self.points[0]
+        
     def __str__(self):
         return 'PointsList'
         
@@ -426,13 +457,13 @@ class PointsList():
     
     ### DataPoint method overwrites ###
     def get_val(self, datatype='max', arg=None, idx=0):
-        return self.points[idx].get_val(datatype, arg)
+        return self[idx].get_val(datatype, arg)
     
     def get_data(self, idx=0, **kwargs):
-        return self.points[idx].get_data(**kwargs)
+        return self[idx].get_data(**kwargs)
     
     def save(self, path, idx=0):
-        return self.points[idx].save(path)
+        return self[idx].save(path)
     
     
     

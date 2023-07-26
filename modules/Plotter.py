@@ -6,7 +6,7 @@ from tkinter import *
 from tkinter.ttk import *
 from utils.utils import Logger, nearest
 from modules.DataStorage import (ADCDataPoint, CVDataPoint, 
-                                 SinglePoint)
+                                 SinglePoint, EISDataPoint)
 
 # Import any analysis functions here and add to Plotter.set_analysis_popup()!
 from analysis import CV_decay, peak_analysis
@@ -23,6 +23,9 @@ def checksum(data):
     
     if isinstance(data, CVDataPoint):
         return sum(data.data[0])
+    
+    if isinstance(data, EISDataPoint):
+        return sum(data.data[1])
     
     if type(data) == np.ndarray:
         # Heatmap type data
@@ -739,6 +742,12 @@ class Plotter(Logger):
                 self.rect.set_bounds(0,0,0,0)
                 self.ax1.draw_artist(self.rect)
                 self.fig1.canvas.draw_idle()
+                
+        elif isinstance(DATAPOINT, PointsList):
+            # Determine which to plot
+            selected_idx = self.master.GUI.fig2ptselection.get()
+            pt = DATAPOINT[selected_idx]
+            return self.set_echemdata(pt, sample_freq)
             
         elif isinstance(DATAPOINT, CVDataPoint):
             t, V, I = DATAPOINT.get_data()
@@ -746,6 +755,9 @@ class Plotter(Logger):
         
         elif isinstance(DATAPOINT, SinglePoint):
             t, V, I = [0], [0], [0]
+            
+        elif isinstance(DATAPOINT, EISDataPoint):
+            return self.draw_nyquist(DATAPOINT)
         
         else:
             print(type(DATAPOINT))
@@ -798,6 +810,31 @@ class Plotter(Logger):
         self.ln.set_data(plotx, ploty)
         self.set_axlim('fig2', *get_plotlim(plotx, ploty) )
         return True
+    
+    
+    def draw_nyquist(self, EISDataPoint):
+        '''
+        Make a Nyquist plot on Fig 2 for EIS-type data
+        '''
+        freqs, Z = EISDataPoint.data
+        x = np.real(Z)
+        y = -np.imag(Z)
+        
+        minimum = min(min(x), min(y))
+        maximum = max(max(x), max(y))
+        
+        self.ln.set_data(x, y)
+        self.set_axlim('fig2', (minimum, maximum), (minimum, maximum))
+        self.ax2.set_xlabel(r"Z'/ $\Omega$")
+        self.ax2.set_ylabel(r"-Z''/ $\Omega$")
+        self.fig2.tight_layout()
+        self.fig2.canvas.draw_idle()
+        plt.pause(0.001)
+        self.fig2data = EISDataPoint
+        return
+        
+
+
 
             
         
