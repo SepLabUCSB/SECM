@@ -6,7 +6,7 @@ from tkinter import *
 from tkinter.ttk import *
 from utils.utils import Logger, nearest
 from modules.DataStorage import (ADCDataPoint, CVDataPoint, 
-                                 SinglePoint, EISDataPoint)
+                                 SinglePoint, EISDataPoint, PointsList)
 
 # Import any analysis functions here and add to Plotter.set_analysis_popup()!
 from analysis import CV_decay, peak_analysis
