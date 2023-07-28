@@ -779,6 +779,8 @@ class GUI(Logger):
         self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
         path = self.master.HekaWriter.run_measurement_loop('CV')
         DataPoint = make_datapoint_from_file(path, 'CVDataPoint')
+        if DataPoint:
+            self.master.ADC.force_data(DataPoint)
         self.master.make_ready()
         return path
     
@@ -810,6 +812,8 @@ class GUI(Logger):
         self.master.HekaWriter.setup_EIS(*eis_params)
         path = self.master.HekaWriter.run_measurement_loop('EIS')
         DataPoint = make_datapoint_from_file(path, 'EISDataPoint')
+        if DataPoint:
+            self.master.ADC.force_data(DataPoint)
         self.master.make_ready()
         return
     
@@ -820,6 +824,8 @@ class GUI(Logger):
         self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
         path = self.master.HekaWriter.run_measurement_loop('Custom')
         DataPoint = make_datapoint_from_file(path, 'CVDataPoint')
+        if DataPoint:
+            self.master.ADC.force_data(DataPoint)
         self.master.make_ready()
         return path
     
