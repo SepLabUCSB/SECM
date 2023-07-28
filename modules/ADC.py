@@ -283,6 +283,12 @@ class ADC(Logger):
         self.port.write(b"stop\r")
         self.stop()
         
+        
+    def force_data(self, DataPoint):
+        # Set self.pollingdata to the given DataPoint to force it 
+        # to be plotted
+        self.pollingdata = DataPoint
+        
 
 
 if __name__ == '__main__':

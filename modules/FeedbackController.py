@@ -90,6 +90,27 @@ def extract_matlab_iv_data(file):
                 V = np.append(V, vals)
                 
     return T, V, I
+
+
+def make_datapoint_from_file(file:str, DataPointType:str):
+    '''
+    Used for plotting echem which was recorded outside of a heatmap.
+    
+    Reads HEKA data from given file path. Returns a DataPoint of the
+    type specified by DataPointType.
+    
+    file: string, path to data file
+    DataPointType: string, one of 'CVDataPoint', 'EISDataPoint'
+    '''
+    t, v, i = read_heka_data(file)
+    if DataPointType == 'CVDataPoint':
+        return CVDataPoint(loc=(0,0,0), data = [t,v,i])
+    if DataPointType == 'EISDataPoint':
+        return EISDataPoint(loc=(0,0,0), data = [t,v,i])
+    else:
+        print('Invalid DataPointType')
+        return
+    
     
 
 
