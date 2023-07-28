@@ -433,6 +433,7 @@ class HekaWriter(Logger):
     
     def make_EIS_waveform(self, E0, f0, f1, n_pts, amp):
         generate_tpl(f0, f1, n_pts, amp, 'D:/SECM/_auto_eis_1.tpl')
+        self.log('Wrote new EIS waveform')
     
     
     def run_EIS(self):

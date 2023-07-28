@@ -329,14 +329,14 @@ class FeedbackController(Logger):
         for i, (x, y) in enumerate(points[:-2]):
             pt_st_time = time.time()
             # Retract from surface
-            if (i !=0) and (not self.master.TEST_MODE):
-                # z = self.Piezo.retract(height=retract_distance, 
-                #                         relative=True)
-                tx, ty, tz = self.Piezo.measure_loc()
-                self.Piezo.goto_z(tz+retract_distance)
-                time.sleep(0.5)
-                _,_,z = self.Piezo.measure_loc()
-                time.sleep(0.5)
+            # if (i !=0) and (not self.master.TEST_MODE):
+            #     # z = self.Piezo.retract(height=retract_distance, 
+            #     #                         relative=True)
+            #     tx, ty, tz = self.Piezo.measure_loc()
+            #     self.Piezo.goto_z(tz+retract_distance)
+            #     time.sleep(0.5)
+            #     _,_,z = self.Piezo.measure_loc()
+            #     time.sleep(0.5)
             
             # Retract to the given z_max, otherwise start from next (x,y) but current z
             if z_max > 0:
@@ -349,10 +349,10 @@ class FeedbackController(Logger):
                 return
             
             # Run approach at this point
-            z, on_surf = self.approach(forced_step_size=forced_step_size)
-            if not on_surf:
-                self.log('Hopping mode ended due to not reaching surface')
-                return
+            # z, on_surf = self.approach(forced_step_size=forced_step_size)
+            # if not on_surf:
+            #     self.log('Hopping mode ended due to not reaching surface')
+            #     return
                         
             # Run echem experiment on surface
             data = self.run_echems(expt_type, expt, (x, y, z), i) # TODO: run variable echem experiment(s) at each pt
@@ -465,7 +465,7 @@ class FeedbackController(Logger):
             EISdata = EISDataPoint(loc = loc, data = [t, voltage, current])
             self.HekaWriter.reset_amplifier()
             
-            data = PointsList(loc=loc, points = [CVdata, EISdata])
+            data = PointsList(loc=loc, data = [CVdata, EISdata])
     
         return data
     

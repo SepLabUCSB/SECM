@@ -177,7 +177,7 @@ class Experiment:
                 min_dist = distance
                 closest = datapoint
                 idx = i
-        if 'PointsList' in closest.__repr__():
+        if isinstance(closest, PointsList):
             closest = closest[pt_idx]
             
         return idx, closest
@@ -391,11 +391,11 @@ class EISDataPoint(DataPoint):
         
         # Fourier transform
         freqs = srate*np.fft.rfftfreq(len(V))[1:]
-        ft_V  = np.fft.rfft(V)
-        ft_I  = np.fft.rfft(I)
+        ft_V  = np.fft.rfft(V)[1:]
+        ft_I  = np.fft.rfft(I)[1:]
         
         # TODO: check this catches all frequencies/ amplitudes
-        idxs = [i for i, v in enumerate(abs(ft_V)) if v > 5]
+        idxs = [i for i, v in enumerate(abs(ft_V)) if v > 0.5]
         
         # Remove all frequencies not in perturbation signal
         freqs = freqs[idxs]
@@ -404,7 +404,7 @@ class EISDataPoint(DataPoint):
         Z = ft_V/ft_I
         
         # Re-save as self.data
-        self.data = [freqs, Z]
+        self.data = [freqs, ft_V, ft_I, Z]
         
     def get_val(self, datatype='max', arg=None):
         if datatype == 'z':
@@ -437,22 +437,22 @@ class PointsList():
         data: list of DataPoint type objects
         '''
         self.loc    = loc
-        self.points = data
+        self.data   = data
         
     def __getitem__(self, i):
         try:
-            return self.points[i]
+            return self.data[i]
         except IndexError:
             print(f'Invalid index: no {i}-th point. This spot has {len(self.points)} data points')
         except:
             print(f'Invalid index: {i}')
-        return self.points[0]
+        return self.data[0]
         
     def __str__(self):
         return 'PointsList'
         
     def add_point(self, DataPoint):
-        self.points.append(DataPoint)
+        self.data.append(DataPoint)
         
     
     ### DataPoint method overwrites ###

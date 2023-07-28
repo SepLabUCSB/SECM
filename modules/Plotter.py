@@ -504,6 +504,7 @@ class Plotter(Logger):
         Returns selected Datapoint object and draws a box on the heatmap
         '''
         
+        pt_idx_selection = int(self.master.GUI.fig2ptselection.get())
         datapts = self.master.expt.get_loc_data()
         
         left, right = self.ax1lim[0][0], self.ax1lim[0][1]
@@ -541,7 +542,8 @@ class Plotter(Logger):
         for row in datapts:
             for (x, y) in row:
                 if pt_in_rect(x, y, xline, yline, delta):
-                    return self.master.expt.get_nearest_datapoint(x, y)
+                    return self.master.expt.get_nearest_datapoint(x, y, 
+                                                                  pt_idx=pt_idx_selection)
 
     
     
@@ -808,6 +810,7 @@ class Plotter(Logger):
             ploty = y
         
         self.ln.set_data(plotx, ploty)
+        self.ln.set_marker('')
         self.set_axlim('fig2', *get_plotlim(plotx, ploty) )
         return True
     
@@ -816,7 +819,7 @@ class Plotter(Logger):
         '''
         Make a Nyquist plot on Fig 2 for EIS-type data
         '''
-        freqs, Z = EISDataPoint.data
+        freqs, _,_,Z = EISDataPoint.data
         x = np.real(Z)
         y = -np.imag(Z)
         
@@ -824,6 +827,7 @@ class Plotter(Logger):
         maximum = max(max(x), max(y))
         
         self.ln.set_data(x, y)
+        self.ln.set_marker('o')
         self.set_axlim('fig2', (minimum, maximum), (minimum, maximum))
         self.ax2.set_xlabel(r"Z'/ $\Omega$")
         self.ax2.set_ylabel(r"-Z''/ $\Omega$")

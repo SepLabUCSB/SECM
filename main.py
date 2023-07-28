@@ -371,7 +371,8 @@ class GUI(Logger):
                    *fig2Options, command=self.fig_opt_changed).grid(column=0, row=1, sticky=(W,E))
         self.fig2ptselection = IntVar(botfigframe)
         self.fig2ptoptmenu = OptionMenu(botfigframe, self.fig2ptselection, 0, 
-                    *[0,], command=self.fig_opt_changed).grid(column=1, row=1, sticky=(W,E))                      
+                    *[0,], command=self.fig_opt_changed)
+        self.fig2ptoptmenu.grid(column=1, row=1, sticky=(W,E))                      
                               
         FigureCanvasTkAgg(self.botfig, master=botfigframe
                           ).get_tk_widget().grid(
@@ -539,12 +540,13 @@ class GUI(Logger):
         
         # Update point selection dropdown field
         max_pts = self.master.expt.max_points_per_loc()
-        if max_pts > 1:
+        menu_length = self.fig2ptoptmenu['menu'].index("end") + 1
+        if (max_pts > 1) and (max_pts != menu_length):
+            self.log(f'Detected {max_pts} pts per location, currently {menu_length} in menu')
             menu = self.fig2ptoptmenu['menu']
             menu.delete(0, 'end')
-            for i in range(max_pts):
-                menu.add_command(label=i, 
-                                 command=lambda x:self.fig2ptselection.set(x))
+            opts = [i for i in range(max_pts)]
+            self.fig2ptoptmenu.set_menu(opts[0], *opts)
         
         self.root.after(250, self._update_piezo_display)
         
@@ -957,6 +959,8 @@ if __name__ == '__main__':
         sys.stdin  = default_stdin
         sys.stderr = default_stderr
         print(traceback.format_exc())
+        root.quit()
+        gui.willStop = True
 
     if not master.TEST_MODE:
         adc.stop()

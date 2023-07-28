@@ -40,13 +40,13 @@ def generate_tpl(f0, f1, n_pts, mVpp, fname, Z=None):
     
     freqs, phases, mVpp = generate_waveform(f0, f1, n_pts, mVpp)
     
-    if Z is None:
-        v = make_time_domain(freqs, phases, mVpp)
-    else:
-        v = optimize_waveform(freqs, phases, mVpp, Z)
+    # if Z is None:
+    #     v = make_time_domain(freqs, phases, mVpp)
+    # else:
+    v = optimize_waveform_default(freqs, phases, mVpp)
         
     write_tpl_file(v, fname)
-    print(f'Wrote waveform to {fname}')
+    # print(f'Wrote waveform to {fname}')
     return
 
 
@@ -112,9 +112,7 @@ def make_time_domain(freqs, phases, mVpp):
         v += amp*np.sin(2*np.pi*freq*t + phase)
     
     v *= max(mVpp)/max(v) # rescale to set max Vpp
-    
-    v = amp*np.sin(2*np.pi*min(freqs)*t)
-    
+        
     return v
         
 
@@ -129,6 +127,15 @@ def optimize_waveform(freqs, phases, mVpp, Z):
     Z = np.asarray(Z)
     amp_factor = 1/np.absolute(Z)
     mVpp = mVpp * (amp_factor/max(amp_factor))
+    return make_time_domain(freqs, phases, mVpp)
+
+
+def optimize_waveform_default(freqs, phases, mVpp):
+    '''
+    Make |V| ~ 1/sqrt(f)
+    '''
+    amp_factor = 1/np.sqrt(freqs)
+    mVpp = mVpp * amp_factor/max(amp_factor)
     return make_time_domain(freqs, phases, mVpp)
 
 
@@ -163,26 +170,27 @@ def write_tpl_file(voltages, fname):
         
         
 if __name__ == '__main__':        
-    # freqs, phases, mVpp = generate_waveform(1, 1000, 20, 25)
+    freqs, phases, mVpp = generate_waveform(1, 1000, 18, 20)
     
     # v = make_time_domain(freqs, phases, mVpp)
+    v = optimize_waveform_default(freqs, phases, mVpp)
     
-    Hz = 50000 #sampling rate
-    A = -0.514   #amplitude
-    A *= 2
-    x = 73  #time
-    t = np.linspace(0, x, Hz*x)
+    # Hz = 50000 #sampling rate
+    # A = -0.514   #amplitude
+    # A *= 2
+    # x = 73  #time
+    # t = np.linspace(0, x, Hz*x)
     
-    #half of t datapoints
-    half = int(len(t)/2)
+    # #half of t datapoints
+    # half = int(len(t)/2)
     
-    #creates waveform
-    y1 = A*np.sqrt(abs(1-(2*(t[:half]/x))**2))
-    y2 = -A*np.sqrt(abs(1-(2*(t[half:]/x-1))**2))
+    # #creates waveform
+    # y1 = A*np.sqrt(abs(1-(2*(t[:half]/x))**2))
+    # y2 = -A*np.sqrt(abs(1-(2*(t[half:]/x-1))**2))
     
-    v = list(y1) + list(y2)
-    plt.plot(v)
-    write_tpl_file(v, r'D:/Brian/circular_1.tpl')
+    # v = list(y1) + list(y2)
+    # plt.plot(v)
+    # write_tpl_file(v, r'D:/Brian/circular_1.tpl')
         
 
 
