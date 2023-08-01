@@ -14,7 +14,7 @@ def nearest(value, array):
     return idx, array[idx]
 
 
-def generate_tpl(f0, f1, n_pts, mVpp, fname, Z=None):
+def generate_tpl(f0, f1, n_pts, n_cycles, mVpp, fname, Z=None):
     '''
     Wraps generate_waveform, make_time_domain, and write_tpl_file
     
@@ -22,6 +22,7 @@ def generate_tpl(f0, f1, n_pts, mVpp, fname, Z=None):
         f0: float, starting frequency (Hz)
         f1: float, ending frequency (Hz)
         n_pts: int, number of frequencies to measure
+        n_cycles: int, number of cycles of the lowest frequency to measure
         mVpp: float, (freq dependent) peak-peak amplitude
         fname: file path to write to
         Z: (optional) array. If given, used to "optimize" waveform
@@ -33,6 +34,7 @@ def generate_tpl(f0, f1, n_pts, mVpp, fname, Z=None):
     assert(f1 > f0 > 0),    'EIS input error: must have f1 > f0 > 0.'
     assert(f1 > n_pts*f0), f'EIS input error: cannot fit {n_pts} points between {f0} and {f1} Hz because for FFT-EIS, all frequencies must be integer multiples of the lowest frequency ({f0} Hz).'
     assert(mVpp > 0),       'EIS input error: amplitude must be positive'
+    assert(n_cycles >= 1),  'EIS input error: n_cycles must be >= 1'
     
     mVpp /= 1000 # PATCHMASTER actually needs it in V
     mVpp *= 10   # PATCHMASTER divides voltages from tpl by 10 for some reason...
@@ -43,7 +45,7 @@ def generate_tpl(f0, f1, n_pts, mVpp, fname, Z=None):
     # if Z is None:
     #     v = make_time_domain(freqs, phases, mVpp)
     # else:
-    v = optimize_waveform_default(freqs, phases, mVpp)
+    v = optimize_waveform_default(freqs, phases, n_cycles, mVpp)
         
     write_tpl_file(v, fname)
     # print(f'Wrote waveform to {fname}')
@@ -89,10 +91,10 @@ def generate_waveform(f0, f1, n_pts, mVpp):
     return freqs, phases, mVpp
         
 
-def make_time_domain(freqs, phases, mVpp):
+def make_time_domain(freqs, phases, n_cycles, mVpp):
     '''
-    Total measurement duration is 1/min(freqs): 1 cycle at the lowest
-    requested frequency.
+    Total measurement duration is n_cycles * 1/min(freqs): 
+    n cycle at the lowest requested frequency.
     
     Number of points needd it duration*sample rate. For now, sample rate is 
     fixed at 50 kHz. In the future the sample rate will be chosen based
@@ -104,10 +106,10 @@ def make_time_domain(freqs, phases, mVpp):
     
     sample_rate = 50000 # TODO: set this dynamically, choose between i.e. 10, 25, 100kHz
     
-    N = (1/min(freqs)) * sample_rate
+    N = (1/min(freqs)) * sample_rate * n_cycles
     N = int(np.ceil(N)) # collect 1 extra point if N is not an integer
     v = np.zeros(N)
-    t = np.linspace(0, 1/min(freqs), N)
+    t = np.linspace(0, n_cycles * 1/min(freqs), N)
     for freq, phase, amp in zip(freqs, phases, mVpp):
         v += amp*np.sin(2*np.pi*freq*t + phase)
     
@@ -130,13 +132,13 @@ def optimize_waveform(freqs, phases, mVpp, Z):
     return make_time_domain(freqs, phases, mVpp)
 
 
-def optimize_waveform_default(freqs, phases, mVpp):
+def optimize_waveform_default(freqs, phases, n_cycles, mVpp):
     '''
     Make |V| ~ 1/sqrt(f)
     '''
     amp_factor = 1/np.sqrt(freqs)
     mVpp = mVpp * amp_factor/max(amp_factor)
-    return make_time_domain(freqs, phases, mVpp)
+    return make_time_domain(freqs, phases, n_cycles, mVpp)
 
 
         

@@ -14,7 +14,7 @@ import matplotlib
 from modules.HekaIO import HekaReader, HekaWriter
 from modules.ADC import ADC
 from modules.Piezo import Piezo
-from modules.FeedbackController import FeedbackController
+from modules.FeedbackController import FeedbackController, make_datapoint_from_file
 from modules.Plotter import Plotter
 from modules.DataStorage import Experiment, load_from_file
 from modules.Picomotor import PicoMotor
@@ -791,23 +791,18 @@ class GUI(Logger):
         f0      = eis_params['f0'].get('1.0', 'end')
         f1      = eis_params['f1'].get('1.0', 'end')
         n_pts   = eis_params['n_pts'].get('1.0', 'end')
+        n_cycles= eis_params['n_cycles'].get('1.0', 'end')
         amp     = eis_params['amp'].get('1.0', 'end')
-        vals = [E0, f0, f1, n_pts, amp]
+        vals = [E0, f0, f1, n_pts, n_cycles, amp]
         try:
-            E0, f0, f1, n_pts, amp = [float(val) for val in vals]
-            n_pts = int(n_pts)
+            E0, f0, f1, n_pts, n_cycles, amp = [float(val) for val in vals]
+            n_pts, n_cycles = int(n_pts), int(n_cycles)
         except:
             print('invalid EIS inputs')
-            return 0,0,0,0,0
-        return E0, f0, f1, n_pts, amp
+            return 0,0,0,0,0,0
+        return E0, f0, f1, n_pts, n_cycles, amp
     
     def run_EIS(self):
-        # TODO: implement EIS
-        # validate EIS parameters
-        # generate waveform
-        # check saved waveform
-        # write waveform file
-        # send command to HEKA
         eis_params = self.get_EIS_params()
         self.master.HekaWriter.setup_EIS(*eis_params)
         path = self.master.HekaWriter.run_measurement_loop('EIS')

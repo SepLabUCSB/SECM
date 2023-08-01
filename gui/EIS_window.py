@@ -20,7 +20,7 @@ def make_EIS_window(gui, master_frame):
     Label(frame, text='Scan from...').grid(column=1, row=1, sticky=(E))
     Label(frame, text='To...').grid(column=1, row=2, sticky=(E))
     Label(frame, text='Collect:').grid(column=1, row=3, sticky=(E))
-    Label(frame, text='').grid(column=1, row=4) # blank space
+    Label(frame, text='Cycles:').grid(column=1, row=4, sticky=(E))
     Label(frame, text='Amplitude:').grid(column=1, row=5, sticky=(E))
     Label(frame, text='').grid(column=1, row=6) # blank space
     
@@ -45,6 +45,11 @@ def make_EIS_window(gui, master_frame):
     n_pts_field.insert('1.0', '18')
     n_pts_field.bind('<Tab>', focus_next_widget)
     
+    n_cycles_field = Text(frame, height=1, width=5)
+    n_cycles_field.grid(column=2, row=4, sticky=(E,W))
+    n_cycles_field.insert('1.0', '1')
+    n_cycles_field.bind('<Tab>', focus_next_widget)
+    
     amp_field = Text(frame, height=1, width=5)
     amp_field.grid(column=2, row=5, sticky=(E,W))
     amp_field.insert('1.0', '20')
@@ -61,6 +66,7 @@ def make_EIS_window(gui, master_frame):
                   'f0':f0_field,
                   'f1':f1_field,
                   'n_pts':n_pts_field,
+                  'n_cycles':n_cycles_field,
                   'amp':amp_field}
     
     Button(frame, text='Run EIS', command=

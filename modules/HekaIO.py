@@ -395,23 +395,23 @@ class HekaWriter(Logger):
         self.running()
       
 
-    def setup_EIS(self, E0, f0, f1, n_pts, amp):
+    def setup_EIS(self, E0, f0, f1, n_pts, n_cycles, amp):
         '''
         Set amplifier to hold DC bias
         Set filters
         Update EIS parameters in PATCHMASTER
         '''
         if self.isRunning(): return
-        values, duration = generate_EIS_params(E0, min(f0, f1))
+        values, duration = generate_EIS_params(E0, n_cycles*min(f0, f1))
         
         self.running()
         
-        
-        cmds = get_filters(max(f0, f1))         # Set filters based on max frequency
-        cmds.append('Set E StimFilter 0')       # Set stim filter to 2 us
-        cmds.append('Set E TestDacToStim1 2')   # Turn on external input for Stim-1
-        cmds.append('Set E ExtScale 1')         # Set external scale to 1
-        cmds.append('Set E Mode 3')
+        cmds = []
+        # cmds = get_filters(max(f0, f1))         # Set filters based on max frequency
+        # cmds.append('Set E StimFilter 0')       # Set stim filter to 2 us
+        # cmds.append('Set E TestDacToStim1 2')   # Turn on external input for Stim-1
+        # cmds.append('Set E ExtScale 1')         # Set external scale to 1
+        # cmds.append('Set E Mode 3')
         cmds.append(f'Set E Vhold {E0}')        # Set Vmon to DC bias
         
         self.send_multiple_cmds(cmds)
@@ -419,10 +419,11 @@ class HekaWriter(Logger):
         # Update pgf fields
         self.update_Values(values)
         
-        EIS_WF_params = {'E0':E0, 'f0':f0, 'f1':f1, 'n_pts':n_pts, 'amp':amp}
+        EIS_WF_params = {'E0':E0, 'f0':f0, 'f1':f1, 'n_pts':n_pts, 
+                         'n_cycles': n_cycles, 'amp':amp}
         
         if EIS_WF_params != self.EIS_WF_params:
-            self.make_EIS_waveform(E0, f0, f1, n_pts, amp)
+            self.make_EIS_waveform(E0, f0, f1, n_pts, n_cycles, amp)
         
         self.EIS_WF_params = EIS_WF_params
         self.EIS_params   = values
@@ -431,8 +432,8 @@ class HekaWriter(Logger):
         self.log('Set EIS parameters')
         return
     
-    def make_EIS_waveform(self, E0, f0, f1, n_pts, amp):
-        generate_tpl(f0, f1, n_pts, amp, 'D:/SECM/_auto_eis_1.tpl')
+    def make_EIS_waveform(self, E0, f0, f1, n_pts, n_cycles, amp):
+        generate_tpl(f0, f1, n_pts, n_cycles, amp, 'D:/SECM/_auto_eis_1.tpl')
         self.log('Wrote new EIS waveform')
     
     
