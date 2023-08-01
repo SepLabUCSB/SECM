@@ -205,6 +205,7 @@ class Experiment:
             [pt.analysis[(analysis_func, *args)] for pt in row]
             for row in self.data]         
             )
+        print(gridpts)
         return gridpts
     
     
