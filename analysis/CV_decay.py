@@ -18,17 +18,27 @@ def extract_data(file):
 
    
 
-def analysis(CVDataPoint, n):
+def CV_decay_analysis(CVDataPoint, n):
     '''
     Returns fraction current (at negative limit) decayed after n cycles
     '''
+    true_n = n            # Make local copy of any args
+    if true_n == '':      # Passed args are used as dictionary keys for storing the result
+        true_n = 0        # DO NOT modify n or else we can't access the result in the CVDataPoint
+    true_n = int(true_n)
     
+    if not hasattr(CVDataPoint, 'analysis'):
+        CVDataPoint.analysis = {}
+    
+    if (CV_decay_analysis, n) in CVDataPoint.analysis.keys():
+        # Already did this function at this condition
+        return CVDataPoint
+        
     if 'CVDataPoint' not in CVDataPoint.__repr__():
-        return 0.0
+        val = 0.0
+        CVDataPoint.analysis[(CV_decay_analysis, n)] = val
+        return CVDataPoint
     
-    if n == '':
-        n = 0
-    n = int(n)
         
     t, V, I = CVDataPoint.data
     dt = np.mean(np.diff(t[:1000]))
@@ -38,28 +48,13 @@ def analysis(CVDataPoint, n):
     peaks, props = find_peaks(arr, height=0.01)
     peak_currs = I[peaks]
     peak_currs /= peak_currs[0]
-    if n >= len(peak_currs):
-        n = -1
-        
-    return peak_currs[n]
-
-
-
-if __name__ == '__main__':
-    file = r'C:/Users/BRoehrich/Desktop/SECCM data/20230713 region3/00_01.asc'
-    t, V, I = extract_data(file)
+    if true_n >= len(peak_currs):
+        true_n = -1
     
+    val = peak_currs[true_n]
     
-    
-    vmin, vmax = min(V), max(V)
-    
-    arr = -(np.abs(V - min(V)) - max(V))
-    peaks, props = find_peaks(arr, height=0.01)
-    
-    
-    fig, ax = plt.subplots(dpi=100)
-    ax.plot(t, I)
-    ax.plot(t[peaks], I[peaks], 'ro')
+    CVDataPoint.analysis[(CV_decay_analysis, n)] = val
+    return CVDataPoint
 
 
 

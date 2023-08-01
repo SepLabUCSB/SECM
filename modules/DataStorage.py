@@ -183,6 +183,31 @@ class Experiment:
         return idx, closest
     
     
+    def do_analysis(self, analysis_func, *args):
+        '''
+        Runs a function on each DataPoint in this experiment.
+        Function should return a modified DataPoint with an attribute
+        DataPoint.analysis = {(analysis_func, *args):value}
+        
+        This dictionary is accessed by the heatmap plotter to draw the point's color
+        
+        Any additional elements to draw on the echem (right) figure can be
+        added as matplotlib.artist.Artist objects to the list DataPoint.artists
+        
+        analysis_func: function to apply to each point
+        args: arguments to pass to analysis_func
+        '''
+        for i, row in enumerate(self.data):
+            for j, pt in enumerate(row):
+                self.data[i][j] = analysis_func(pt, *args)
+                
+        gridpts = np.array([
+            [pt.analysis[(analysis_func, *args)] for pt in row]
+            for row in self.data]         
+            )
+        return gridpts
+    
+    
     def max_points_per_loc(self):
         '''
         Checks all DataPoints in this experiment. Returns the length of
