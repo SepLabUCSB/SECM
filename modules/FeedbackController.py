@@ -8,6 +8,7 @@ from functools import partial
 from utils.utils import run, Logger
 from modules.DataStorage import (Experiment, CVDataPoint, EISDataPoint,
                                  PointsList)
+from analysis.analysis_funcs import E0_finder_analysis
 
 
 
@@ -350,14 +351,14 @@ class FeedbackController(Logger):
         for i, (x, y) in enumerate(points[:-2]):
             pt_st_time = time.time()
             # Retract from surface
-            # if (i !=0) and (not self.master.TEST_MODE):
-            #     # z = self.Piezo.retract(height=retract_distance, 
-            #     #                         relative=True)
-            #     tx, ty, tz = self.Piezo.measure_loc()
-            #     self.Piezo.goto_z(tz+retract_distance)
-            #     time.sleep(0.5)
-            #     _,_,z = self.Piezo.measure_loc()
-            #     time.sleep(0.5)
+            if (i !=0) and (not self.master.TEST_MODE):
+                # z = self.Piezo.retract(height=retract_distance, 
+                #                         relative=True)
+                tx, ty, tz = self.Piezo.measure_loc()
+                self.Piezo.goto_z(tz+retract_distance)
+                time.sleep(0.5)
+                _,_,z = self.Piezo.measure_loc()
+                time.sleep(0.5)
             
             # Retract to the given z_max, otherwise start from next (x,y) but current z
             if z_max > 0:
@@ -370,10 +371,10 @@ class FeedbackController(Logger):
                 return
             
             # Run approach at this point
-            # z, on_surf = self.approach(forced_step_size=forced_step_size)
-            # if not on_surf:
-            #     self.log('Hopping mode ended due to not reaching surface')
-            #     return
+            z, on_surf = self.approach(forced_step_size=forced_step_size)
+            if not on_surf:
+                self.log('Hopping mode ended due to not reaching surface')
+                return
                         
             # Run echem experiment on surface
             data = self.run_echems(expt_type, expt, (x, y, z), i) # TODO: run variable echem experiment(s) at each pt
@@ -401,9 +402,6 @@ class FeedbackController(Logger):
         self.Piezo.goto(80,80,80)
         self.est_time_remaining = 0
         
-        # self.Piezo.goto(curr_x, curr_y, z_max)
-        # self.master.expt = expt
-            
         return 
 
     ###############################
@@ -477,15 +475,26 @@ class FeedbackController(Logger):
                 return None
             CVdata = CVDataPoint(loc=loc, data=[t,voltage,current])
             
-            # Run EIS
+            # Check for peak detection
+            CVdata = E0_finder_analysis(CVdata, '')
+            start_V = voltage[0]
+            E0 = CVDataPoint.analysis[(E0_finder_analysis, '')]
+            if E0 == 0:
+                return CVdata
+            
+            # Run EIS: Set DC bias
             if not self.potentiostat_setup('EIS'): 
                 return None
+            self.HekaWriter.macro('E Vhold {E0}')
+            time.sleep(2)
+            
+            # Run EIS expt
             t, voltage, current = self.run_EIS(expt.path, i)
             if type(t) == int:
                 return None
-            EISdata = EISDataPoint(loc = loc, data = [t, voltage, current])
             self.HekaWriter.reset_amplifier()
-            
+            self.HekaWriter.macro('E Vhold {start_V}')
+            EISdata = EISDataPoint(loc = loc, data = [t, voltage, current])
             data = PointsList(loc=loc, data = [CVdata, EISdata])
     
         return data
