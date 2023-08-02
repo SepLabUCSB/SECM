@@ -34,6 +34,7 @@ TEST_MODE = False
     
 '''
 TODO:
+    - image exporting
     
     - handle forward/backwards CV scans in current @ view
     
@@ -41,13 +42,11 @@ TODO:
         
     - check on opening new file procedure (might overwrite/ not save)
     
-    - steamline echem running process    
         
     Write documentation
         
     HEKA control
     - choose EIS sample rate based on max freq.
-    - run multiple echem experiments at each location
     
     
 
@@ -226,10 +225,12 @@ class GUI(Logger):
         menu_settings   = Menu(menubar)
         menu_heatmap    = Menu(menubar)
         menu_analysis   = Menu(menubar)
+        menu_image      = Menu(menubar)
         menubar.add_cascade(menu=menu_file, label='File')
         menubar.add_cascade(menu=menu_settings, label='Settings')
         menubar.add_cascade(menu=menu_heatmap, label='Heatmap')
         menubar.add_cascade(menu=menu_analysis, label='Analysis')
+        menubar.add_cascade(menu=menu_image, label='Image')
         
         
         menu_file.add_command(label='New', command=self.newFile)
@@ -247,6 +248,11 @@ class GUI(Logger):
         menu_heatmap.add_command(label='Line scan', command=self.heatmap_line_scan)
         
         menu_analysis.add_command(label='Set analysis function...', command=self.set_analysis_func)
+        
+        menu_image.add_command(label='Export heatmap...', command=self.export_heatmap)
+        menu_image.add_command(label='Export echem figure...', command=self.export_echem_fig)
+        menu_image.add_command(label='Export heatmap data...', command=self.export_heatmap_data)
+        menu_image.add_command(label='Export echem data...', command=self.export_echem_fig_data)
         
         
                 
@@ -672,6 +678,19 @@ class GUI(Logger):
         set_all(self.__settings, loaded)
         
         return
+    
+    
+    def export_heatmap(self):
+        pass
+    
+    def export_echem_fig(self):
+        pass
+    
+    def export_heatmap_data(self):
+        pass
+    
+    def export_echem_fig_data(self):
+        pass
         
      
     ########## DISPLAY FIGURE CALLBACKS ###########
