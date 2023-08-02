@@ -759,6 +759,7 @@ class Plotter(Logger):
             t, V, I = [0], [0], [0]
             
         elif isinstance(DATAPOINT, EISDataPoint):
+            self.FIG2_FORCED = True
             return self.draw_nyquist(DATAPOINT)
         
         else:

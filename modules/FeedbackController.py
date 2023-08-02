@@ -181,6 +181,8 @@ class FeedbackController(Logger):
                 break
             
             if on_surface:
+                # Take a CV on the surface
+                self.master.GUI.run_CV()
                 # Slowly retract from surface by 10 um
                 self.Piezo.retract(10, relative=True)
                 break
@@ -478,22 +480,26 @@ class FeedbackController(Logger):
             # Check for peak detection
             CVdata = E0_finder_analysis(CVdata, '')
             start_V = voltage[0]
-            E0 = CVDataPoint.analysis[(E0_finder_analysis, '')]
+            E0 = CVdata.analysis[(E0_finder_analysis, '')]
             if E0 == 0:
                 return CVdata
             
             # Run EIS: Set DC bias
+            self.log(f'Detected E0 = {E0:0.3f} V')
+            self.master.GUI.params['EIS']['E0'].delete('1.0', 'end')
+            self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E0*1000:0.1f}')
             if not self.potentiostat_setup('EIS'): 
                 return None
-            self.HekaWriter.macro('E Vhold {E0}')
             time.sleep(2)
+            
             
             # Run EIS expt
             t, voltage, current = self.run_EIS(expt.path, i)
             if type(t) == int:
                 return None
             self.HekaWriter.reset_amplifier()
-            self.HekaWriter.macro('E Vhold {start_V}')
+            self.HekaWriter.send_command(f'Set E Vhold {start_V}')
+            time.sleep(2)
             EISdata = EISDataPoint(loc = loc, data = [t, voltage, current])
             data = PointsList(loc=loc, data = [CVdata, EISdata])
     

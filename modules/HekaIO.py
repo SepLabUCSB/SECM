@@ -402,19 +402,19 @@ class HekaWriter(Logger):
         Update EIS parameters in PATCHMASTER
         '''
         if self.isRunning(): return
-        values, duration = generate_EIS_params(E0, n_cycles*min(f0, f1))
+        values, duration = generate_EIS_params(E0/1000, n_cycles*min(f0, f1))
         
         self.running()
         
-        cmds = []
-        # cmds = get_filters(max(f0, f1))         # Set filters based on max frequency
-        # cmds.append('Set E StimFilter 0')       # Set stim filter to 2 us
-        # cmds.append('Set E TestDacToStim1 2')   # Turn on external input for Stim-1
-        # cmds.append('Set E ExtScale 1')         # Set external scale to 1
-        # cmds.append('Set E Mode 3')
-        cmds.append(f'Set E Vhold {E0}')        # Set Vmon to DC bias
-        
+        cmds = get_filters(max(f0, f1))         # Set filters based on max frequency
+        cmds.append('Set E StimFilter 0')       # Set stim filter to 2 us
+        cmds.append('Set E TestDacToStim1 2')   # Turn on external input for Stim-1
+        cmds.append('Set E ExtScale 1')         # Set external scale to 1
+        cmds.append('Set E Mode 3')
         self.send_multiple_cmds(cmds)
+        
+        self.send_command(f'Set E Vhold {E0}')  # Set DC bias
+        time.sleep(1)
         
         # Update pgf fields
         self.update_Values(values)
