@@ -841,6 +841,12 @@ class Plotter(Logger):
         minimum = min(min(x), min(y))
         maximum = max(max(x), max(y))
         
+        # Clear old artists
+        if len(self.fig2_extra_artists) != 0:
+            for artist in self.fig2_extra_artists:
+                artist.remove()
+            self.fig2_extra_artists = []
+        
         self.ln.set_data(x, y)
         self.ln.set_marker('o')
         self.set_axlim('fig2', (minimum, maximum), (minimum, maximum))
