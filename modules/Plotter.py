@@ -350,7 +350,7 @@ class Plotter(Logger):
             print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {unit_label(val)}')
         if event.inaxes == self.ax2:
             x, y = event.xdata, event.ydata
-            print(f'({x:0.3f}, {unit_label(y)})')
+            print(f'({unit_label(x)}, {unit_label(y)})')
         
         return 
     
