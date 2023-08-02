@@ -199,13 +199,23 @@ class Experiment:
         '''
         for i, row in enumerate(self.data):
             for j, pt in enumerate(row):
-                self.data[i][j] = analysis_func(pt, *args)
-                
+                if isinstance(pt, PointsList):
+                    for k, subpt in enumerate(pt.data):
+                        if isinstance(subpt, CVDataPoint):
+                            pt.data[k] = analysis_func(subpt, *args)
+                            break
+                    if not hasattr(pt, 'analysis'):
+                        pt.analysis = {}
+                    pt.analysis[(analysis_func, *args)] = pt.data[k].analysis[(analysis_func, *args)]
+                    self.data[i][j] = pt
+                else:
+                    self.data[i][j] = analysis_func(pt, *args)
+                    
         gridpts = np.array([
             [pt.analysis[(analysis_func, *args)] for pt in row]
             for row in self.data]         
             )
-        print(gridpts)
+        
         return gridpts
     
     
