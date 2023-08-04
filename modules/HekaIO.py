@@ -423,7 +423,7 @@ class HekaWriter(Logger):
                          'n_cycles': n_cycles, 'amp':amp}
         
         if EIS_WF_params != self.EIS_WF_params:
-            self.make_EIS_waveform(E0, f0, f1, n_pts, n_cycles, amp)
+            self.EIS_applied_freqs = self.make_EIS_waveform(E0, f0, f1, n_pts, n_cycles, amp)
         
         self.EIS_WF_params = EIS_WF_params
         self.EIS_params   = values
@@ -433,8 +433,10 @@ class HekaWriter(Logger):
         return
     
     def make_EIS_waveform(self, E0, f0, f1, n_pts, n_cycles, amp):
-        generate_tpl(f0, f1, n_pts, n_cycles, amp, 'D:/SECM/_auto_eis_1.tpl')
+        applied_freqs = generate_tpl(f0, f1, n_pts, n_cycles, 
+                                     amp, 'D:/SECM/_auto_eis_1.tpl')
         self.log('Wrote new EIS waveform')
+        return applied_freqs
     
     
     def run_EIS(self):

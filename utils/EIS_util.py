@@ -49,7 +49,7 @@ def generate_tpl(f0, f1, n_pts, n_cycles, mVpp, fname, Z=None):
         
     write_tpl_file(v, fname)
     # print(f'Wrote waveform to {fname}')
-    return
+    return freqs
 
 
 def generate_waveform(f0, f1, n_pts, mVpp):

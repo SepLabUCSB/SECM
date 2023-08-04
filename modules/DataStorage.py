@@ -412,9 +412,10 @@ class CVDataPoint(DataPoint):
 
     
 class EISDataPoint(DataPoint):    
-    def __init__(self, loc: tuple, data:list):
+    def __init__(self, loc: tuple, data:list, applied_freqs:list):
         self.loc      = loc
         self.data     = data
+        self.applied_freqs = applied_freqs
         self.FT() # do the Fourier transform
         
     def __str__(self):
@@ -431,7 +432,10 @@ class EISDataPoint(DataPoint):
         ft_I  = np.fft.rfft(I)[1:]
         
         # TODO: check this catches all frequencies/ amplitudes
-        idxs = [i for i, v in enumerate(abs(ft_V)) if v > 0.5]
+        if self.applied_freqs is not None:
+            idxs = [f for f in freqs if f in self.applied_freqs]
+        else:
+            idxs = [i for i, v in enumerate(abs(ft_V)) if v > 0.5]
         
         # Remove all frequencies not in perturbation signal
         freqs = freqs[idxs]
