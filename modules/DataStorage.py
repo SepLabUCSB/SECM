@@ -65,7 +65,7 @@ class Experiment:
         self.set_type(expt_type)
         self.setup_blank(points, order)
         self.saved = True # Toggles to False when first data point is appended
-    
+        self.settings = None
     
     def isSaved(self):
         return self.saved
@@ -84,6 +84,10 @@ class Experiment:
         if not path.endswith('temp.secmdata'):
             print(f'Saved as {path}')
             self.saved = True
+            
+            
+    def save_settings(self, settings):
+        self.settings = settings
     
     
     def setup_blank(self, points, order):
@@ -433,7 +437,10 @@ class EISDataPoint(DataPoint):
         
         # TODO: check this catches all frequencies/ amplitudes
         if self.applied_freqs is not None:
-            idxs = [f for f in freqs if f in self.applied_freqs]
+            idxs = []
+            for f in self.applied_freqs:
+                idx, _ = nearest(freqs, f)
+                idxs.append(idx)
         else:
             idxs = [i for i, v in enumerate(abs(ft_V)) if v > 0.5]
         

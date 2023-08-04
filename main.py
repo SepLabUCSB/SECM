@@ -570,11 +570,18 @@ class GUI(Logger):
         expt = load_from_file(f)
         self.master.set_expt(expt)
         self.master.Plotter.load_from_expt(expt)
-        pass
+        if hasattr(expt, 'settings') and expt.settings is not None:
+            answer = messagebox.askyesno('Load settings', 
+                          'Load settings associated with this experiment file?')
+            if answer:
+                self.load_settings(expt.settings)
+            
     
     # save current file to disk
     def save(self):
         if self.master.expt:
+            settings = self.save_settings(ask_prompt=False)
+            self.master.expt.save_settings(settings)
             if self.master.expt.path == 'temp.secmdata':
                 return self.saveAs()
             self.master.expt.save()
@@ -619,7 +626,7 @@ class GUI(Logger):
         self.root.destroy()
     
     
-    def save_settings(self):
+    def save_settings(self, ask_prompt=True):
 
         def convert_field(field):
             if isinstance(field, StringVar):
@@ -640,21 +647,23 @@ class GUI(Logger):
             return d2
         
         settings = convert_all(self.__settings)
-        SETTINGS_FILE = filedialog.asksaveasfilename(initialdir='settings/',
+        if ask_prompt:
+            SETTINGS_FILE = filedialog.asksaveasfilename(initialdir='settings/',
                                                      defaultextension='.json')
-        if not SETTINGS_FILE: return
-        with open(SETTINGS_FILE, 'w') as f:
-            json.dump(settings, f)
-        
-        return
+            if SETTINGS_FILE:
+                with open(SETTINGS_FILE, 'w') as f:
+                    json.dump(settings, f)
+                
+        return settings
           
     
     
-    def load_settings(self):
-        SETTINGS_FILE = filedialog.askopenfilename(initialdir='settings/')
-        if not SETTINGS_FILE: return
-        with open(SETTINGS_FILE, 'r') as f:
-            loaded = json.load(f)
+    def load_settings(self, loaded = None):
+        if loaded is None:
+            SETTINGS_FILE = filedialog.askopenfilename(initialdir='settings/')
+            if not SETTINGS_FILE: return
+            with open(SETTINGS_FILE, 'r') as f:
+                loaded = json.load(f)
         
         
         def set_value(field, value):
