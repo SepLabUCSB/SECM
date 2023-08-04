@@ -589,6 +589,8 @@ class GUI(Logger):
     # save current file under new path
     def saveAs(self):
         if self.master.expt:
+            settings = self.save_settings(ask_prompt=False)
+            self.master.expt.save_settings(settings)
             f = filedialog.asksaveasfilename(
                 defaultextension='.secmdata', initialdir='D:\SECM\Data')
             if not f: return
