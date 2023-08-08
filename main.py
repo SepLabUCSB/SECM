@@ -28,7 +28,7 @@ default_stderr = sys.stderr
 matplotlib.use('TkAgg')
 plt.style.use('secm.mplstyle')
 
-TEST_MODE = True
+TEST_MODE = False
 
 
     
@@ -388,7 +388,7 @@ class GUI(Logger):
         
                               
         ###############################    
-        #### HEATMAP SCALE OPTIONS ####
+        #### HEATMAP IMAGE OPTIONS ####
         ###############################
         
         bottom_menu_frame = Frame(rightpanel)
@@ -397,8 +397,9 @@ class GUI(Logger):
         HEATMAP_TABS = Notebook(bottom_menu_frame)
     
         heatmapscaleframe = Frame(HEATMAP_TABS)
+        heatmapcolorframe = Frame(HEATMAP_TABS)
                
-        
+        ### Scaling ###
         heatmapscaleframe.grid(row=2, column=0)
         self.heatmap_min_val = StringVar(value='0')
         self.heatmap_max_val = StringVar(value='0')
@@ -420,8 +421,35 @@ class GUI(Logger):
         Button(heatmapscaleframe, text='Reset', 
                command=self.master.Plotter.cancel_popup).grid(
                row=3, column=2, sticky=(W,E))
+                   
+                   
+        ### Color map ###
+        cmaps = ['viridis', 'hot', 'gist_gray', 'afmhot', 'plasma', 'inferno', 
+                 'magma', 'cividis','Greys', 'Purples', 'Blues', 'Greens', 
+                 'Oranges', 'Reds', 'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 
+                 'BuPu','GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn']
         
+        
+        self.heatmap_cmap = StringVar()
+        OptionMenu(heatmapcolorframe, self.heatmap_cmap, cmaps[0], *cmaps, 
+                   command=self.master.Plotter.update_cmap).grid(
+                       row=0, column=1, columnspan=2)
+        
+        self.heatmap_cmap_minval = StringVar(value='0')
+        self.heatmap_cmap_maxval = StringVar(value='1')
+        Label(heatmapcolorframe, text='Min: ').grid(row=1, column=0, sticky=(W,E))
+        Entry(heatmapcolorframe, textvariable=self.heatmap_cmap_minval, width=3).grid(
+            row=1, column=1, sticky=(W,E))
+        Label(heatmapcolorframe, text='Max: ').grid(row=1, column=2, sticky=(W,E))
+        Entry(heatmapcolorframe, textvariable=self.heatmap_cmap_maxval, width=3).grid(
+            row=1, column=3, sticky=(W,E))
+        Button(heatmapcolorframe, text='Apply', command=self.master.Plotter.update_cmap).grid(
+            row=2, column=1, columnspan=2)
+        
+  
+                   
         HEATMAP_TABS.add(heatmapscaleframe, text='Heatmap Scale')
+        HEATMAP_TABS.add(heatmapcolorframe, text='Heatmap Color')
         HEATMAP_TABS.pack(expand=1, fill='both')
         
         

@@ -555,41 +555,14 @@ class Plotter(Logger):
     # Heatmap line scan mode
     def heatmap_line_scan(self):
         pass
-    
-    
-    # Popup to set color map
-    def heatmap_color_popup(self):
-        cmaps = ['viridis', 'hot', 'gist_gray', 'afmhot', 'plasma', 'inferno', 
-                 'magma', 'cividis','Greys', 'Purples', 'Blues', 'Greens', 
-                 'Oranges', 'Reds', 'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 
-                 'BuPu','GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn']
-        
-        popup = Toplevel()
-        frame = Frame(popup)
-        frame.grid(row=0, column=0)
-        
-        self.cmap = StringVar()
-        OptionMenu(frame, self.cmap, cmaps[0], *cmaps, 
-                   command=self.update_cmap).grid(row=0, column=1, columnspan=2)
-        
-        self.cmap_minval = StringVar(value='0')
-        self.cmap_maxval = StringVar(value='1')
-        Label(frame, text='Min: ').grid(row=1, column=0, sticky=(W,E))
-        Entry(frame, textvariable=self.cmap_minval, width=3).grid(row=1, column=1, sticky=(W,E))
-        Label(frame, text='Max: ').grid(row=1, column=2, sticky=(W,E))
-        Entry(frame, textvariable=self.cmap_maxval, width=3).grid(row=1, column=3, sticky=(W,E))
-        Button(frame, text='Apply', command=self.update_cmap).grid(row=2, column=1, columnspan=2)
-        x = self.master.GUI.root.winfo_x()
-        y = self.master.GUI.root.winfo_y()
-        popup.geometry("+%d+%d" % (x + 350, y))
-        
+           
     
     def update_cmap(self, _=None):
-        cmap = self.cmap.get()
+        cmap = self.master.GUI.heatmap_cmap.get()
         base_cmap = matplotlib.cm.get_cmap(cmap, 1024)
         
-        vmin = float(self.cmap_minval.get())
-        vmax = float(self.cmap_maxval.get())
+        vmin = float(self.master.GUI.heatmap_cmap_minval.get())
+        vmax = float(self.master.GUI.heatmap_cmap_maxval.get())
         
         if (vmin < 0) or (vmin > 1) or (vmax < 0) or (vmax > 1):
             print('\nInvalid input! Min and max must be between 0 and 1.\n')
