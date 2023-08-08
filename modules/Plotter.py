@@ -722,6 +722,7 @@ class Plotter(Logger):
     def update_fig2(self):
         DATAPOINT = self.master.ADC.pollingdata
         self.last_data2checksum = checksum(DATAPOINT)
+        self.fig2_datapoint = DATAPOINT
         self.set_echemdata(DATAPOINT)
 
     
@@ -860,6 +861,40 @@ class Plotter(Logger):
         
 
 
+class FigureExporter():
+    
+    def __init__(self):
+        self.fig, self.ax = plt.subplots(figsize=(5,5), dpi=100)
+        
+    def save(self, path):
+        self.fig.savefig(path, dpi=self.dpi)
+    
+    def set_dpi(self, dpi):
+        self.dpi = dpi
+        
+    def set_xlabel(self, xlabel):
+        self.ax.set_xlabel(xlabel)
+    
+    def set_ylabel(self, ylabel):
+        self.ax.set_ylabel(ylabel)
+        
+    def set_xticks(self, xticks:list):
+        self.ax.set_xticks(xticks)
+        
+    def set_yticks(self, yticks:list):
+        self.ax.set_yticks(yticks)
+    
+    
+
+
+class HeatmapExporter(FigureExporter):
+    pass
+
+
+
+class EchemFigExporter(FigureExporter):
+    def divide_by_const(self, constant):
+        pass
 
             
         

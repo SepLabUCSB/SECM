@@ -16,7 +16,7 @@ from modules.ADC import ADC
 from modules.Piezo import Piezo
 from modules.FeedbackController import FeedbackController, make_datapoint_from_file
 from modules.Plotter import Plotter
-from modules.DataStorage import Experiment, load_from_file
+from modules.DataStorage import Experiment, EISDataPoint, load_from_file
 from modules.Picomotor import PicoMotor
 from utils.utils import run, Logger
 from gui import *
@@ -36,10 +36,8 @@ TEST_MODE = False
 TODO:
     - image exporting
     
-    - handle forward/backwards CV scans in current @ view
-    
-    - Make FeedbackController threadsafe
-        
+    - Bode plot options
+            
     - check on opening new file procedure (might overwrite/ not save)
     
         
@@ -371,10 +369,10 @@ class GUI(Logger):
              'I vs V',
              ]
         Label(botfigframe, text='Electrochemistry').grid(column=0, row=0)
-        # Label(botfigframe, text='Show: ').grid(column=0, row=1, sticky=(W,E))
         self.fig2selection = StringVar(botfigframe)
-        OptionMenu(botfigframe, self.fig2selection, fig2Options[2], 
-                   *fig2Options, command=self.fig_opt_changed).grid(column=0, row=1, sticky=(W,E))
+        self.fig2typeoptmenu = OptionMenu(botfigframe, self.fig2selection, fig2Options[2], 
+                   *fig2Options, command=self.fig_opt_changed)
+        self.fig2typeoptmenu.grid(column=0, row=1, sticky=(W,E))
         self.fig2ptselection = IntVar(botfigframe)
         self.fig2ptoptmenu = OptionMenu(botfigframe, self.fig2ptselection, 0, 
                     *[0,], command=self.fig_opt_changed)
@@ -545,6 +543,16 @@ class GUI(Logger):
         self._time_est.set(f'{time_est}')
         
         # Update point selection dropdown field
+        self.update_fig2_dropdowns()        
+        self.root.after(250, self._update_piezo_display)
+        
+        
+    def update_fig2_dropdowns(self):
+        '''
+        Update Echem figure selection dropdowns based on how many 
+        DataPoints are in the experiment and what type is currently selected
+        '''
+        # Set dropdown to select DataPoint from PointsList
         max_pts = self.master.expt.max_points_per_loc()
         menu_length = self.fig2ptoptmenu['menu'].index("end") + 1
         if (max_pts > 1) and (max_pts != menu_length):
@@ -553,8 +561,19 @@ class GUI(Logger):
             menu.delete(0, 'end')
             opts = [i for i in range(max_pts)]
             self.fig2ptoptmenu.set_menu(opts[0], *opts)
-        
-        self.root.after(250, self._update_piezo_display)
+            
+        # Set dropdown to select display type (I/V/t or EIS-type)
+        # if hasattr(self.master.Plotter, 'fig2_datapoint'):
+        #     if isinstance(self.master.Plotter.fig2_datapoint, EISDataPoint):
+        #         desired_optlist = ['Nyquist', 'Bode Z', 'Bode Phase']
+        #         if not all([opt in self.fig2typeoptmenu for opt in desired_optlist]):
+                    
+        #         pass
+        #     else:
+        #         menu =
+                
+            
+            
         
     ########## GUI CALLBACKS ###########    
     
