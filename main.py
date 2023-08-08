@@ -28,7 +28,7 @@ default_stderr = sys.stderr
 matplotlib.use('TkAgg')
 plt.style.use('secm.mplstyle')
 
-TEST_MODE = False
+TEST_MODE = True
 
 
     
@@ -241,7 +241,6 @@ class GUI(Logger):
         menu_settings.add_command(label='Save settings...', command=self.save_settings)
         menu_settings.add_command(label='Load settings...', command=self.load_settings)
         
-        menu_heatmap.add_command(label='Set scale...', command=self.set_heatmap_scale)
         menu_heatmap.add_command(label='Set colors...', command=self.set_heatmap_colors)
         menu_heatmap.add_command(label='Line scan', command=self.heatmap_line_scan)
         
@@ -256,11 +255,11 @@ class GUI(Logger):
                 
         # Left panel: potentiostat/ SECM parameters
         leftpanel = Frame(self.root)
-        leftpanel.grid(row=1, column=0, sticky=(N, S))
+        leftpanel.grid(row=1, column=0, sticky=(N,S,W,E))
         
         # Right panel: Figures
         rightpanel = Frame(self.root)
-        rightpanel.grid(row=1, column=1)
+        rightpanel.grid(row=1, column=1, sticky=(N,S,W,E))
         
         # Bottom panel: Console
         bottompanel = Frame(self.root)
@@ -298,12 +297,12 @@ class GUI(Logger):
         #####                            #####
         ######################################
         
-        # Label(rightpanel, text='right frame').grid(column=1, row=1)
+        ## Figures ##
         topfigframe = Frame(rightpanel)
         topfigframe.grid(row=0, column=0)
         
-        Separator(rightpanel, 
-                  orient='vertical').grid(row=0, column=1, sticky=(N,S))
+        Separator(rightpanel,orient='vertical').grid(
+            row=0, column=1, padx=5, sticky=(N,S))
         
         botfigframe = Frame(rightpanel)
         botfigframe.grid(row=0, column=2)
@@ -314,7 +313,8 @@ class GUI(Logger):
         self.topfig.add_subplot(111)
         self.botfig.add_subplot(111)
         
-        
+        Separator(rightpanel, orient='horizontal').grid(
+            row=1, column=0, columnspan=10, pady=5, sticky=(W,E))
         
         
         ###############################
@@ -381,7 +381,48 @@ class GUI(Logger):
         FigureCanvasTkAgg(self.botfig, master=botfigframe
                           ).get_tk_widget().grid(
                                               row=2, column=0,
-                                              columnspan=10)                       
+                                              columnspan=10)        
+         
+        # Initialize plotter
+        Plotter(self.master, self.topfig, self.botfig)
+        
+                              
+        ###############################    
+        #### HEATMAP SCALE OPTIONS ####
+        ###############################
+        
+        bottom_menu_frame = Frame(rightpanel)
+        bottom_menu_frame.grid(row=2, column=0, sticky=(N,W,S,E))
+        
+        HEATMAP_TABS = Notebook(bottom_menu_frame)
+    
+        heatmapscaleframe = Frame(HEATMAP_TABS)
+               
+        
+        heatmapscaleframe.grid(row=2, column=0)
+        self.heatmap_min_val = StringVar(value='0')
+        self.heatmap_max_val = StringVar(value='0')
+        Button(heatmapscaleframe, text='-', 
+               command=self.master.Plotter.zoom_out).grid(
+               row=1, column=1, sticky=(W,E))
+        Button(heatmapscaleframe, text='+', 
+               command=self.master.Plotter.zoom_in).grid(
+               row=1, column=2, sticky=(W,E))
+        
+        Entry(heatmapscaleframe, textvariable=self.heatmap_min_val, width=5).grid(
+            row=2, column=1, sticky=(W,E))
+        Entry(heatmapscaleframe, textvariable=self.heatmap_max_val, width=5).grid(
+            row=2, column=2, sticky=(W,E))
+        
+        Button(heatmapscaleframe, text='Apply', 
+               command=self.master.Plotter.update_fig1).grid(
+               row=3, column=1, sticky=(W,E))
+        Button(heatmapscaleframe, text='Reset', 
+               command=self.master.Plotter.cancel_popup).grid(
+               row=3, column=2, sticky=(W,E))
+        
+        HEATMAP_TABS.add(heatmapscaleframe, text='Heatmap Scale')
+        HEATMAP_TABS.pack(expand=1, fill='both')
         
         
         
@@ -500,8 +541,6 @@ class GUI(Logger):
         
         
     
-        # Initialize plotter
-        Plotter(self.master, self.topfig, self.botfig)
         
         
         # Collect all settings for saving/ loading

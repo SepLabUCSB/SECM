@@ -295,8 +295,7 @@ class Plotter(Logger):
         self.last_data1checksum = checksum(self.data1)
         self.last_data2checksum = checksum(self.data2)
         
-        self.minval = None    # Min/ max values for heatmap
-        self.maxval = None    # Set as tk.StringVar in popup window
+        self.force_minmax = False
 
         self.rect = matplotlib.patches.Rectangle((0,0), 0, 0, fill=0,
                                                  edgecolor='red', lw=2)
@@ -473,11 +472,14 @@ class Plotter(Logger):
         arr = self.data1[::-1]
         self.image1.set_data(arr)
         
-        if self.minval and self.maxval:
-            minval = float(self.minval.get())
-            maxval = float(self.maxval.get())
+        if self.force_minmax:
+            minval = float(self.master.GUI.heatmap_min_val.get())
+            maxval = float(self.master.GUI.heatmap_max_val.get())
         else:
             minval, maxval = get_clim(arr)
+            self.update_minmaxval_fields()
+            # self.master.GUI.heatmap_min_val.set(f'{minval))
+            # self.master.GUI.heatmap_max_val.set(str(maxval))
             
         self.image1.set(clim=( minval, maxval) )
         set_cbar_ticklabels(self.image1.colorbar, [minval, maxval])
@@ -601,70 +603,46 @@ class Plotter(Logger):
             
         self.image1.set(cmap = new_cmap)
         self.update_fig1()
+            
     
-    
-    # Popup to set min/max scale
-    def heatmap_scale_popup(self):
-        data = self.data1.flatten()
-        data = [d for d in data if d != 0]
-        print(f'\nMax: {max(data):0.4g}')
-        print(f'Min: {min(data):0.4g}')
-        print(f'Avg: {np.mean(data):0.4g}')
-        print(f'Std: {np.std(data):0.4g}\n')
-        
-        self.popup_window = Toplevel()
-        frame  = Frame(self.popup_window)
-        frame.grid(row=0, column=0)
-        
+    def update_minmaxval_fields(self):
         minval, maxval = get_clim(self.data1[::-1])
-        
-        self.minval = StringVar(value=f'{minval:0.2g}')
-        self.maxval = StringVar(value=f'{maxval:0.2g}')
-        
-        Label(frame, text='Scale: ').grid(row=0, column=0, sticky=(W,E))
-        Button(frame, text='-', command=self.zoom_out).grid(row=0, column=1, sticky=(W,E))
-        Button(frame, text='+', command=self.zoom_in).grid(row=0, column=2, sticky=(W,E))
-        
-        Entry(frame, textvariable=self.minval, width=5).grid(row=1, column=1, sticky=(W,E))
-        Entry(frame, textvariable=self.maxval, width=5).grid(row=1, column=2, sticky=(W,E))
-        
-        Button(frame, text='Apply', command=self.update_fig1).grid(row=3, column=1, sticky=(W,E))
-        Button(frame, text='Reset', command=self.cancel_popup).grid(row=3, column=2, sticky=(W,E))
-        x = self.master.GUI.root.winfo_x()
-        y = self.master.GUI.root.winfo_y() 
-        self.popup_window.geometry("+%d+%d" % (x + 150, y))
+        self.master.GUI.heatmap_min_val.set(f'{minval:0.3g}')
+        self.master.GUI.heatmap_max_val.set(f'{maxval:0.3g}') 
         
         
     def zoom_in(self):
-        minval = float(self.minval.get())
-        maxval = float(self.maxval.get())
+        minval = float(self.master.GUI.heatmap_min_val.get())
+        maxval = float(self.master.GUI.heatmap_max_val.get())
         mean = (maxval + minval) / 2
         diff = (maxval - minval) / 2
         diff *= 0.5
         new_minval = mean - diff
         new_maxval = mean + diff
-        self.minval.set(f'{new_minval:0.3g}')
-        self.maxval.set(f'{new_maxval:0.3g}')   
+        self.master.GUI.heatmap_min_val.set(f'{new_minval:0.3g}')
+        self.master.GUI.heatmap_max_val.set(f'{new_maxval:0.3g}')  
+        self.force_minmax = True
         self.update_fig1()
     
     def zoom_out(self):
-        minval = float(self.minval.get())
-        maxval = float(self.maxval.get())
+        minval = float(self.master.GUI.heatmap_min_val.get())
+        maxval = float(self.master.GUI.heatmap_max_val.get())
         mean = (maxval + minval) / 2
         diff = (maxval - minval) / 2
         diff *= 1.5
         new_minval = mean - diff
         new_maxval = mean + diff
-        self.minval.set(f'{new_minval:0.3g}')
-        self.maxval.set(f'{new_maxval:0.3g}') 
+        self.master.GUI.heatmap_min_val.set(f'{new_minval:0.3g}')
+        self.master.GUI.heatmap_max_val.set(f'{new_maxval:0.3g}') 
+        self.force_minmax = True
         self.update_fig1()
         
         
     def cancel_popup(self):
         # Reset minval and maxval to None
-        self.minval = None
-        self.maxval = None
+        self.force_minmax = False
         self.update_fig1()
+        self.update_minmaxval_fields()
      
     
     def set_analysis_popup(self):
