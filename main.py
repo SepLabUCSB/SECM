@@ -221,12 +221,10 @@ class GUI(Logger):
         root['menu']    = menubar
         menu_file       = Menu(menubar)
         menu_settings   = Menu(menubar)
-        menu_heatmap    = Menu(menubar)
         menu_analysis   = Menu(menubar)
         menu_image      = Menu(menubar)
         menubar.add_cascade(menu=menu_file, label='File')
         menubar.add_cascade(menu=menu_settings, label='Settings')
-        menubar.add_cascade(menu=menu_heatmap, label='Heatmap')
         menubar.add_cascade(menu=menu_analysis, label='Analysis')
         menubar.add_cascade(menu=menu_image, label='Image')
         
@@ -240,9 +238,6 @@ class GUI(Logger):
         
         menu_settings.add_command(label='Save settings...', command=self.save_settings)
         menu_settings.add_command(label='Load settings...', command=self.load_settings)
-        
-        menu_heatmap.add_command(label='Set colors...', command=self.set_heatmap_colors)
-        menu_heatmap.add_command(label='Line scan', command=self.heatmap_line_scan)
         
         menu_analysis.add_command(label='Set analysis function...', command=self.set_analysis_func)
         
@@ -449,7 +444,7 @@ class GUI(Logger):
   
                    
         HEATMAP_TABS.add(heatmapscaleframe, text='Heatmap Scale')
-        HEATMAP_TABS.add(heatmapcolorframe, text='Heatmap Color')
+        HEATMAP_TABS.add(heatmapcolorframe, text='Colors')
         HEATMAP_TABS.pack(expand=1, fill='both')
         
         
@@ -815,11 +810,7 @@ class GUI(Logger):
     
     def heatmap_rect_zoom(self):
         self.master.Plotter.heatmap_zoom()
-    
-    
-    def heatmap_line_scan(self):
-        self.master.Plotter.heatmap_line_scan()
-        
+            
     
     def set_heatmap_scale(self):
         '''
