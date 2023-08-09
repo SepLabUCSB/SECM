@@ -121,10 +121,10 @@ def unit_label(d:float):
 
         scaled = float(d * pow(1000, -degree))
 
-        s = f"{scaled:0.2f} {prefix}"
+        s = f"{int(scaled)}".rjust(4, ' ') + f" {prefix}"
 
     else:
-        s = f"{d:.03f}"
+        s = f"{int(scaled)}".rjust(4, ' ')
     return s
 
 
