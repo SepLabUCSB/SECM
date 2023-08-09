@@ -914,7 +914,7 @@ class HeatmapExporter(FigureExporter):
         self.artists.append(cb)
         
         for sp in ['right', 'top', 'left', 'bottom']:
-            self.ax.spines[sp].set_visible(False)
+            self.ax.spines[sp].set_visible(True)
         self.ax.set_xticks([])
         self.ax.set_yticks([])
         
