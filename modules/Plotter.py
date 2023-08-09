@@ -897,7 +897,10 @@ class HeatmapExporter(FigureExporter):
     def redraw(self):
         self.ax.clear()
         for artist in self.artists:
-            artist.remove()
+            try:
+                artist.remove()
+            except:
+                pass
         self.artists = []
         self.draw()
     
