@@ -15,7 +15,7 @@ from modules.HekaIO import HekaReader, HekaWriter
 from modules.ADC import ADC
 from modules.Piezo import Piezo
 from modules.FeedbackController import FeedbackController, make_datapoint_from_file
-from modules.Plotter import Plotter
+from modules.Plotter import Plotter, HeatmapExporter, EchemFigExporter
 from modules.DataStorage import Experiment, EISDataPoint, load_from_file
 from modules.Picomotor import PicoMotor
 from utils.utils import run, Logger
@@ -411,7 +411,7 @@ class GUI(Logger):
             row=2, column=2, sticky=(W,E))
         
         Button(heatmapscaleframe, text='Apply', 
-               command=self.master.Plotter.update_fig1).grid(
+               command=self.master.Plotter.apply_minmax_fields).grid(
                row=3, column=1, sticky=(W,E))
         Button(heatmapscaleframe, text='Reset', 
                command=self.master.Plotter.cancel_popup).grid(
@@ -773,10 +773,10 @@ class GUI(Logger):
     
     
     def export_heatmap(self):
-        pass
+        exporter = HeatmapExporter(heatmap_data = self.master.Plotter.data1.copy())
     
     def export_echem_fig(self):
-        pass
+        exporter = EchemFigExporter(echem_data = self.master.Plotter.ln.get_xydata())
     
     def export_heatmap_data(self):
         pass

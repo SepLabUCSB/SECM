@@ -1,5 +1,7 @@
 import matplotlib
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 import numpy as np
 import os
 from tkinter import *
@@ -404,9 +406,10 @@ class Plotter(Logger):
     
     # Initialize heatmap
     def init_heatmap(self):
-        self.image1 = self.ax1.imshow(np.array([
+        self.data1 = np.array([
             np.array([0 for _ in range(10)]) for _ in range(10)
-            ], dtype=np.float32), cmap='viridis', origin='upper')
+            ], dtype=np.float32)
+        self.image1 = self.ax1.imshow(self.data1, cmap='viridis', origin='upper')
         cb = self.fig1.colorbar(self.image1, ax=self.ax1, shrink=0.5,
                                 pad=0.02, format="%0.1e")
         cb.ax.tick_params(labelsize=14)
@@ -478,8 +481,6 @@ class Plotter(Logger):
         else:
             minval, maxval = get_clim(arr)
             self.update_minmaxval_fields()
-            # self.master.GUI.heatmap_min_val.set(f'{minval))
-            # self.master.GUI.heatmap_max_val.set(str(maxval))
             
         self.image1.set(clim=( minval, maxval) )
         set_cbar_ticklabels(self.image1.colorbar, [minval, maxval])
@@ -582,7 +583,10 @@ class Plotter(Logger):
         minval, maxval = get_clim(self.data1[::-1])
         self.master.GUI.heatmap_min_val.set(f'{minval:0.3g}')
         self.master.GUI.heatmap_max_val.set(f'{maxval:0.3g}') 
-        
+    
+    def apply_minmax_fields(self):
+        self.force_minmax = True
+        self.update_fig1()
         
     def zoom_in(self):
         minval = float(self.master.GUI.heatmap_min_val.get())
@@ -815,7 +819,29 @@ class Plotter(Logger):
 class FigureExporter():
     
     def __init__(self):
-        self.fig, self.ax = plt.subplots(figsize=(5,5), dpi=100)
+        self.fig = plt.Figure(figsize=(3,3), dpi=100, constrained_layout=True)
+        self.fig.add_subplot(111)
+        self.ax = self.fig.gca()
+        self.make_popup()
+        self.fill_leftframe()
+        self.draw()
+        
+    def make_popup(self):
+        self.popup = Toplevel()
+        self.leftframe  = Frame(self.popup)
+        self.rightframe = Frame(self.popup)
+        self.leftframe.grid(row=0, column=0)
+        self.rightframe.grid(row=0, column=1)
+        FigureCanvasTkAgg(self.fig, master=self.rightframe
+                          ).get_tk_widget().grid(row=0, column=0)
+        plt.pause(0.001)
+        
+        
+    def fill_leftframe(self):
+        pass
+    
+    def draw(self):
+        pass
         
     def save(self, path):
         self.fig.savefig(path, dpi=self.dpi)
@@ -839,11 +865,87 @@ class FigureExporter():
 
 
 class HeatmapExporter(FigureExporter):
-    pass
+    def __init__(self, heatmap_data):
+        self.data = heatmap_data[::-1]
+        super().__init__()
+    
+    def fill_leftframe(self):
+        # Put relevant buttons in self.leftframe
+        frame = self.leftframe
+        
+        self.scale           = StringVar(value='50')
+        self.scalebar_length = StringVar(value='10')
+        
+        Label(frame, text='Heatmap Exporter       ').grid(row=0, column=0)
+        Button(frame, text='Redraw', command=self.draw).grid(row=0, column=1, sticky=(W,E))
+        
+        
+        Label(frame, text='Scale: ').grid(row=1, column=0, sticky=(W,E))
+        Entry(frame, textvariable=self.scale, width=5).grid(
+            row=1, column=1, sticky=(W,E))
+        
+        Label(frame, text='Scalebar Length: ').grid(row=2, column=0, sticky=(W,E))
+        Entry(frame, textvariable=self.scalebar_length, width=5).grid(
+            row=2, column=1, sticky=(W,E))
+        
+    
+    def draw(self):
+        self.image1 = self.ax.imshow(self.data, cmap='viridis', 
+                                     origin='upper', extent=[0,1,0,1])
+        cb = self.fig.colorbar(self.image1, ax=self.ax, shrink=0.5,
+                                pad=0.02, format="%0.1e")
+        cb.ax.tick_params(labelsize=14)
+        
+        for sp in ['right', 'top', 'left', 'bottom']:
+            self.ax.spines[sp].set_visible(False)
+        self.ax.set_xticks([])
+        self.ax.set_yticks([])
+        
+        minval, maxval = get_clim(self.data)
+        self.image1.set(clim=(minval, maxval))
+        set_cbar_ticklabels(self.image1.colorbar, [minval, maxval])
+
+        self.fig.canvas.draw()
+        self.draw_scalebar()
+        self.ax.draw_artist(self.image1)
+        plt.pause(0.001)
+        
+    
+    def draw_scalebar(self):
+        scale  = float(self.scale.get())
+        length = float(self.scalebar_length.get())
+        
+        frac = length/scale
+        label = f'{self.scalebar_length.get()}' + r' $\mu$m'
+        
+        scalebar = AnchoredSizeBar(self.ax.transData,
+                           frac, label, 'lower right', 
+                           pad=0.1,
+                           color='white',
+                           frameon=False,
+                           size_vertical=0.1,
+                           label_top=True)
+        
+        self.ax.add_artist(scalebar)
+        self.ax.draw_artist(scalebar)
+        
 
 
 
 class EchemFigExporter(FigureExporter):
+    def __init__(self, echem_data):
+        self.data = echem_data
+        super().__init__()
+    
+    def fill_leftframe(self):
+        # Put relevant buttons in self.leftframe
+        frame = self.leftframe
+        Label(frame, text='echem fig exporter').grid(row=0, column=0)
+        pass
+    
+    def draw(self):
+        pass
+    
     def divide_by_const(self, constant):
         pass
 
