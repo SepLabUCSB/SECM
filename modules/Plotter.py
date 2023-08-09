@@ -76,13 +76,12 @@ def get_clim(arr):
     return minval, maxval
 
 
-def set_cbar_ticklabels(cbar, clim):
+def set_cbar_ticklabels(cbar, clim, n_ticks=5):
     # m0=int(np.floor(arr.min()))            # colorbar min value
     # m1=int(np.ceil(arr.max()))             # colorbar max value
     m0 = min(clim)
     m1 = max(clim)
-    num_ticks = 5
-    ticks = np.linspace(m0, m1, num_ticks)
+    ticks = np.linspace(m0, m1, n_ticks)
     cbar.set_ticks(ticks)
     cbar.set_ticklabels([unit_label(t) for t in ticks])
 
@@ -876,6 +875,7 @@ class HeatmapExporter(FigureExporter):
             self.dpi_field       = StringVar(value='600')
             self.scale           = StringVar(value=str(length))
             self.scalebar_length = StringVar(value=f'{length/4:.0f}')
+            self.n_cbar_ticks    = StringVar(value='5')
         
         Label(frame, text='Heatmap Exporter       ').grid(row=0, column=0, columnspan=2)
         Button(frame, text='Redraw', command=self.redraw).grid(row=0, column=2, sticky=(W,E))
@@ -890,6 +890,11 @@ class HeatmapExporter(FigureExporter):
                                                     columnspan=2, sticky=(W,E))
         Entry(frame, textvariable=self.scalebar_length, width=5).grid(
             row=2, column=2, sticky=(W,E))
+        
+        Label(frame, text='# Colorbar Ticks: ').grid(row=3, column=0, 
+                                                    columnspan=2, sticky=(W,E))
+        Entry(frame, textvariable=self.n_cbar_ticks, width=5).grid(
+            row=3, column=2, sticky=(W,E))
         
         return
     
@@ -921,7 +926,9 @@ class HeatmapExporter(FigureExporter):
         minval = float(self.GUI.heatmap_min_val.get())
         maxval = float(self.GUI.heatmap_max_val.get())
         image1.set(clim=(minval, maxval))
-        set_cbar_ticklabels(image1.colorbar, [minval, maxval])
+        
+        n_ticks = int(self.n_cbar_ticks.get())
+        set_cbar_ticklabels(image1.colorbar, [minval, maxval], n_ticks)
         
         cmap = self.get_cmap()
         image1.set(cmap = cmap)
