@@ -15,7 +15,7 @@ from modules.HekaIO import HekaReader, HekaWriter
 from modules.ADC import ADC
 from modules.Piezo import Piezo
 from modules.FeedbackController import FeedbackController, make_datapoint_from_file
-from modules.Plotter import Plotter, HeatmapExporter, EchemFigExporter
+from modules.Plotter import Plotter, ExporterGenerator
 from modules.DataStorage import Experiment, EISDataPoint, load_from_file
 from modules.Picomotor import PicoMotor
 from utils.utils import run, Logger
@@ -773,10 +773,17 @@ class GUI(Logger):
     
     
     def export_heatmap(self):
-        exporter = HeatmapExporter(GUI=self, heatmap_data = self.master.Plotter.data1.copy())
+        if not hasattr(self, 'ExporterGenerator'):
+            self.ExporterGenerator = ExporterGenerator()
+        exporter = self.ExporterGenerator.get('Heatmap', self, self.master.Plotter.data1.copy())
+        # exporter = HeatmapExporter(GUI=self, heatmap_data = self.master.Plotter.data1.copy())
     
     def export_echem_fig(self):
-        exporter = EchemFigExporter(GUI=self, echem_data = self.master.Plotter.ln.get_xydata())
+        if not hasattr(self, 'ExporterGenerator'):
+            self.ExporterGenerator = ExporterGenerator()
+        self.ExporterGenerator.get('Echem', self, self.master.Plotter.ln.get_xydata())
+        
+        # exporter = EchemFigExporter(GUI=self, echem_data = self.master.Plotter.ln.get_xydata())
     
     def export_heatmap_data(self):
         pass

@@ -854,17 +854,7 @@ class FigureExporter():
     def set_dpi(self, dpi):
         self.dpi = dpi
         
-    def set_xlabel(self, xlabel):
-        self.ax.set_xlabel(xlabel)
     
-    def set_ylabel(self, ylabel):
-        self.ax.set_ylabel(ylabel)
-        
-    def set_xticks(self, xticks:list):
-        self.ax.set_xticks(xticks)
-        
-    def set_yticks(self, yticks:list):
-        self.ax.set_yticks(yticks)
     
     
 
@@ -880,9 +870,11 @@ class HeatmapExporter(FigureExporter):
         frame = self.leftframe
         
         length = self.GUI.master.expt.length
-        self.dpi_field       = StringVar(value='600')
-        self.scale           = StringVar(value=str(length))
-        self.scalebar_length = StringVar(value=f'{length/4:.0f}')
+        if not hasattr(self, 'dpi_field'):
+            # Will already have these attributes if it's being reinitialized
+            self.dpi_field       = StringVar(value='600')
+            self.scale           = StringVar(value=str(length))
+            self.scalebar_length = StringVar(value=f'{length/4:.0f}')
         
         Label(frame, text='Heatmap Exporter       ').grid(row=0, column=0, columnspan=2)
         Button(frame, text='Redraw', command=self.redraw).grid(row=0, column=2, sticky=(W,E))
@@ -967,17 +959,150 @@ class EchemFigExporter(FigureExporter):
     def fill_leftframe(self):
         # Put relevant buttons in self.leftframe
         frame = self.leftframe
-        Label(frame, text='echem fig exporter').grid(row=0, column=0)
+        
+        if not hasattr(self, 'dpi_field'):
+            # Will already have these attributes if it's being reinitialized
+            self.dpi_field = StringVar(value='600')
+            self.xlabel = StringVar(value='')
+            self.ylabel = StringVar(value='')
+            self.xticks = StringVar(value='')
+            self.yticks = StringVar(value='')
+            self.n_xticks = StringVar(value='')
+            self.n_yticks = StringVar(value='')
+            self.div_const = StringVar(value='1')
+        
+        Label(frame, text='Heatmap Exporter       ').grid(row=0, column=0, columnspan=2)
+        Button(frame, text='Redraw', command=self.redraw).grid(row=0, column=2, sticky=(W,E))
+        
+        Label(frame, text='dpi: ').grid(row=1, column=0, sticky=(W,E))
+        Entry(frame, textvariable=self.dpi_field, width=4).grid(row=1, column=1,
+                                                                sticky=(W,E))
+        Button(frame, text='Save', command=self.save).grid(row=1, column=2, sticky=(W,E))
+        
+        
+        Label(frame, text='X label: ').grid(row=2, column=0, 
+                                                    columnspan=2, sticky=(W,E))
+        Entry(frame, textvariable=self.xlabel, width=20).grid(
+            row=2, column=1, columnspan=2, sticky=(W,E))
+        
+        Label(frame, text='Y label: ').grid(row=3, column=0, 
+                                                    columnspan=2, sticky=(W,E))
+        Entry(frame, textvariable=self.ylabel, width=20).grid(
+            row=3, column=1, columnspan=2, sticky=(W,E))
+        
+        Label(frame, text='X ticks: ').grid(row=4, column=0, 
+                                                    columnspan=2, sticky=(W,E))
+        Entry(frame, textvariable=self.xticks, width=20).grid(
+            row=4, column=1, columnspan=2, sticky=(W,E))
+        
+        Label(frame, text='Y ticks: ').grid(row=5, column=0, 
+                                                    columnspan=2, sticky=(W,E))
+        Entry(frame, textvariable=self.yticks, width=20).grid(
+            row=5, column=1, columnspan=2, sticky=(W,E))
+        
+        Label(frame, text='# X ticks: ').grid(row=6, column=0, 
+                                                    columnspan=2, sticky=(W,E))
+        Entry(frame, textvariable=self.n_xticks, width=20).grid(
+            row=6, column=1, columnspan=2, sticky=(W,E))
+        
+        Label(frame, text='# Y ticks: ').grid(row=7, column=0, 
+                                                    columnspan=2, sticky=(W,E))
+        Entry(frame, textvariable=self.n_yticks, width=20).grid(
+            row=7, column=1, columnspan=2, sticky=(W,E))
+        
+        Label(frame, text='Div. const.: ').grid(row=8, column=0, 
+                                                    columnspan=2, sticky=(W,E))
+        Entry(frame, textvariable=self.div_const, width=20).grid(
+            row=8, column=1, columnspan=2, sticky=(W,E))
         pass
     
+    
+    def redraw(self):
+        self.ax.clear()
+        self.draw()
+    
+    
     def draw(self):
-        pass
+        x,y = zip(*self.data)
+        x,y = np.array(x), np.array(y)
+        y /= float(self.div_const.get())
+        self.ax.plot(x,y)
+        self.set_xlabel()
+        self.set_ylabel()
+        self.set_xticks()
+        self.set_yticks()
+        
+        self.fig.canvas.draw()
+        plt.pause(0.001)
+    
     
     def divide_by_const(self, constant):
         pass
+    
+    
+    def set_xlabel(self):
+        xlabel = self.xlabel.get()
+        self.ax.set_xlabel(f'{xlabel}')
+    
+    def set_ylabel(self):
+        ylabel = self.ylabel.get()
+        self.ax.set_ylabel(f'{ylabel}')
+        
+    def set_xticks(self):
+        xticks = self.xticks.get()
+        if xticks == '':
+            return self.set_n_xticks()
+        xticks = xticks.split(',')
+        xticks = [float(n) for n in xticks]
+        self.ax.set_xticks(xticks)
+        
+    def set_yticks(self):
+        yticks = self.yticks.get()
+        if yticks == '':
+            return self.set_n_yticks()
+        yticks = yticks.split(',')
+        yticks = [float(n) for n in yticks]
+        self.ax.set_yticks(yticks)
+        
+    def set_n_xticks(self):
+        try:
+            n_xticks = int(self.n_xticks.get())
+        except:
+            return
+        self.ax.xaxis.set_major_locator(plt.MaxNLocator(n_xticks))
+        
+    def set_n_yticks(self):
+        try:
+            n_yticks = int(self.n_yticks.get())
+        except:
+            return
+        self.ax.yaxis.set_major_locator(plt.MaxNLocator(n_yticks))
+        
 
             
+class ExporterGenerator():
+    '''
+    Class for generating or returning the current Exporters
+    '''
+    def __init__(self):
+        self.HeatmapExporter = None
+        self.EchemExporter   = None
+    
+    def get(self, exporter_type, GUI, data):
         
+        if exporter_type == 'Heatmap':
+            if self.HeatmapExporter:
+                # Reinitialize to remake window with old settings
+                return self.HeatmapExporter.__init__(GUI, data)
+            self.HeatmapExporter = HeatmapExporter(GUI, data)
+            return
+            
+        if exporter_type == 'Echem':
+            if self.EchemExporter:
+                # Reinitialize to remake window with old settings
+                return self.EchemExporter.__init__(GUI, data)
+            self.EchemExporter = EchemFigExporter(GUI, data)
+            return 
         
   
     
