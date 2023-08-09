@@ -568,12 +568,16 @@ class GUI(Logger):
         
         # Collect all settings for saving/ loading
         self.__settings = {
-            'heatmapselection': self.heatmapselection,      # StringVar
-            'HeatMapDisplayParam': self.HeatMapDisplayParam, # Text
-            'fig2selection': self.fig2selection,            # StringVar
+            'heatmapselection': self.heatmapselection,          # StringVar
+            'HeatMapDisplayParam': self.HeatMapDisplayParam,    # Text
+            'HeatMapColorMap': self.heatmap_cmap,               # StringVar
+            'Heatmap_minval': self.heatmap_cmap_minval,         # StringVar
+            'Heatmap_maxval': self.heatmap_cmap_maxval,         # StringVar
+            'fig2selection': self.fig2selection,                # StringVar
             'params': {
                 'CV': self.params['CV'],            # dict
                 'amp': self.params['amp'],          # dict
+                'EIS': self.params['EIS'],          # dict
                 'hopping': self.params['hopping'],  # dict
                 'approach': self.params['approach']
                 },
