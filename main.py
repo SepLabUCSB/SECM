@@ -762,9 +762,13 @@ class GUI(Logger):
 
         def set_all(settings_dict, loaded_dict):
             # Recursively iterate through settings dict and sub-dicts
-            for key, field, value in zip(settings_dict.keys(), 
-                                         settings_dict.values(),
-                                         loaded_dict.values()):
+            for key in settings_dict:
+                if key not in loaded_dict:
+                    # Backwards compatibility - may not have had this field
+                    # in the past.
+                    continue
+                field = settings_dict[key]
+                value = loaded_dict[key]
                 if isinstance(value, dict):
                     settings_dict[key] = set_all(settings_dict[key], value)
                     continue
@@ -780,15 +784,14 @@ class GUI(Logger):
         if not hasattr(self, 'ExporterGenerator'):
             self.ExporterGenerator = ExporterGenerator()
         exporter = self.ExporterGenerator.get('Heatmap', self, self.master.Plotter.data1.copy())
-        # exporter = HeatmapExporter(GUI=self, heatmap_data = self.master.Plotter.data1.copy())
-    
+        
+        
     def export_echem_fig(self):
         if not hasattr(self, 'ExporterGenerator'):
             self.ExporterGenerator = ExporterGenerator()
         self.ExporterGenerator.get('Echem', self, self.master.Plotter.ln.get_xydata())
         
-        # exporter = EchemFigExporter(GUI=self, echem_data = self.master.Plotter.ln.get_xydata())
-    
+        
     def export_heatmap_data(self):
         pass
     
