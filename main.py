@@ -773,10 +773,10 @@ class GUI(Logger):
     
     
     def export_heatmap(self):
-        exporter = HeatmapExporter(heatmap_data = self.master.Plotter.data1.copy())
+        exporter = HeatmapExporter(GUI=self, heatmap_data = self.master.Plotter.data1.copy())
     
     def export_echem_fig(self):
-        exporter = EchemFigExporter(echem_data = self.master.Plotter.ln.get_xydata())
+        exporter = EchemFigExporter(GUI=self, echem_data = self.master.Plotter.ln.get_xydata())
     
     def export_heatmap_data(self):
         pass
