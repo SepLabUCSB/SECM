@@ -879,9 +879,10 @@ class HeatmapExporter(FigureExporter):
         # Put relevant buttons in self.leftframe
         frame = self.leftframe
         
+        length = self.GUI.master.expt.length
         self.dpi_field       = StringVar(value='600')
-        self.scale           = StringVar(value='50')
-        self.scalebar_length = StringVar(value='10')
+        self.scale           = StringVar(value=str(length))
+        self.scalebar_length = StringVar(value=f'{length/4:.0f}')
         
         Label(frame, text='Heatmap Exporter       ').grid(row=0, column=0, columnspan=2)
         Button(frame, text='Redraw', command=self.redraw).grid(row=0, column=2, sticky=(W,E))
@@ -891,14 +892,11 @@ class HeatmapExporter(FigureExporter):
                                                                 sticky=(W,E))
         Button(frame, text='Save', command=self.save).grid(row=1, column=2, sticky=(W,E))
         
-        Label(frame, text='Scale: ').grid(row=2, column=0, columnspan=2, sticky=(W,E))
-        Entry(frame, textvariable=self.scale, width=5).grid(
-            row=2, column=2, sticky=(W,E))
         
-        Label(frame, text='Scalebar Length: ').grid(row=3, column=0, 
+        Label(frame, text='Scalebar Length: ').grid(row=2, column=0, 
                                                     columnspan=2, sticky=(W,E))
         Entry(frame, textvariable=self.scalebar_length, width=5).grid(
-            row=3, column=2, sticky=(W,E))
+            row=2, column=2, sticky=(W,E))
         
         return
     
@@ -949,7 +947,7 @@ class HeatmapExporter(FigureExporter):
                            pad=0.1,
                            color='black',
                            frameon=False,
-                           size_vertical=0.25*frac,
+                           size_vertical=0.2*frac,
                            label_top=False,
                            bbox_to_anchor=matplotlib.transforms.Bbox.from_bounds(0.5,-0.3,0.5,0.3),
                            bbox_transform=self.ax.transAxes)
