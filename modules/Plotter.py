@@ -284,7 +284,7 @@ class Plotter(Logger):
         self.adc_polling = True
         self.adc_polling_count = 0
         self.FIG2_FORCED = False
-        self.analysis_function = None
+        self.analysis_function = analysis_funcs.CV_decay_analysis
         
         self.fig1 = fig1
         self.fig2 = fig2
