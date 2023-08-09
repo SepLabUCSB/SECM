@@ -793,10 +793,17 @@ class GUI(Logger):
         
         
     def export_heatmap_data(self):
-        pass
+        print('Heatmap data export not implemented')
     
     def export_echem_fig_data(self):
-        pass
+        path = filedialog.asksaveasfilename(defaultextension='.csv')
+        if not path:
+            return
+        pts = self.master.Plotter.ln.get_xydata()
+        with open(path, 'w') as f:
+            for (x, y) in pts:
+                f.write(f'{x},{y}\n')
+        self.log(f'Saved to {path}')
         
      
     ########## DISPLAY FIGURE CALLBACKS ###########
