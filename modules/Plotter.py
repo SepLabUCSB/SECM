@@ -6,6 +6,7 @@ import numpy as np
 import os
 from tkinter import *
 from tkinter.ttk import *
+from tkinter import filedialog
 from utils.utils import Logger, nearest
 from modules.DataStorage import (ADCDataPoint, CVDataPoint, 
                                  SinglePoint, EISDataPoint, PointsList)
@@ -919,12 +920,30 @@ class HeatmapExporter(FigureExporter):
         image1.set(clim=(minval, maxval))
         set_cbar_ticklabels(image1.colorbar, [minval, maxval])
         
+        cmap = self.get_cmap()
+        image1.set(cmap = cmap)
+        
         self.fig.canvas.draw()
         self.ax.draw_artist(image1)
         self.draw_scalebar()
         self.fig.canvas.draw()
         
         plt.pause(0.001)
+        
+        
+    def get_cmap(self):
+        cmap = self.GUI.heatmap_cmap.get()
+        base_cmap = matplotlib.cm.get_cmap(cmap, 1024)
+        
+        vmin = float(self.GUI.heatmap_cmap_minval.get())
+        vmax = float(self.GUI.heatmap_cmap_maxval.get())
+        
+        new_cmap = matplotlib.colors.ListedColormap(
+            base_cmap(
+                np.linspace(vmin, vmax, 512)
+                )
+            )
+        return new_cmap   
         
     
     def draw_scalebar(self):
@@ -1090,16 +1109,17 @@ class ExporterGenerator():
     
     def get(self, exporter_type, GUI, data):
         
+        # Either reinitialize to remake window with old settings,
+        # or create a new Exporter object
+        
         if exporter_type == 'Heatmap':
             if self.HeatmapExporter:
-                # Reinitialize to remake window with old settings
                 return self.HeatmapExporter.__init__(GUI, data)
             self.HeatmapExporter = HeatmapExporter(GUI, data)
             return
             
         if exporter_type == 'Echem':
             if self.EchemExporter:
-                # Reinitialize to remake window with old settings
                 return self.EchemExporter.__init__(GUI, data)
             self.EchemExporter = EchemFigExporter(GUI, data)
             return 
