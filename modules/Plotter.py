@@ -86,7 +86,7 @@ def set_cbar_ticklabels(cbar, clim, n_ticks=5):
     cbar.set_ticklabels([unit_label(t) for t in ticks])
 
 
-def unit_label(d:float):
+def unit_label(d:float,dec=0):
     '''
     Returns value as string with SI unit prefix
     
@@ -121,10 +121,10 @@ def unit_label(d:float):
 
         scaled = float(d * pow(1000, -degree))
 
-        s = f"{int(scaled)}".rjust(4, ' ') + f" {prefix}"
+        s = f"{scaled:0.{dec}f}".rjust(4, ' ') + f" {prefix}"
 
     else:
-        s = f"{int(scaled)}".rjust(4, ' ')
+        s = f"{d:0.2f}".rjust(4, ' ')
     return s
 
 
@@ -348,10 +348,10 @@ class Plotter(Logger):
             if type(z0) == tuple:
                 z0 = z0[0] # Handle early bug in some saved data
             val = self.data1.flatten()[idx]
-            print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {unit_label(val)}')
+            print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {unit_label(val, dec=3)}')
         if event.inaxes == self.ax2:
             x, y = event.xdata, event.ydata
-            print(f'({unit_label(x)}, {unit_label(y)})')
+            print(f'({unit_label(x, dec=3)}, {unit_label(y, dec=3)})')
         
         return 
     
