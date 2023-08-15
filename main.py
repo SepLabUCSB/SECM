@@ -124,7 +124,7 @@ class MasterModule(Logger):
                     self.STOP = True
                     self.abort()
                     self.log('Stopping')
-                    self.check_save()
+                    # self.check_save()
                     self.endState()
                     return 
             time.sleep(0.1)
@@ -214,6 +214,7 @@ class GUI(Logger):
         root.attributes('-topmost', 1)
         root.attributes('-topmost', 0) 
         root.option_add('*tearOff', FALSE)
+        root.protocol("WM_DELETE_WINDOW", self.Quit)
         
         
         # Menu bar
@@ -710,6 +711,7 @@ class GUI(Logger):
     
     # Exit program
     def Quit(self):
+        self.master.check_save()
         self.root.destroy()
     
     
