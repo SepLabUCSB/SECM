@@ -1,4 +1,4 @@
-from src import main
+from src.main import run_main
 
 if __name__ == '__main__':
-    main.run_main()
+    run_main()

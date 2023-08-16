@@ -26,7 +26,6 @@ default_stdin  = sys.stdin
 default_stderr = sys.stderr
 
 matplotlib.use('TkAgg')
-plt.style.use('src/secm.mplstyle')
 
 TEST_MODE = True
 
@@ -64,6 +63,39 @@ global gl_st
 gl_st = time.time()
 
 SETTINGS_FILE = 'settings/DEFAULT.json'
+
+plt_style_dict = {
+    'figure.figsize': (5, 5),
+    'figure.dpi': 300,
+    'font.family': 'Calibri',
+    'font.size': 20,
+    'mathtext.default': 'regular',
+    'axes.linewidth': 2,
+    'axes.labelpad': 10,
+    'axes.spines.right': False,
+    'axes.spines.top': False,
+    'axes.prop_cycle': matplotlib.cycler('color', 
+                                         ['4C72B0', '55A868', 
+                                          'C44E52', '8172B2', 
+                                          'CCB974', '64B5CD']),
+    'xtick.top': False,
+    'xtick.direction': 'out',
+    'xtick.major.size': 7,
+    'xtick.major.width': 2,
+    'xtick.minor.size': 5,
+    'xtick.minor.width': 2,
+    'ytick.right': False,
+    'ytick.direction': 'out',
+    'ytick.major.size': 7,
+    'ytick.major.width': 2,
+    'ytick.minor.size': 5,
+    'ytick.minor.width': 2,
+    'lines.linewidth': 2.5,
+    'lines.solid_capstyle': 'round',
+    'legend.framealpha': 1,
+    'legend.frameon': False
+    }
+plt.style.use(plt_style_dict)
 
 class MasterModule(Logger):
     '''
