@@ -2,7 +2,7 @@ import usb.core
 import usb.util
 from usb.backend import libusb1
 import re
-from utils.utils import Logger
+from ..utils.utils import Logger
 
 
 '''

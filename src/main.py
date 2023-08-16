@@ -11,24 +11,24 @@ from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib
-from modules.HekaIO import HekaReader, HekaWriter
-from modules.ADC import ADC
-from modules.Piezo import Piezo
-from modules.FeedbackController import FeedbackController, make_datapoint_from_file
-from modules.Plotter import Plotter, ExporterGenerator
-from modules.DataStorage import Experiment, EISDataPoint, load_from_file
-from modules.Picomotor import PicoMotor
-from utils.utils import run, Logger
-from gui import *
+from .modules.HekaIO import HekaReader, HekaWriter
+from .modules.ADC import ADC
+from .modules.Piezo import Piezo
+from .modules.FeedbackController import FeedbackController, make_datapoint_from_file
+from .modules.Plotter import Plotter, ExporterGenerator
+from .modules.DataStorage import Experiment, EISDataPoint, load_from_file
+from .modules.Picomotor import PicoMotor
+from .utils.utils import run, Logger
+from .gui import *
 
 default_stdout = sys.stdout
 default_stdin  = sys.stdin
 default_stderr = sys.stderr
 
 matplotlib.use('TkAgg')
-plt.style.use('secm.mplstyle')
+plt.style.use('src/secm.mplstyle')
 
-TEST_MODE = False
+TEST_MODE = True
 
 
     
@@ -1035,16 +1035,9 @@ class GUI(Logger):
         return
         
             
-    
 
 
-
-
-
-
-
-if __name__ == '__main__':
-    tracemalloc.start()
+def run_main():
     try:
         master = MasterModule(TEST_MODE = TEST_MODE)
         reader = HekaReader(master)
@@ -1102,6 +1095,15 @@ if __name__ == '__main__':
     sys.stdout = default_stdout
     sys.stdin  = default_stdin
     sys.stderr = default_stderr
+
+
+
+
+
+
+if __name__ == '__main__':
+    tracemalloc.start()
+    run_main()
     
     
     

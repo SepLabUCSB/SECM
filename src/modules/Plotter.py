@@ -7,12 +7,12 @@ import os
 from tkinter import *
 from tkinter.ttk import *
 from tkinter import filedialog
-from utils.utils import Logger, nearest
-from modules.DataStorage import (ADCDataPoint, CVDataPoint, 
+from ..utils.utils import Logger, nearest
+from .DataStorage import (ADCDataPoint, CVDataPoint, 
                                  SinglePoint, EISDataPoint, PointsList)
 
 # Import any analysis functions here and add to Plotter.set_analysis_popup()!
-from analysis import analysis_funcs
+from ..analysis import analysis_funcs
 
 
 # For time domain plotting

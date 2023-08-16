@@ -1,5 +1,5 @@
 import numpy as np
-from utils.utils import run, Logger
+from ..utils.utils import run, Logger
 import serial
 import time
 

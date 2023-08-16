@@ -3,7 +3,7 @@ from tkinter.ttk import *
 import numpy as np
 from functools import partial
 
-from utils.utils import focus_next_widget, run
+from ..utils.utils import focus_next_widget, run
 
 
 def make_approach_window(gui, master_frame):

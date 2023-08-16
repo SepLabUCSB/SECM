@@ -6,7 +6,7 @@ from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from utils.utils import focus_next_widget, run
+from ..utils.utils import focus_next_widget, run
 
 filter1options = ['Bessel 100 kHz', 
                   'Bessel 30 kHz', 

@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter.ttk import *
 from functools import partial
 
-from utils.utils import focus_next_widget, run
+from ..utils.utils import focus_next_widget, run
 
 
 

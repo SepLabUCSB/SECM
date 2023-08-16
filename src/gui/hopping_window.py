@@ -3,7 +3,7 @@ from tkinter.ttk import *
 import numpy as np
 from functools import partial
 
-from utils.utils import focus_next_widget, run
+from ..utils.utils import focus_next_widget, run
 
 methods = ['CV', 'CV then EIS', 'Custom']
 
