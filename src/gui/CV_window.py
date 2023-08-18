@@ -38,31 +38,37 @@ def make_CV_window(gui, master_frame):
     E0_field.grid(column=2, row=1, sticky=(E,W))
     E0_field.insert('1.0', '0')
     E0_field.bind('<Tab>', focus_next_widget)
+    E0_field.bind('<Return>', focus_next_widget)
     
     t0_field = Text(frame, height=1, width=5)
     t0_field.grid(column=2, row=2, sticky=(E,W))
     t0_field.insert('1.0', '0.2')
     t0_field.bind('<Tab>', focus_next_widget)
+    t0_field.bind('<Return>', focus_next_widget)
     
     E1_field = Text(frame, height=1, width=5)
     E1_field.grid(column=2, row=3, sticky=(E,W))
     E1_field.insert('1.0', '0.5')
     E1_field.bind('<Tab>', focus_next_widget)
+    E1_field.bind('<Return>', focus_next_widget)
     
     E2_field = Text(frame, height=1, width=5)
     E2_field.grid(column=2, row=4, sticky=(E,W))
     E2_field.insert('1.0', '0')
     E2_field.bind('<Tab>', focus_next_widget)
+    E2_field.bind('<Return>', focus_next_widget)
     
     Ef_field = Text(frame, height=1, width=5)
     Ef_field.grid(column=2, row=5, sticky=(E,W))
     Ef_field.insert('1.0', '0')
     Ef_field.bind('<Tab>', focus_next_widget)
+    Ef_field.bind('<Return>', focus_next_widget)
     
     v_field  = Text(frame, height=1, width=5)
     v_field.grid(column=2, row=6, sticky=(E,W))
     v_field.insert('1.0', '0.1')
     v_field.bind('<Tab>', focus_next_widget)
+    v_field.bind('<Return>', focus_next_widget)
     
     
     Label(frame, text='V').grid(column=3, row=1, sticky=(W))

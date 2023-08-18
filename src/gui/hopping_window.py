@@ -24,16 +24,19 @@ def make_hopping_window(gui, master_frame):
     size_field.grid(column=3, row=1, sticky=(E,W))
     size_field.insert('1.0', '50')
     size_field.bind('<Tab>', focus_next_widget)
+    size_field.bind('<Return>', focus_next_widget)
     
     Z_field = Text(frame, height=1, width=1)
     Z_field.grid(column=3, row=2, sticky=(E,W))
     Z_field.insert('1.0', '80')
     Z_field.bind('<Tab>', focus_next_widget)
+    Z_field.bind('<Return>', focus_next_widget)
     
     points_field = Text(frame, height=1, width=1)
     points_field.grid(column=3, row=3, sticky=(E,W))
     points_field.insert('1.0', '10')
     points_field.bind('<Tab>', focus_next_widget)
+    points_field.bind('<Return>', focus_next_widget)
     
     Label(frame, text='um').grid(column=4, row=1, sticky=(W))
     Label(frame, text='um').grid(column=4, row=2, sticky=(W))

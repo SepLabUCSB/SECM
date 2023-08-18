@@ -372,6 +372,7 @@ class GUI(Logger):
         self.HeatMapDisplayParam = Text(topfigframe, height=1, width=5)
         self.HeatMapDisplayParam.insert('1.0', '')
         self.HeatMapDisplayParam.grid(column=3, row=1, sticky=(W,E))
+        self.HeatMapDisplayParam.bind('<Return>', self.heatmap_opt_changed)
         
         Button(topfigframe, text='Zoom to grid...', 
                command=self.heatmap_rect_zoom).grid(column=0, row=1,
@@ -857,7 +858,7 @@ class GUI(Logger):
         value  = self.HeatMapDisplayParam.get('1.0', 'end')
         
         self.master.Plotter.update_heatmap(option, value)        
-        return
+        return 'break'
     
     
     
@@ -1134,7 +1135,7 @@ def run_main():
 
 
 if __name__ == '__main__':
-    tracemalloc.start()
+    # tracemalloc.start()
     run_main()
     
     
