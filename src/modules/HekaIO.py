@@ -2,8 +2,8 @@ import time
 import os
 import psutil
 import shutil
-from utils.utils import run, Logger
-from utils.EIS_util import generate_tpl
+from ..utils.utils import run, Logger
+from ..utils.EIS_util import generate_tpl
 from functools import partial
 
 

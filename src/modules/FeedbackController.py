@@ -5,10 +5,10 @@ import os
 import scipy.io
 import datetime
 from functools import partial
-from utils.utils import run, Logger
-from modules.DataStorage import (Experiment, CVDataPoint, EISDataPoint,
+from ..utils.utils import run, Logger
+from .DataStorage import (Experiment, CVDataPoint, EISDataPoint,
                                  PointsList)
-from analysis.analysis_funcs import E0_finder_analysis
+from ..analysis.analysis_funcs import E0_finder_analysis
 
 
 
@@ -241,7 +241,7 @@ class FeedbackController(Logger):
         # Setup potentiostat and ADC
         self.HekaWriter.macro(f'E Vhold {voltage}')
         gain  = 1e9 * self.master.GUI.amp_params['float_gain']
-        srate = 500
+        srate = 1000
         self.ADC.set_sample_rate(srate)
         run(partial(self.ADC.polling, 5000))
         time.sleep(0.005)
@@ -343,7 +343,7 @@ class FeedbackController(Logger):
         # height < 0 means retract that amount at each point
         if z_max < 0:
             retract_distance = -z_max
-            forced_step_size = 0.01
+            forced_step_size = 0.005
         else:
             retract_distance = 6
             forced_step_size = None
