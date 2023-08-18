@@ -1130,14 +1130,3 @@ def run_main():
     sys.stderr = default_stderr
 
 
-
-
-
-
-if __name__ == '__main__':
-    # tracemalloc.start()
-    run_main()
-    
-    
-    
-    
