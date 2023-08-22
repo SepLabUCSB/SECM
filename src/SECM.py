@@ -20,6 +20,7 @@ from .modules.DataStorage import Experiment, EISDataPoint, load_from_file
 from .modules.Picomotor import PicoMotor
 from .utils.utils import run, Logger
 from .gui import *
+from .gui.hopping_popup import HoppingPopup
 
 default_stdout = sys.stdout
 default_stdin  = sys.stdin
@@ -510,6 +511,7 @@ class GUI(Logger):
         self.params['EIS'] = make_EIS_window(self, eis_control)
         make_CA_window(self, ca_control)
         
+        self.amp_params = convert_to_index(self.params['amp'])
         ###  TODO: UNCOMMENT ME FOR FINAL CONFIG. STARTUP FROM KNOWN AMP. STATE ###
         # self.set_amplifier()
         ######################
@@ -1016,9 +1018,53 @@ class GUI(Logger):
         run(func)
         
     
+    def run_multi_hopping(self):
+        popup = HoppingPopup(self)
+        popup.make_popup()
+        if not popup.ready:
+            return
+        
+        if not popup.validate_responses():
+            return
+        
+        fname = filedialog.asksaveasfilename(
+                defaultextension='.secmdata', initialdir='D:\SECM\Data')
+        if not fname: 
+            return
+        
+        n_scans = int(popup.n_scans.get())
+        dist    = int(popup.move_dist.get())
+        
+        func = partial(self._multi_hopping, fname, n_scans, dist)
+        run(func)
+        
+    
+    def _multi_hopping(self, fname, n_scans, dist):
+        for i in range(n_scans):
+            this_fname = fname.replace('.secmdata', f'_{(i+1):03d}.secmdata')
+            
+            # Run hopping mode scan
+            success = self.master.FeedbackController.hopping_mode(self.params['hopping'])
+            
+            # Save the data
+            settings = self.save_settings(ask_prompt=False)
+            self.master.expt.save_settings(settings)
+            self.master.expt.save(this_fname)
+            
+            if not success:
+                self.log('Multi hopping aborted due to incomplete scan')
+                return
+            
+            # Move to next spot
+            if not self.master.PicoMotor.move_y(dist):
+                self.log('Failed to move y piezo')
+                return
+        
+        
+    
             
                                                         
-     ########## PIEZO CALLBACKS ###########   
+    ########## PIEZO CALLBACKS ###########   
                                                             
     def piezo_goto(self):
         x = self._x_set.get()

@@ -145,6 +145,8 @@ class HekaWriter(Logger):
         
     def send_command(self, cmd):
         # print(f'Sending: {self.num} {cmd}')
+        if self.master.TEST_MODE:
+            return
         with open(self.file, 'w') as f:
             f.write(f'+{self.num}\n{cmd}\n')
         self.num += 1
