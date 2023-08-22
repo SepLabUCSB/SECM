@@ -2,7 +2,10 @@ temp/
 settings/*
 !settings/DEFAULT*
 *.secmdata
+*.spec
 log/
+build/
+dist/
 
 __pycache__/
 

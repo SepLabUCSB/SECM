@@ -2,8 +2,8 @@ import time
 import os
 import psutil
 import shutil
-from utils.utils import run, Logger
-from utils.EIS_util import generate_tpl
+from ..utils.utils import run, Logger
+from ..utils.EIS_util import generate_tpl
 from functools import partial
 
 
@@ -145,6 +145,8 @@ class HekaWriter(Logger):
         
     def send_command(self, cmd):
         # print(f'Sending: {self.num} {cmd}')
+        if self.master.TEST_MODE:
+            return
         with open(self.file, 'w') as f:
             f.write(f'+{self.num}\n{cmd}\n')
         self.num += 1

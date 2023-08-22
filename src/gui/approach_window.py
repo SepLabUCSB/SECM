@@ -3,7 +3,7 @@ from tkinter.ttk import *
 import numpy as np
 from functools import partial
 
-from utils.utils import focus_next_widget, run
+from ..utils.utils import focus_next_widget, run
 
 
 def make_approach_window(gui, master_frame):
@@ -17,7 +17,8 @@ def make_approach_window(gui, master_frame):
     V_field.grid(column=3, row=1, sticky=(E,W))
     V_field.insert('1.0', '400')
     V_field.bind('<Tab>', focus_next_widget)
-    
+    V_field.bind('<Return>', focus_next_widget)
+
     Label(frame, text='mV').grid(column=4, row=1, sticky=(W))
     
     Label(frame, text='    ').grid(column=1, row=1)
@@ -29,6 +30,7 @@ def make_approach_window(gui, master_frame):
     I_field.grid(column=3, row=2, sticky=(E,W))
     I_field.insert('1.0', '5')
     I_field.bind('<Tab>', focus_next_widget)
+    I_field.bind('<Return>', focus_next_widget)
     
     Label(frame, text='pA').grid(column=4, row=2, sticky=(W))
     
@@ -42,6 +44,8 @@ def make_approach_window(gui, master_frame):
     Z_field.grid(column=3, row=3, sticky=(E,W))
     Z_field.insert('1.0', '80')
     Z_field.bind('<Tab>', focus_next_widget)
+    Z_field.bind('<Return>', focus_next_widget)
+
     Label(frame, text='um').grid(column=4, row=3, sticky=(W))
     
     
@@ -50,6 +54,8 @@ def make_approach_window(gui, master_frame):
     speed_field.grid(column=3, row=4, sticky=(E,W))
     speed_field.insert('1.0', '2')
     speed_field.bind('<Tab>', focus_next_widget)
+    speed_field.bind('<Return>', focus_next_widget)
+
     Label(frame, text='um/s').grid(column=4, row=4, sticky=(W))
     
     Button(frame, text='Approach', 

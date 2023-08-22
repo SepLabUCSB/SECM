@@ -6,7 +6,7 @@ from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from utils.utils import focus_next_widget, run
+from ..utils.utils import focus_next_widget, run
 
 
 def make_EIS_window(gui, master_frame):
@@ -29,31 +29,37 @@ def make_EIS_window(gui, master_frame):
     DC_field.grid(column=2, row=0, sticky=(E,W))
     DC_field.insert('1.0', '0')
     DC_field.bind('<Tab>', focus_next_widget)
+    DC_field.bind('<Return>', focus_next_widget)
     
     f0_field = Text(frame, height=1, width=1)
     f0_field.grid(column=2, row=1, sticky=(E,W))
     f0_field.insert('1.0', '1')
     f0_field.bind('<Tab>', focus_next_widget)
+    f0_field.bind('<Return>', focus_next_widget)
     
     f1_field = Text(frame, height=1, width=5)
     f1_field.grid(column=2, row=2, sticky=(E,W))
     f1_field.insert('1.0', '1000')
     f1_field.bind('<Tab>', focus_next_widget)
+    f1_field.bind('<Return>', focus_next_widget)
     
     n_pts_field = Text(frame, height=1, width=5)
     n_pts_field.grid(column=2, row=3, sticky=(E,W))
     n_pts_field.insert('1.0', '18')
     n_pts_field.bind('<Tab>', focus_next_widget)
+    n_pts_field.bind('<Return>', focus_next_widget)
     
     n_cycles_field = Text(frame, height=1, width=5)
     n_cycles_field.grid(column=2, row=4, sticky=(E,W))
     n_cycles_field.insert('1.0', '1')
     n_cycles_field.bind('<Tab>', focus_next_widget)
+    n_cycles_field.bind('<Return>', focus_next_widget)
     
     amp_field = Text(frame, height=1, width=5)
     amp_field.grid(column=2, row=5, sticky=(E,W))
     amp_field.insert('1.0', '20')
     amp_field.bind('<Tab>', focus_next_widget)
+    amp_field.bind('<Return>', focus_next_widget)
     
     
     Label(frame, text='mV').grid(column=3, row=0, sticky=(W))

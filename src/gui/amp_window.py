@@ -6,7 +6,7 @@ from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from utils.utils import focus_next_widget, run
+from ..utils.utils import focus_next_widget, run
 
 filter1options = ['Bessel 100 kHz', 
                   'Bessel 30 kHz', 
@@ -63,6 +63,7 @@ def make_amp_window(gui, master_frame):
     Vhold.grid(column=2, row=1, sticky=(E,W))
     Vhold.insert('1.0', '0')
     Vhold.bind('<Tab>', focus_next_widget)
+    Vhold.bind('<Return>', focus_next_widget)
     
     filter1 = StringVar(frame)
     OptionMenu(frame, filter1, filter1options[2],
@@ -78,6 +79,7 @@ def make_amp_window(gui, master_frame):
     f2_field.grid(column=2, row=4, sticky=(E,W))
     f2_field.insert('1.0', '0.5')
     f2_field.bind('<Tab>', focus_next_widget)
+    f2_field.bind('<Return>', focus_next_widget)
     
     stimfilter = StringVar(frame)
     OptionMenu(frame, stimfilter, stimfilters[1],

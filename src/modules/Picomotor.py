@@ -2,7 +2,7 @@ import usb.core
 import usb.util
 from usb.backend import libusb1
 import re
-from utils.utils import Logger
+from ..utils.utils import Logger
 
 
 '''
@@ -45,6 +45,9 @@ class PicoMotor(Logger):
         
         self.idProduct = idProduct
         self.idVendor = idVendor
+        
+        self.connected_motors = []
+        
         if not self.master.TEST_MODE:
             self._connect()
         
@@ -112,12 +115,14 @@ class PicoMotor(Logger):
         self.log("Connected to Motor Controller Model {}. Firmware {} {} {}\n".format(
                                                     *resp.split(' ')
                                                     ))
-        # for m in range(1,5):
-        #     resp = self.command("{}QM?".format(m))
-        #     print("Motor #{motor_number}: {status}".format(
-        #                                             motor_number=m,
-        #                                             status=MOTOR_TYPE[resp[-1]]
-        #                                             ))
+        for m in range(1,3):
+            resp = self.command("{}QM?".format(m))
+            print("Motor #{motor_number}: {status}".format(
+                                                    motor_number=m,
+                                                    status=MOTOR_TYPE[resp[-1]]
+                                                    ))
+            if (resp[-1] == '2' or resp[-1] == '3'):
+                self.connected_motors.append(m)
 
 
 
@@ -238,6 +243,22 @@ class PicoMotor(Logger):
         Send a halt command immediately
         '''
         self.command('AB')
+        
+    
+    def move_y(self, dist):
+        '''
+        Step y-axis pico motor the appropriate number of steps to move
+        the requested distance
+        Args:
+            dist: int, distance in microns
+        '''
+        n_steps = int(dist/0.03)
+        self.log(f'Moving {n_steps} steps on y piezo.')
+        
+        if 2 in self.connected_motors:
+            self.command(f'2PR{n_steps}')
+            return True
+        return False
         
         
     def start_console(self):

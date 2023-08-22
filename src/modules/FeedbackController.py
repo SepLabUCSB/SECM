@@ -5,10 +5,10 @@ import os
 import scipy.io
 import datetime
 from functools import partial
-from utils.utils import run, Logger
-from modules.DataStorage import (Experiment, CVDataPoint, EISDataPoint,
+from ..utils.utils import run, Logger
+from .DataStorage import (Experiment, CVDataPoint, EISDataPoint,
                                  PointsList)
-from analysis.analysis_funcs import E0_finder_analysis
+from ..analysis.analysis_funcs import E0_finder_analysis
 
 
 
@@ -241,7 +241,7 @@ class FeedbackController(Logger):
         # Setup potentiostat and ADC
         self.HekaWriter.macro(f'E Vhold {voltage}')
         gain  = 1e9 * self.master.GUI.amp_params['float_gain']
-        srate = 500
+        srate = 1000
         self.ADC.set_sample_rate(srate)
         run(partial(self.ADC.polling, 5000))
         time.sleep(0.005)
@@ -320,7 +320,7 @@ class FeedbackController(Logger):
         # Setup potentiostat for experiment
         if not self.potentiostat_setup(expt_type):
             self.log('Failed to set up potentiostat! Cannot run hopping mode')
-            return
+            return False
                                 
         # Starts scan from Piezo.starting_coords
         points, order = self.Piezo.get_xy_coords(length, n_pts) 
@@ -338,12 +338,12 @@ class FeedbackController(Logger):
                                       )
         x,y,z = self.Piezo.measure_loc()
         self.log(f'Starting hopping mode {expt_type} scan')
-        self.log(f'Starting approach curves from {height}')
+        self.log(f'Starting approach curves from {height.strip()}')
         
         # height < 0 means retract that amount at each point
         if z_max < 0:
             retract_distance = -z_max
-            forced_step_size = 0.01
+            forced_step_size = 0.005
         else:
             retract_distance = 6
             forced_step_size = None
@@ -370,20 +370,20 @@ class FeedbackController(Logger):
             time.sleep(0.1)
             if self.master.ABORT:
                 self.log('Hopping mode aborted')
-                return
+                return False
             
             # Run approach at this point
             z, on_surf = self.approach(forced_step_size=forced_step_size)
             if not on_surf:
                 self.log('Hopping mode ended due to not reaching surface')
-                return
+                return False
                         
             # Run echem experiment on surface
             data = self.run_echems(expt_type, expt, (x, y, z), i) # TODO: run variable echem experiment(s) at each pt
             if not data:
                 # Aborted during HEKA measurement
                 self.log('Hopping mode aborted')
-                return
+                return False
             
             # Save data
             grid_i, grid_j = order[i]  
@@ -400,11 +400,13 @@ class FeedbackController(Logger):
             avg_time = np.mean(point_times)
             self.est_time_remaining = (len(points[:-2]) - (i+1))*avg_time
         
-        z = self.Piezo.retract(height=80, relative=False)
+        # z = self.Piezo.retract(height=80, relative=False)
+        self.Piezo.goto_z(80)
+        time.sleep(0.1)
         self.Piezo.goto(80,80,80)
         self.est_time_remaining = 0
         
-        return 
+        return True
 
     ###############################
     #### POTENTIOSTAT CONTROLS ####
@@ -510,10 +512,11 @@ class FeedbackController(Logger):
     
     def fake_CV(self, i):
         # Generate fake data for testing piezo
+        t = np.linspace(0,1,50)
         voltage = np.linspace(0, 0.5, 50)
         max_I = 100*np.random.rand()
         current = np.linspace(0, i*1e-9, 50)
-        return voltage, current
+        return t, voltage, current
     
     
     def run_CV(self, save_path, name):
