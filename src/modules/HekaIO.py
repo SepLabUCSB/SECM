@@ -2,6 +2,7 @@ import time
 import os
 import psutil
 import shutil
+import json
 from ..utils.utils import run, Logger
 from ..utils.EIS_util import generate_tpl
 from functools import partial
@@ -128,6 +129,7 @@ class HekaWriter(Logger):
         self.CV_params  = None
         self.EIS_params = None
         self.EIS_WF_params = None
+        self.EIS_corrections = None
         
     
         
@@ -420,25 +422,64 @@ class HekaWriter(Logger):
         
         # Update pgf fields
         self.update_Values(values)
+        self.EIS_params   = values
+        self.EIS_duration = duration
         
         EIS_WF_params = {'E0':E0, 'f0':f0, 'f1':f1, 'n_pts':n_pts, 
                          'n_cycles': n_cycles, 'amp':amp}
         
         if EIS_WF_params != self.EIS_WF_params:
             self.EIS_applied_freqs = self.make_EIS_waveform(E0, f0, f1, n_pts, n_cycles, amp)
+            self.check_EIS_corrections(EIS_WF_params)
         
         self.EIS_WF_params = EIS_WF_params
-        self.EIS_params   = values
-        self.EIS_duration = duration
         self.idle()
         self.log('Set EIS parameters')
         return
+    
     
     def make_EIS_waveform(self, E0, f0, f1, n_pts, n_cycles, amp):
         applied_freqs = generate_tpl(f0, f1, n_pts, n_cycles, 
                                      amp, 'D:/SECM/_auto_eis_1.tpl')
         self.log('Wrote new EIS waveform')
         return applied_freqs
+    
+    
+    def check_EIS_corrections(self, EIS_WF_params):
+        '''
+        Checks if the current waveform is in the stored corrections file.
+        
+        If it is, take its correction factors from the file.
+        
+        Otherwise, prompt user to plug in the model circuit to record
+        a reference waveform
+        
+        Corrections file is a json which stores a dictionary. Dictionary keys
+        are defined by the waveform parameters: amplitude, number of points,
+        and all the applied frequencies.
+        
+        d = {
+            (amp, n_pts, *applied_frequencies) = [(Z_corr, phase_corr) for
+                                                  f in applied frequencies]            
+            }
+                
+        '''
+        amp   = EIS_WF_params['amp']
+        n_pts = EIS_WF_params['n_pts']
+        key   = (amp, n_pts, *self.EIS_applied_freqs)
+        file = 'src/utils/EIS_waveforms.json'
+        if os.path.exists(file):
+            d = json.load(file)
+            if key in d:
+                self.EIS_corrections = d[key]
+                return
+        
+        # Prompt for model circuit
+        
+        # Record a spectrum
+        
+        # Save corrections to file
+            
     
     
     def run_EIS(self):
