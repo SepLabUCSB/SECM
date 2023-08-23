@@ -1,11 +1,11 @@
 temp/
-settings/*
-!settings/DEFAULT*
+*settings/*
+!*settings/DEFAULT*
 *.secmdata
 *.spec
-log/
+*log/
 build/
 dist/
 
-__pycache__/
+*__pycache__/*
 
