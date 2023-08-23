@@ -28,7 +28,7 @@ default_stderr = sys.stderr
 
 matplotlib.use('TkAgg')
 
-TEST_MODE = False
+TEST_MODE = True
 
 
     
@@ -788,7 +788,9 @@ class GUI(Logger):
     
     def load_settings(self, loaded = None):
         if loaded is None:
-            SETTINGS_FILE = filedialog.askopenfilename(initialdir='settings/')
+            if not os.path.exists('src/settings/'):
+                os.mkdir('src/settings')
+            SETTINGS_FILE = filedialog.askopenfilename(initialdir='src/settings/')
             if not SETTINGS_FILE: return
             with open(SETTINGS_FILE, 'r') as f:
                 loaded = json.load(f)
