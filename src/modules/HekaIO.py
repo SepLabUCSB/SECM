@@ -3,6 +3,7 @@ import os
 import psutil
 import shutil
 import json
+from tkinter import messagebox
 from ..utils.utils import run, Logger
 from ..utils.EIS_util import generate_tpl
 from functools import partial
@@ -474,11 +475,35 @@ class HekaWriter(Logger):
                 self.EIS_corrections = d[key]
                 return
         
+        # Save C-fast settings
+        self.send_command("GetEpcParams-1 CFastTau, CFastTot")
+        while True:
+            if self.master.HekaReader.last[1].startswith('Reply_GetEpcParams'):
+                msg = self.master.HekaReader.last[1].split('  ')[1]
+                CFastTau, CFastTot = msg.split(',')
+        
+        
         # Prompt for model circuit
+        connected = messagebox.askokcancel('Waveform corrections', 
+                                           message='''
+                                           EIS correction factors not found for this waveform.
+                                           Please plug in the model circuit, 
+                                           ''')
         
         # Record a spectrum
         
+        
         # Save corrections to file
+        d[key] = self.EIS_corrections
+        json.dump(d, file)
+        
+        messagebox.askokcancel('Waveform corrections',
+                               message='Correction factors recorded.')
+        
+        self.send_multiple_commands([
+            f'Set E CFastTau {CFastTau}',
+            f'Set E CFastTot {CFastTot}'
+            ])
             
     
     
