@@ -1,3 +1,4 @@
+import time
 import usb.core
 import usb.util
 from usb.backend import libusb1
@@ -72,7 +73,7 @@ class PicoMotor(Logger):
             Assert False: if the input and outgoing endpoints can't be established
         """
         # find the device
-        backend = libusb1.get_backend(find_library=lambda x: "modules/libusb-1.0.dll")
+        backend = libusb1.get_backend(find_library=lambda x: "src/modules/libusb-1.0.dll")
         
         # TODO: Fix backend path!! ^^
         self.dev = usb.core.find(
@@ -112,10 +113,10 @@ class PicoMotor(Logger):
         
         # Confirm connection to user
         resp = self.command('VE?')
-        self.log("Connected to Motor Controller Model {}. Firmware {} {} {}\n".format(
+        self.log("Connected to Motor Controller Model {}. Firmware {} {} {}".format(
                                                     *resp.split(' ')
                                                     ))
-        for m in range(1,3):
+        for m in range(1,5):
             resp = self.command("{}QM?".format(m))
             print("Motor #{motor_number}: {status}".format(
                                                     motor_number=m,
@@ -243,21 +244,40 @@ class PicoMotor(Logger):
         Send a halt command immediately
         '''
         self.command('AB')
+    
+        
+    def step_y(self, n_steps):
+        if not type(n_steps) == int:
+            print('Invalid input to PicoMotor')
+            return
+        
+        self.command(f'2PR{n_steps}')
         
     
     def move_y(self, dist):
         '''
         Step y-axis pico motor the appropriate number of steps to move
         the requested distance
+        
+        There is hysterisis in the y direction! This is because a spring in the 
+        stage pushes in one y direction instead of the other. Visually, it
+        looks like 1000 steps in +y direction ~= 2150 steps in -y direction.
+        
+        Assuming ~30 nm/step for +y, ~ -13.8 nm/step for -y
+        
         Args:
             dist: int, distance in microns
         '''
-        n_steps = int(dist/0.03)
+        if dist >= 0:
+            n_steps = int(dist/0.03)
+        elif dist < 0:
+            n_steps = int(dist/0.0138)
+            
         self.log(f'Moving {n_steps} steps on y piezo.')
         
         if 2 in self.connected_motors:
-            self.command(f'2PR{n_steps}')
-            return True
+            self.step_y(n_steps)
+            return n_steps
         return False
         
         

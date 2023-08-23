@@ -19,6 +19,12 @@ def make_CA_window(gui, master_frame):
     Button(frame, text='Run Custom',
            command=partial(run, gui.run_custom)
            ).grid(column=2, row=9)
+    Button(frame, text='+100um',
+           command=partial(gui.master.PicoMotor.move_y, 100)
+           ).grid(column=2, row=10)
+    Button(frame, text='-100um',
+           command=partial(gui.master.PicoMotor.move_y, -100)
+           ).grid(column=2, row=11)
         
     return
 

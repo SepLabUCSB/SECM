@@ -584,17 +584,23 @@ class GUI(Logger):
         Button(piezo_control, text='Send Cmd', command=self.piezo_msg_send).grid(row=2, column=6, sticky=(W,E))
         
         
-        self._piezosteps = StringVar(value='0')
+        self._z_piezosteps  = StringVar(value='0')
+        self._y_piezosteps  = StringVar(value='0')
         
-        Label(z_piezo_control, text='Steps:').grid(row=0, column=0, sticky=(W,E))
-        Entry(z_piezo_control, textvariable=self._piezosteps, width=8).grid(row=0, column=1, sticky=(W,E))
-        Button(z_piezo_control, text='Go', command=self.z_piezo_go).grid(row=0, column=2, sticky=(W,E))
+        Label(z_piezo_control, text='Z Steps:').grid(row=0, column=0, sticky=(W,E))
+        Entry(z_piezo_control, textvariable=self._z_piezosteps, width=8).grid(row=0, column=1, sticky=(W,E))
+        Button(z_piezo_control, text='Go Z', command=self.z_piezo_go).grid(row=0, column=2, sticky=(W,E))
+        
+        Label(z_piezo_control, text='Y Steps:').grid(row=1, column=0, sticky=(W,E))
+        Entry(z_piezo_control, textvariable=self._y_piezosteps, width=8).grid(row=1, column=1, sticky=(W,E))
+        Button(z_piezo_control, text='Go Y', command=self.y_piezo_go).grid(row=1, column=2, sticky=(W,E))
+        
         Label(z_piezo_control, text='(1 step = ~30 nm)').grid(row=0, column=3, sticky=(W))
-        Button(z_piezo_control, text='Stop', command=self.z_piezo_stop).grid(row=1, column=2, sticky=(W,E))
+        Button(z_piezo_control, text='Stop', command=self.z_piezo_stop).grid(row=2, column=1, columnspan=2, sticky=(W,E))
         
         
         PIEZO_TABS.add(piezo_control, text='Piezo')
-        PIEZO_TABS.add(z_piezo_control, text='Z Positioner')
+        PIEZO_TABS.add(z_piezo_control, text='Coarse Piezos')
         PIEZO_TABS.pack(expand=1, fill='both')
         
         
@@ -1056,9 +1062,11 @@ class GUI(Logger):
                 return
             
             # Move to next spot
-            if not self.master.PicoMotor.move_y(dist):
+            n_steps = self.master.PicoMotor.move_y(-dist)
+            if not n_steps:
                 self.log('Failed to move y piezo')
                 return
+            time.sleep(0.5 + abs(n_steps)/1000)
         
         
     
@@ -1099,13 +1107,23 @@ class GUI(Logger):
         
     
     def z_piezo_go(self):
-        steps = self._piezosteps.get()
+        steps = self._z_piezosteps.get()
         try:
             steps = int(steps)
         except:
             print(f'Invalid input:"{steps}"')
             return
         self.master.PicoMotor.step(steps)
+        return
+    
+    def y_piezo_go(self):
+        steps = self._y_piezosteps.get()
+        try:
+            steps = int(steps)
+        except:
+            print(f'Invalid input:"{steps}"')
+            return
+        self.master.PicoMotor.step_y(steps)
         return
     
     

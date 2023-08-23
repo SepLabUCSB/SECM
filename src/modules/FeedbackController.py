@@ -168,6 +168,9 @@ class FeedbackController(Logger):
         voltage = self.master.GUI.params['approach']['voltage'].get('1.0', 'end')
         voltage = float(voltage) 
         self.Piezo.goto(80,80,height)
+        self.HekaWriter.macro('E Vhold 0')
+        time.sleep(1)
+        self.HekaWriter.macro('E AutoCFast')
         self.HekaWriter.macro(f'E Vhold {voltage}')
         
         while True:
