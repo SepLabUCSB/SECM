@@ -1,6 +1,7 @@
 temp/
 *settings/*
-!*settings/DEFAULT
+src/settings/*
+!src/settings/DEFAULT*
 *.secmdata
 *.spec
 *log/
