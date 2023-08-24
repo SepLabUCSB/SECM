@@ -507,10 +507,26 @@ class HekaWriter(Logger):
             'Set E CFastTau 0.6'
             ])
         
-        # Record a spectrum
+        # Record a spectrum, rewrite waveform to record multiple (5) cycles
+        self.make_EIS_waveform(E0 = EIS_WF_params['E0'], 
+                               f0 = EIS_WF_params['f0'], 
+                               f1 = EIS_WF_params['f1'], 
+                               n_pts = EIS_WF_params['n_pts'], 
+                               n_cycles = 5, 
+                               amp = EIS_WF_params['amp'])
+       
+        # Do the measurement
         self.idle()
         path = self.run_measurement_loop('EIS', 'src/temp', 'EIS_corrections')
         self.running()
+        
+        # Rewrite waveform back to original n_cycles
+        self.make_EIS_waveform(E0 = EIS_WF_params['E0'], 
+                               f0 = EIS_WF_params['f0'], 
+                               f1 = EIS_WF_params['f1'], 
+                               n_pts = EIS_WF_params['n_pts'], 
+                               n_cycles = EIS_WF_params['n_cycles'], 
+                               amp = EIS_WF_params['amp'])
         
         # Read data from file
         t, V, I = read_heka_data(path)
