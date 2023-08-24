@@ -452,6 +452,21 @@ class EISDataPoint(DataPoint):
         ft_I  = ft_I[idxs]
         Z = ft_V/ft_I
         
+        if self.corrections is not None:
+            '''
+            Corrected |Z| = |Z| / Z_corrections
+            Corrected  p  =  p  - phase_corrections
+            Corrected  Z  = |Z| * exp(1j * phase * pi/180)
+            '''
+            fs, Z_corrections, phase_corrections = zip(*self.corrections)
+            modZ  = np.abs(Z)
+            phase = np.angle(Z, deg=True)
+            
+            modZ  /= Z_corrections
+            phase -= phase_corrections
+            
+            Z = modZ * np.exp(1j * phase * np.pi/180)
+        
         # Re-save as self.data
         self.data = [freqs, ft_V, ft_I, Z]
         
