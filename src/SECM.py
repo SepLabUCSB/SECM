@@ -788,9 +788,9 @@ class GUI(Logger):
     
     def load_settings(self, loaded = None):
         if loaded is None:
-            if not os.path.exists('src/settings/'):
-                os.mkdir('src/settings')
-            SETTINGS_FILE = filedialog.askopenfilename(initialdir='src/settings/')
+            if not os.path.exists('./settings/'):
+                os.mkdir('./settings')
+            SETTINGS_FILE = filedialog.askopenfilename(initialdir='./settings/')
             if not SETTINGS_FILE: return
             with open(SETTINGS_FILE, 'r') as f:
                 loaded = json.load(f)
