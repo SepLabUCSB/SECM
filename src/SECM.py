@@ -28,7 +28,7 @@ default_stderr = sys.stderr
 
 matplotlib.use('TkAgg')
 
-TEST_MODE = True
+TEST_MODE = False
 
 
     
@@ -977,7 +977,8 @@ class GUI(Logger):
         eis_params = self.get_EIS_params()
         self.master.HekaWriter.setup_EIS(*eis_params)
         path = self.master.HekaWriter.run_measurement_loop('EIS')
-        DataPoint = make_datapoint_from_file(path, 'EISDataPoint')
+        DataPoint = make_datapoint_from_file(path, 'EISDataPoint', 
+                                             corrections=self.master.HekaWriter.EIS_corrections)
         if DataPoint:
             self.master.ADC.force_data(DataPoint)
         self.master.make_ready()

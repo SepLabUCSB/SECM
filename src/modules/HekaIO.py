@@ -471,31 +471,41 @@ class HekaWriter(Logger):
         amp   = EIS_WF_params['amp']
         n_pts = EIS_WF_params['n_pts']
         key   = (amp, n_pts, *self.EIS_applied_freqs)
-        file = 'src/utils/EIS_waveforms.json'
+        key   = str(key)
+        file  = 'src/utils/EIS_waveforms.json'
         if os.path.exists(file):
-            d = json.load(file)
+            d = json.load(open(file, 'r'))
             if key in d:
                 self.EIS_corrections = d[key]
                 return
+        else:
+            d = {}
         
         # Save C-fast settings
         self.send_command("GetEpcParams-1 CFastTau, CFastTot")
         while True:
             if self.master.HekaReader.last[1].startswith('Reply_GetEpcParams'):
-                msg = self.master.HekaReader.last[1].split('  ')[1]
-                CFastTau, CFastTot = msg.split(',')
+                msg = self.master.HekaReader.last[1]
+                
+                CFastTau, CFastTot = msg[21:].split(',')
+                CFastTau = CFastTau[:4]
+                CFastTot = CFastTot[:4]
+                break
         
         
         # Prompt for model circuit
         connected = messagebox.askokcancel('Waveform corrections', 
-                                           message='''
-                                           EIS correction factors not found for this waveform.
-                                           Please plug in the model circuit and set to 10 MOhm.
-                                           Press OK when ready.
-                                           ''')
+                                           message=
+                                           'EIS correction factors not found for this waveform.\nPlease plug in the model circuit and set to 10 MOhm.\nPress OK when ready.'
+                                           )
         if not connected:
             self.EIS_corrections = None
             return
+        
+        self.send_multiple_cmds([
+            'Set E CFastTot 5.56',
+            'Set E CFastTau 0.6'
+            ])
         
         # Record a spectrum
         self.idle()
@@ -505,14 +515,14 @@ class HekaWriter(Logger):
         # Read data from file
         t, V, I = read_heka_data(path)
         correction_datapoint = EISDataPoint(loc=(0,0,0), data=[t,V,I],
-                                            applied_freqs = self.applied_freqs,
+                                            applied_freqs = self.EIS_applied_freqs,
                                             corrections = None)
         freq, _, _, Z = correction_datapoint.data
         
         modZ  = np.abs(Z)
         phase = np.angle(Z, deg=True)
         
-        Z_corrections     = Z / 10e6
+        Z_corrections     = modZ / 10e6
         phase_corrections = phase
         
         '''
@@ -520,18 +530,21 @@ class HekaWriter(Logger):
             Corrected  p  =  p  - phase_corrections
             Corrected  Z  = |Z| * exp(1j * phase * pi/180)
         '''
-        
+        print('Z corrections:')
+        print(Z_corrections)
+        print('phase corrections:')
+        print(phase_corrections)
         self.EIS_corrections = list(zip(freq, Z_corrections, phase_corrections))
         
         # Save corrections to file
         d[key] = self.EIS_corrections
-        json.dump(d, file)
+        json.dump(d, open(file, 'w'))
         
         messagebox.askokcancel('Waveform corrections',
                                message='Correction factors recorded.')
         
         # Reset Cfast
-        self.send_multiple_commands([
+        self.send_multiple_cmds([
             f'Set E CFastTau {CFastTau}',
             f'Set E CFastTot {CFastTot}'
             ])

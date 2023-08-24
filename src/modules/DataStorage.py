@@ -417,7 +417,7 @@ class CVDataPoint(DataPoint):
     
 class EISDataPoint(DataPoint):    
     def __init__(self, loc: tuple, data:list, applied_freqs:list,
-                 corrections: list):
+                 corrections: list=None):
         self.loc      = loc
         self.data     = data
         self.applied_freqs = applied_freqs
