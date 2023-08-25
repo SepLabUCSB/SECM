@@ -717,7 +717,7 @@ class Plotter(Logger):
             
         elif isinstance(DATAPOINT, EISDataPoint):
             self.FIG2_FORCED = True
-            return self.draw_nyquist(DATAPOINT)
+            return self.draw_Bode(DATAPOINT)
         
         else:
             print(type(DATAPOINT))
@@ -733,6 +733,7 @@ class Plotter(Logger):
         
         # Plot the data
         # t always used to determine sampling frequency
+        self.ax2.set_xscale('linear')
         self.draw_echemfig(t, x, y, sample_freq)
         
         # Clear old artists
@@ -821,12 +822,39 @@ class Plotter(Logger):
         Make a Bode plot on Fig 2 for EIS-type data
         '''
         freqs, _, _, Z = EISDataPoint.data
-        x  = freqs
+        x  = [float(f) for f in freqs]
         y1 = np.abs(Z)
         y2 = np.angle(Z, deg=True)
-        self.ln.set_data(x,y)
+        
+        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+        
+        self.ln.set_data(x,y1)
         self.ln.set_marker('o')
+        # self.ln2.set_data(x, y2)
+        # self.ln2.set_marker('o')
+        
         self.ax2.set_xscale('log')
+        self.ax2.set_xlim(min(x), max(x))
+        self.ax2.set_xlabel('Frequency/ Hz')
+        self.ax2.set_ylabel(r'|Z|/ $\Omega$', color=colors[0])
+        # self.ax2_2.set_ylabel(r'Phase/ $\degree$', color=colors[1])
+        
+        self.ax2.set_ylim(
+                          min(y1) - 0.05*abs(min(y1)),
+                          max(y1) + 0.05*abs(max(y1))
+                          )
+        
+        min_phase, max_phase = min(y2), max(y2)
+        phase_ticks = [-180, -135, -90, -45, 0, 45, 90, 135, 180]
+        # self.ax2_2.set_yticks(phase_ticks)
+        # self.ax2_2.set_ylim(min(y2)-15, max(y2)+15)
+        
+        # self.clear_fig2_artists()
+        
+        self.fig2.tight_layout()
+        self.fig2.canvas.draw_idle()
+        plt.pause(0.001)
+        self.fig2data = EISDataPoint
         
         
 
