@@ -416,10 +416,12 @@ class CVDataPoint(DataPoint):
 
     
 class EISDataPoint(DataPoint):    
-    def __init__(self, loc: tuple, data:list, applied_freqs:list):
+    def __init__(self, loc: tuple, data:list, applied_freqs:list,
+                 corrections: list=None):
         self.loc      = loc
         self.data     = data
         self.applied_freqs = applied_freqs
+        self.corrections   = corrections
         self.FT() # do the Fourier transform
         
     def __str__(self):
@@ -449,6 +451,21 @@ class EISDataPoint(DataPoint):
         ft_V  = ft_V[idxs]
         ft_I  = ft_I[idxs]
         Z = ft_V/ft_I
+        
+        if self.corrections is not None:
+            '''
+            Corrected |Z| = |Z| / Z_corrections
+            Corrected  p  =  p  - phase_corrections
+            Corrected  Z  = |Z| * exp(1j * phase * pi/180)
+            '''
+            fs, Z_corrections, phase_corrections = zip(*self.corrections)
+            modZ  = np.abs(Z)
+            phase = np.angle(Z, deg=True)
+            
+            modZ  /= Z_corrections
+            phase -= phase_corrections
+            
+            Z = modZ * np.exp(1j * phase * np.pi/180)
         
         # Re-save as self.data
         self.data = [freqs, ft_V, ft_I, Z]

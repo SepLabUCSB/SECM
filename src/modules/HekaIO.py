@@ -2,6 +2,11 @@ import time
 import os
 import psutil
 import shutil
+import json
+import numpy as np
+from tkinter import messagebox
+from .FeedbackController import read_heka_data
+from .DataStorage import EISDataPoint
 from ..utils.utils import run, Logger
 from ..utils.EIS_util import generate_tpl
 from functools import partial
@@ -128,6 +133,7 @@ class HekaWriter(Logger):
         self.CV_params  = None
         self.EIS_params = None
         self.EIS_WF_params = None
+        self.EIS_corrections = None
         
     
         
@@ -420,25 +426,145 @@ class HekaWriter(Logger):
         
         # Update pgf fields
         self.update_Values(values)
+        self.EIS_params   = values
+        self.EIS_duration = duration
         
         EIS_WF_params = {'E0':E0, 'f0':f0, 'f1':f1, 'n_pts':n_pts, 
                          'n_cycles': n_cycles, 'amp':amp}
         
         if EIS_WF_params != self.EIS_WF_params:
             self.EIS_applied_freqs = self.make_EIS_waveform(E0, f0, f1, n_pts, n_cycles, amp)
+            self.check_EIS_corrections(EIS_WF_params)
         
         self.EIS_WF_params = EIS_WF_params
-        self.EIS_params   = values
-        self.EIS_duration = duration
         self.idle()
         self.log('Set EIS parameters')
         return
+    
     
     def make_EIS_waveform(self, E0, f0, f1, n_pts, n_cycles, amp):
         applied_freqs = generate_tpl(f0, f1, n_pts, n_cycles, 
                                      amp, 'D:/SECM/_auto_eis_1.tpl')
         self.log('Wrote new EIS waveform')
         return applied_freqs
+    
+    
+    def check_EIS_corrections(self, EIS_WF_params):
+        '''
+        Checks if the current waveform is in the stored corrections file.
+        
+        If it is, take its correction factors from the file.
+        
+        Otherwise, prompt user to plug in the model circuit to record
+        a reference waveform
+        
+        Corrections file is a json which stores a dictionary. Dictionary keys
+        are defined by the waveform parameters: amplitude, number of points,
+        and all the applied frequencies.
+        
+        d = {
+            (amp, n_pts, *applied_frequencies) = [(f, Z_corr, phase_corr) for
+                                                  f in applied frequencies]            
+            }
+                
+        '''
+        amp   = EIS_WF_params['amp']
+        n_pts = EIS_WF_params['n_pts']
+        key   = (amp, n_pts, *self.EIS_applied_freqs)
+        key   = str(key)
+        file  = 'src/utils/EIS_waveforms.json'
+        if os.path.exists(file):
+            d = json.load(open(file, 'r'))
+            if key in d:
+                self.EIS_corrections = d[key]
+                return
+        else:
+            d = {}
+        
+        # Save C-fast settings
+        self.send_command("GetEpcParams-1 CFastTau, CFastTot")
+        while True:
+            if self.master.HekaReader.last[1].startswith('Reply_GetEpcParams'):
+                msg = self.master.HekaReader.last[1]
+                
+                CFastTau, CFastTot = msg[21:].split(',')
+                CFastTau = CFastTau[:4]
+                CFastTot = CFastTot[:4]
+                break
+        
+        
+        # Prompt for model circuit
+        connected = messagebox.askokcancel('Waveform corrections', 
+                                           message=
+                                           'EIS correction factors not found for this waveform.\nPlease plug in the model circuit and set to 10 MOhm.\nPress OK when ready.'
+                                           )
+        if not connected:
+            self.EIS_corrections = None
+            return
+        
+        self.send_multiple_cmds([
+            'Set E CFastTot 5.56',
+            'Set E CFastTau 0.6'
+            ])
+        
+        # Record a spectrum, rewrite waveform to record multiple (5) cycles
+        self.make_EIS_waveform(E0 = EIS_WF_params['E0'], 
+                               f0 = EIS_WF_params['f0'], 
+                               f1 = EIS_WF_params['f1'], 
+                               n_pts = EIS_WF_params['n_pts'], 
+                               n_cycles = 5, 
+                               amp = EIS_WF_params['amp'])
+       
+        # Do the measurement
+        self.idle()
+        path = self.run_measurement_loop('EIS', 'src/temp', 'EIS_corrections')
+        self.running()
+        
+        # Rewrite waveform back to original n_cycles
+        self.make_EIS_waveform(E0 = EIS_WF_params['E0'], 
+                               f0 = EIS_WF_params['f0'], 
+                               f1 = EIS_WF_params['f1'], 
+                               n_pts = EIS_WF_params['n_pts'], 
+                               n_cycles = EIS_WF_params['n_cycles'], 
+                               amp = EIS_WF_params['amp'])
+        
+        # Read data from file
+        t, V, I = read_heka_data(path)
+        correction_datapoint = EISDataPoint(loc=(0,0,0), data=[t,V,I],
+                                            applied_freqs = self.EIS_applied_freqs,
+                                            corrections = None)
+        freq, _, _, Z = correction_datapoint.data
+        
+        modZ  = np.abs(Z)
+        phase = np.angle(Z, deg=True)
+        
+        Z_corrections     = modZ / 10e6
+        phase_corrections = phase
+        
+        '''
+            Corrected |Z| = |Z| / Z_corrections
+            Corrected  p  =  p  - phase_corrections
+            Corrected  Z  = |Z| * exp(1j * phase * pi/180)
+        '''
+        print('Z corrections:')
+        print(Z_corrections)
+        print('phase corrections:')
+        print(phase_corrections)
+        self.EIS_corrections = list(zip(freq, Z_corrections, phase_corrections))
+        
+        # Save corrections to file
+        d[key] = self.EIS_corrections
+        json.dump(d, open(file, 'w'))
+        
+        messagebox.askokcancel('Waveform corrections',
+                               message='Correction factors recorded.')
+        
+        # Reset Cfast
+        self.send_multiple_cmds([
+            f'Set E CFastTau {CFastTau}',
+            f'Set E CFastTot {CFastTot}'
+            ])
+            
     
     
     def run_EIS(self):

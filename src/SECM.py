@@ -28,7 +28,7 @@ default_stderr = sys.stderr
 
 matplotlib.use('TkAgg')
 
-TEST_MODE = True
+TEST_MODE = False
 
 
     
@@ -788,9 +788,9 @@ class GUI(Logger):
     
     def load_settings(self, loaded = None):
         if loaded is None:
-            if not os.path.exists('src/settings/'):
-                os.mkdir('src/settings')
-            SETTINGS_FILE = filedialog.askopenfilename(initialdir='src/settings/')
+            if not os.path.exists('./settings/'):
+                os.mkdir('./settings')
+            SETTINGS_FILE = filedialog.askopenfilename(initialdir='./settings/')
             if not SETTINGS_FILE: return
             with open(SETTINGS_FILE, 'r') as f:
                 loaded = json.load(f)
@@ -921,6 +921,7 @@ class GUI(Logger):
                 continue
             # if val != self.amp_params.get(key, None):
             cmds.append(f'Set {key} {val}')
+            cmds.append('Set E TestDacToStim1 0')
         
         self.master.HekaWriter.send_multiple_cmds(cmds)
         
@@ -977,7 +978,8 @@ class GUI(Logger):
         eis_params = self.get_EIS_params()
         self.master.HekaWriter.setup_EIS(*eis_params)
         path = self.master.HekaWriter.run_measurement_loop('EIS')
-        DataPoint = make_datapoint_from_file(path, 'EISDataPoint')
+        DataPoint = make_datapoint_from_file(path, 'EISDataPoint', 
+                                             corrections=self.master.HekaWriter.EIS_corrections)
         if DataPoint:
             self.master.ADC.force_data(DataPoint)
         self.master.make_ready()
@@ -1061,6 +1063,7 @@ class GUI(Logger):
             
             if not success:
                 self.log('Multi hopping aborted due to incomplete scan')
+                self.master.Piezo.goto_z(80) # Retract on failed scan
                 return
             
             # Move to next spot
@@ -1069,6 +1072,14 @@ class GUI(Logger):
                 self.log('Failed to move y piezo')
                 return
             time.sleep(0.5 + abs(n_steps)/1000)
+        
+        # Move far away after completing scans
+        self.log(f'Multi hopping mode complete. Moving additional {10*dist} um')
+        n_steps = self.master.PicoMotor.move_y(-10*dist)
+        if not n_steps:
+            return
+        time.sleep(0.5 + abs(n_steps)/1000)
+        return
         
         
     

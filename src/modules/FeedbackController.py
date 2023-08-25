@@ -93,7 +93,7 @@ def extract_matlab_iv_data(file):
     return T, V, I
 
 
-def make_datapoint_from_file(file:str, DataPointType:str):
+def make_datapoint_from_file(file:str, DataPointType:str, **kwargs):
     '''
     Used for plotting echem which was recorded outside of a heatmap.
     
@@ -107,7 +107,7 @@ def make_datapoint_from_file(file:str, DataPointType:str):
     if DataPointType == 'CVDataPoint':
         return CVDataPoint(loc=(0,0,0), data = [t,v,i])
     if DataPointType == 'EISDataPoint':
-        return EISDataPoint(loc=(0,0,0), data = [t,v,i], applied_freqs=None)
+        return EISDataPoint(loc=(0,0,0), data = [t,v,i], applied_freqs=None, **kwargs)
     else:
         print('Invalid DataPointType')
         return
@@ -466,7 +466,8 @@ class FeedbackController(Logger):
             if type(t) == int:
                 return None
             data = EISDataPoint(loc = loc, data = [t, voltage, current],
-                                applied_freqs = self.HekaWriter.EIS_applied_freqs)
+                                applied_freqs = self.HekaWriter.EIS_applied_freqs,
+                                corrections = self.HekaWriter.EIS_corrections)
          
         if expt_type == 'Custom':
             t, voltage, current = self.run_custom(expt.path, i)
@@ -507,7 +508,8 @@ class FeedbackController(Logger):
             self.HekaWriter.send_command(f'Set E Vhold {start_V}')
             time.sleep(2)
             EISdata = EISDataPoint(loc = loc, data = [t, voltage, current],
-                                   applied_freqs = self.HekaWriter.EIS_applied_freqs)
+                                   applied_freqs = self.HekaWriter.EIS_applied_freqs,
+                                   corrections = self.HekaWriter.EIS_corrections)
             data = PointsList(loc=loc, data = [CVdata, EISdata])
     
         return data

@@ -2,6 +2,7 @@ temp/
 *settings/*
 src/settings/*
 !src/settings/DEFAULT*
+src/utils/EIS_waveforms.json
 *.secmdata
 *.spec
 *log/
