@@ -1062,6 +1062,7 @@ class GUI(Logger):
             
             if not success:
                 self.log('Multi hopping aborted due to incomplete scan')
+                self.master.Piezo.goto_z(80) # Retract on failed scan
                 return
             
             # Move to next spot
@@ -1070,6 +1071,14 @@ class GUI(Logger):
                 self.log('Failed to move y piezo')
                 return
             time.sleep(0.5 + abs(n_steps)/1000)
+        
+        # Move far away after completing scans
+        self.log(f'Multi hopping mode complete. Moving additional {10*dist} um')
+        n_steps = self.master.PicoMotor.move_y(-10*dist)
+        if not n_steps:
+            return
+        time.sleep(0.5 + abs(n_steps)/1000)
+        return
         
         
     
