@@ -661,6 +661,7 @@ class Plotter(Logger):
         self.ln2, = self.ax2.plot([], [])
         self.ax2.set_xlabel('V')
         self.ax2.set_ylabel('I')
+        self.ax2.set_xscale('linear')
         self.fig2.canvas.draw()
         self.fig2.tight_layout()
         self.ax2bg = self.fig2.canvas.copy_from_bbox(self.ax2.bbox)
@@ -813,6 +814,20 @@ class Plotter(Logger):
         plt.pause(0.001)
         self.fig2data = EISDataPoint
         return
+    
+    
+    def draw_Bode(self, EISDataPoint):
+        '''
+        Make a Bode plot on Fig 2 for EIS-type data
+        '''
+        freqs, _, _, Z = EISDataPoint.data
+        x  = freqs
+        y1 = np.abs(Z)
+        y2 = np.angle(Z, deg=True)
+        self.ln.set_data(x,y)
+        self.ln.set_marker('o')
+        self.ax2.set_xscale('log')
+        
         
 
 
