@@ -420,8 +420,8 @@ class EISDataPoint(DataPoint):
                  corrections: list=None):
         self.loc      = loc
         self.data     = data
-        self.applied_freqs = applied_freqs
-        self.corrections   = corrections
+        self.applied_freqs = applied_freqs     # Recorded by HekaWriter
+        self.corrections   = corrections       # Recorded by HekaWriter
         self.FT() # do the Fourier transform
         
     def __str__(self):
@@ -437,7 +437,6 @@ class EISDataPoint(DataPoint):
         ft_V  = np.fft.rfft(V)[1:]
         ft_I  = np.fft.rfft(I)[1:]
         
-        # TODO: check this catches all frequencies/ amplitudes
         if self.applied_freqs is not None:
             idxs = []
             for f in self.applied_freqs:
@@ -454,6 +453,7 @@ class EISDataPoint(DataPoint):
         
         if self.corrections is not None:
             '''
+            Correct for filter effects.
             Corrected |Z| = |Z| / Z_corrections
             Corrected  p  =  p  - phase_corrections
             Corrected  Z  = |Z| * exp(1j * phase * pi/180)
@@ -461,10 +461,8 @@ class EISDataPoint(DataPoint):
             fs, Z_corrections, phase_corrections = zip(*self.corrections)
             modZ  = np.abs(Z)
             phase = np.angle(Z, deg=True)
-            
             modZ  /= Z_corrections
             phase -= phase_corrections
-            
             Z = modZ * np.exp(1j * phase * np.pi/180)
         
         # Re-save as self.data

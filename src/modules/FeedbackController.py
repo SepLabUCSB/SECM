@@ -107,7 +107,7 @@ def make_datapoint_from_file(file:str, DataPointType:str, **kwargs):
     if DataPointType == 'CVDataPoint':
         return CVDataPoint(loc=(0,0,0), data = [t,v,i])
     if DataPointType == 'EISDataPoint':
-        return EISDataPoint(loc=(0,0,0), data = [t,v,i], applied_freqs=None, **kwargs)
+        return EISDataPoint(loc=(0,0,0), data = [t,v,i], **kwargs)
     else:
         print('Invalid DataPointType')
         return

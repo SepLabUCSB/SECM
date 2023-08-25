@@ -979,6 +979,7 @@ class GUI(Logger):
         self.master.HekaWriter.setup_EIS(*eis_params)
         path = self.master.HekaWriter.run_measurement_loop('EIS')
         DataPoint = make_datapoint_from_file(path, 'EISDataPoint', 
+                                             applied_freqs=self.master.HekaWriter.EIS_applied_freqs,
                                              corrections=self.master.HekaWriter.EIS_corrections)
         if DataPoint:
             self.master.ADC.force_data(DataPoint)

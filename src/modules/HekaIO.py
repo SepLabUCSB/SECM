@@ -480,18 +480,7 @@ class HekaWriter(Logger):
                 return
         else:
             d = {}
-        
-        # Save C-fast settings
-        self.send_command("GetEpcParams-1 CFastTau, CFastTot")
-        while True:
-            if self.master.HekaReader.last[1].startswith('Reply_GetEpcParams'):
-                msg = self.master.HekaReader.last[1]
                 
-                CFastTau, CFastTot = msg[21:].split(',')
-                CFastTau = CFastTau[:4]
-                CFastTot = CFastTot[:4]
-                break
-        
         
         # Prompt for model circuit
         connected = messagebox.askokcancel('Waveform corrections', 
@@ -502,37 +491,35 @@ class HekaWriter(Logger):
             self.EIS_corrections = None
             return
         
+        
+        '''
+        Model circuit 10MOhm resistor is in parallel (or series?) with a capacitor
+        HEKA intends users to put the model circuit to the middle position
+        and click "Auto C-Fast" button on PATCHMASTER, which measures this capacitance
+        and then corrects for it (analog-ly) constantly. We separately use the 
+        C-fast feature to compensate for stray capacitance in the substrate or
+        probe (FeedbackController calls AutoCFast at the beginning of the 
+        automatic approach to the substrate), so we need to manually reset 
+        C-Fast to be correct for the model circuit. 5.56 pF and 0.6 us.
+        '''
+        
         self.send_multiple_cmds([
             'Set E CFastTot 5.56',
             'Set E CFastTau 0.6'
             ])
-        
-        # Record a spectrum, rewrite waveform to record multiple (5) cycles
-        self.make_EIS_waveform(E0 = EIS_WF_params['E0'], 
-                               f0 = EIS_WF_params['f0'], 
-                               f1 = EIS_WF_params['f1'], 
-                               n_pts = EIS_WF_params['n_pts'], 
-                               n_cycles = 5, 
-                               amp = EIS_WF_params['amp'])
-       
+               
         # Do the measurement
         self.idle()
         path = self.run_measurement_loop('EIS', 'src/temp', 'EIS_corrections')
         self.running()
         
-        # Rewrite waveform back to original n_cycles
-        self.make_EIS_waveform(E0 = EIS_WF_params['E0'], 
-                               f0 = EIS_WF_params['f0'], 
-                               f1 = EIS_WF_params['f1'], 
-                               n_pts = EIS_WF_params['n_pts'], 
-                               n_cycles = EIS_WF_params['n_cycles'], 
-                               amp = EIS_WF_params['amp'])
         
         # Read data from file
         t, V, I = read_heka_data(path)
         correction_datapoint = EISDataPoint(loc=(0,0,0), data=[t,V,I],
                                             applied_freqs = self.EIS_applied_freqs,
                                             corrections = None)
+        self.master.Plotter.set_echemdata(correction_datapoint)
         freq, _, _, Z = correction_datapoint.data
         
         modZ  = np.abs(Z)
@@ -546,10 +533,10 @@ class HekaWriter(Logger):
             Corrected  p  =  p  - phase_corrections
             Corrected  Z  = |Z| * exp(1j * phase * pi/180)
         '''
-        print('Z corrections:')
-        print(Z_corrections)
-        print('phase corrections:')
-        print(phase_corrections)
+        self.log('|Z| corrections (multiplicative):')
+        self.log(Z_corrections)
+        self.log('Phase corrections (additive):')
+        self.log(phase_corrections)
         self.EIS_corrections = list(zip(freq, Z_corrections, phase_corrections))
         
         # Save corrections to file
@@ -559,11 +546,6 @@ class HekaWriter(Logger):
         messagebox.askokcancel('Waveform corrections',
                                message='Correction factors recorded.')
         
-        # Reset Cfast
-        self.send_multiple_cmds([
-            f'Set E CFastTau {CFastTau}',
-            f'Set E CFastTot {CFastTot}'
-            ])
             
     
     
@@ -723,10 +705,10 @@ def get_filters(max_freq):
     filt1s = [10, 30, 100]
     best_filt1 = 100
     for filt in filt1s:
-        if filt*1000 >= 3*max_freq:
+        if filt*1000 >= 5*max_freq:
             best_filt1 = filt
             break
-    best_filt2 = 2*max_freq
+    best_filt2 = 5*max_freq
     if best_filt2 > 8000:
         f2_val  = 8000
         f2_type = 2
