@@ -1072,7 +1072,7 @@ class GUI(Logger):
             if not n_steps:
                 self.log('Failed to move y piezo')
                 return
-            time.sleep(0.5 + abs(n_steps)/1000)
+            time.sleep(2 + abs(n_steps)/1000)
         
         # Move far away after completing scans
         self.log(f'Multi hopping mode complete. Moving additional {10*dist} um')

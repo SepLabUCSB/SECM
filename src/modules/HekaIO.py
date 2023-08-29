@@ -234,9 +234,12 @@ class HekaWriter(Logger):
         self.send_command('GetParameters DataFile')
         st = time.time()
         while time.time() - st < 1:
-            response = self.master.HekaReader.last[1]
-            if response[1].startswith('Reply_GetParameters'): 
-                break
+            try:
+                response = self.master.HekaReader.last[1]
+                if response[1].startswith('Reply_GetParameters'): 
+                    break
+            except:
+                pass
         
         savepath = response.lstrip('Reply_GetParameters ').strip('"')
         savepath = savepath.replace('.dat', '')
