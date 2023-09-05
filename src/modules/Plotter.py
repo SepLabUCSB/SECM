@@ -629,7 +629,7 @@ class Plotter(Logger):
         # to each datapoint in the heatmap
         # Add any new functions to this dictionary to make them selectable
         functions = {'CV decay': analysis_funcs.CV_decay_analysis,
-                     'E0 finder': analysis_funcs.E0_finder_analysis_new,
+                     'E0 finder': analysis_funcs.E0_finder_analysis,
                      
                      }
         

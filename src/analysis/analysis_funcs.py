@@ -156,19 +156,19 @@ def CV_decay_analysis(CVDataPoint, n):
     return CVDataPoint
 
 
-def E0_finder_analysis_new(CVDataPoint, *args):
+def E0_finder_analysis(CVDataPoint, *args):
     if not hasattr(CVDataPoint, 'analysis'):
         CVDataPoint.analysis = {}
         
     if 'CVDataPoint' not in CVDataPoint.__repr__():
-        CVDataPoint.analysis[(E0_finder_analysis_new, *args)] = 0.0
+        CVDataPoint.analysis[(E0_finder_analysis, *args)] = 0.0
         return CVDataPoint
     
     t, V, I = CVDataPoint.data
     I = savgol_filter(I, 15, 1)  # Do a little filtering
     peaks = find_redox_peaks(t,V,I)
     if not peaks:
-        CVDataPoint.analysis[(E0_finder_analysis_new, *args)] = 0.0
+        CVDataPoint.analysis[(E0_finder_analysis, *args)] = 0.0
         return CVDataPoint
     fpeak, bpeak = peaks
     
@@ -179,14 +179,14 @@ def E0_finder_analysis_new(CVDataPoint, *args):
                                    linestyle='', marker='o', color='red')
     ln  = matplotlib.lines.Line2D( [E0, E0],
                                    [I[fpeak], I[bpeak]], color='black')
-    CVDataPoint.analysis[(E0_finder_analysis_new, *args)] = E0
+    CVDataPoint.analysis[(E0_finder_analysis, *args)] = E0
     CVDataPoint.artists = [pts, ln]
     return CVDataPoint
 
     
 
 
-def E0_finder_analysis(CVDataPoint, *args):
+def E0_finder_analysis_old(CVDataPoint, *args):
     '''
     Assumes 1 CV cycle!!!
     
