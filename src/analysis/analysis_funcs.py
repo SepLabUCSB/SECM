@@ -190,6 +190,9 @@ def E0_finder_analysis(CVDataPoint, *args):
     
     Returns E0 = halfway between them
     '''
+    
+    Vpp_CUTOFF = 0.6   # Don't return E0 if peak-to-peak separation exceeds this value
+    
     if not hasattr(CVDataPoint, 'analysis'):
         CVDataPoint.analysis = {}
         
@@ -249,6 +252,11 @@ def E0_finder_analysis(CVDataPoint, *args):
     
     E0 = (fV + bV)/2
     E0 = E0[0]
+    
+    if (abs(V[f_peak_idx] - V[b_peak_idx]) > Vpp_CUTOFF or
+        abs(V[b_peak_idx] - V[f_peak_idx]) > Vpp_CUTOFF):
+        CVDataPoint.analysis[(E0_finder_analysis, *args)] = 0.0
+        return CVDataPoint
     
     # draw point artists on peaks
     x = [fV, bV]

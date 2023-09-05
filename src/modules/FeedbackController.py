@@ -505,6 +505,7 @@ class FeedbackController(Logger):
             if type(t) == int:
                 return None
             self.HekaWriter.reset_amplifier()
+            time.sleep(0.2)
             self.HekaWriter.send_command(f'Set E Vhold {start_V}')
             time.sleep(2)
             EISdata = EISDataPoint(loc = loc, data = [t, voltage, current],
