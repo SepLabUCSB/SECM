@@ -139,14 +139,18 @@ def CV_decay_analysis(CVDataPoint, n):
     dt = np.mean(np.diff(t[:1000]))
     t = np.arange(t[0], dt*len(t), dt)
     
-    arr = -(np.abs(V - min(V)) - max(V))
-    peaks, props = find_peaks(arr, height=0.01)
-    peak_currs = I[peaks]
-    peak_currs /= peak_currs[0]
-    if true_n >= len(peak_currs):
-        true_n = -1
+    try:
+        arr = -(np.abs(V - min(V)) - max(V))
+        peaks, props = find_peaks(arr, height=0.01)
+        peak_currs = I[peaks]
+        peak_currs /= peak_currs[0]
+        if true_n >= len(peak_currs):
+            true_n = -1
+        
+        val = peak_currs[true_n]
     
-    val = peak_currs[true_n]
+    except:
+        val = 0.0
     
     CVDataPoint.analysis[(CV_decay_analysis, n)] = val
     return CVDataPoint

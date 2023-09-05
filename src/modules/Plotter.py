@@ -64,6 +64,8 @@ def get_clim(arr):
     # min and max values on the heatmap color scale.
     arr = [val for val in np.array(arr).flatten()
            if val != 0]
+    if len(arr) == 0:
+        return -1, 1
     avg = np.average(arr)
     std = np.std(arr)
     
