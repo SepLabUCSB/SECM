@@ -37,7 +37,7 @@ def make_EIS_window(gui, master_frame):
     f0_field.bind('<Tab>', focus_next_widget)
     f0_field.bind('<Return>', focus_next_widget)
     
-    f1_field = Text(frame, height=1, width=5)
+    f1_field = Text(frame, height=1, width=7)
     f1_field.grid(column=2, row=2, sticky=(E,W))
     f1_field.insert('1.0', '1000')
     f1_field.bind('<Tab>', focus_next_widget)
@@ -66,18 +66,27 @@ def make_EIS_window(gui, master_frame):
     Label(frame, text='Hz').grid(column=3, row=1, sticky=(W))
     Label(frame, text='Hz').grid(column=3, row=2, sticky=(W))
     Label(frame, text='points').grid(column=3, row=3, sticky=(W))
-    Label(frame, text='mVpp').grid(column=3, row=5, sticky=(W))
+    Label(frame, text='mVpp').grid(column=3, row=5, sticky=(W))   
     
+    EIS_selection = StringVar()
+    
+    EIS_options = ['Nyquist', '|Z| Bode', 'Phase Bode']
+    
+    Label(frame, text='Show: ').grid(column=1, row=6, sticky=(E))
+    OptionMenu(frame, EIS_selection, EIS_options[0], *EIS_options).grid(
+        column=2, row=6, columnspan=2, sticky=(E,W))
+    
+    Button(frame, text='Run EIS', command=
+            partial(run, gui.run_EIS)).grid(column=2, row=7, columnspan=2,
+                                           sticky=(E,W))  
+                                            
     EIS_params = {'E0':DC_field,
                   'f0':f0_field,
                   'f1':f1_field,
                   'n_pts':n_pts_field,
                   'n_cycles':n_cycles_field,
-                  'amp':amp_field}
-    
-    Button(frame, text='Run EIS', command=
-            partial(run, gui.run_EIS)).grid(column=2, row=7,
-                                           sticky=(E,W))  
+                  'amp':amp_field,
+                  'EIS_view_option': EIS_selection}
     
     return EIS_params
 
