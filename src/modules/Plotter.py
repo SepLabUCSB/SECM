@@ -350,6 +350,7 @@ class Plotter(Logger):
             if type(z0) == tuple:
                 z0 = z0[0] # Handle early bug in some saved data
             val = self.data1.flatten()[idx]
+            self.master.ImageCorrelator.draw_on_pt(x0, y0)
             print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {unit_label(val, dec=3)}')
         if event.inaxes == self.ax2:
             x, y = event.xdata, event.ydata

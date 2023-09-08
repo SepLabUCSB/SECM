@@ -19,6 +19,7 @@ class ImageCorrelator(Logger):
         self.willStop = False
         
         self.clicked = False
+        self._popup_shown = False
         
     
     def load_image(self, file):
@@ -78,6 +79,8 @@ class ImageCorrelator(Logger):
             row=0, column=0, sticky=(W,E), )
         Button(self.topframe, text='\n     Draw Grid     \n', command=self.draw_grid
                ).grid(row=0, column=1, sticky=(W,E))
+        
+        self._popup_shown = True
         
         
     def reset(self):
@@ -180,7 +183,7 @@ class ImageCorrelator(Logger):
                 artist.remove()
             self.gridlns = []
         plt.pause(0.001)
-        width = height = self.master.expt.length
+        
         n_pts = len(self.master.expt.data[0]) # points per row/ column
         
         xmin, xmax = self.ax.get_xlim()
@@ -203,8 +206,76 @@ class ImageCorrelator(Logger):
         
     
     
-    # def draw_grid(self):
-    #     pass
+    def draw_on_pt(self, x, y):
+        '''
+        Draw a box around the selected point
+        '''
+        if not self._popup_shown:
+            return
+        
+        width = height = self.master.expt.length
+        
+        x_frac = x/width
+        y_frac = (height - y)/height
+        
+        n_pts = len(self.master.expt.data[0]) # points per row/ column
+        
+        xmin, xmax = self.ax.get_xlim()
+        ymax, ymin = self.ax.get_ylim()
+        
+        # Get the relative location in image coordinates
+        x_loc = xmin + x_frac*(xmax - xmin)
+        y_loc = ymin + y_frac*(ymax - ymin)
+        
+        x_lines = [n for n in np.linspace(xmin, xmax, n_pts + 1)]
+        y_lines = [n for n in np.linspace(ymin, ymax, n_pts + 1)]
+        
+        
+        # Find what box the point falls in
+        for xline in x_lines:
+            if x_loc >= xline:
+                continue
+            break
+        for yline in y_lines:
+            if y_loc >= yline:
+                continue
+            break
+        
+        x_delta = x_lines[1] - x_lines[0]
+        y_delta = y_lines[1] - y_lines[0]
+        
+        # Box drawing limits
+        y_min = (yline-y_delta-ymax)/(-ymax + ymin)
+        y_max = (yline-ymax)/(-ymax + ymin)
+        
+        x_min = (xline-x_delta-xmin)/(xmax - xmin)
+        x_max = (xline-xmin)/(xmax - xmin)
+         
+        # Lines to draw the box
+        lns = [
+            self.ax.axvline(xline, ymin=y_min, ymax=y_max, color='red', 
+                            lw=1, alpha=0.7),
+            self.ax.axvline(xline - x_delta, ymin=y_min, ymax=y_max, color='red', 
+                            lw=1, alpha=0.7),
+            
+            self.ax.axhline(yline, xmin=x_min, xmax=x_max, color='red', 
+                            lw=1, alpha=0.7),
+            self.ax.axhline(yline - y_delta, xmin=x_min, xmax=x_max, color='red', 
+                            lw=1, alpha=0.7),
+            ]
+        
+        # Draw the box
+        if hasattr(self, 'gridlns'):
+            for artist in self.gridlns:
+                artist.remove()
+        self.gridlns = []
+        self.gridlns.extend(lns)
+        for artist in self.gridlns:
+            self.ax.draw_artist(artist)
+        self.fig.canvas.draw_idle()
+        plt.pause(0.01)
+        
+        
 
 
 
