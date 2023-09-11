@@ -295,6 +295,7 @@ class Plotter(Logger):
         
         self.data1 = np.array([0,])
         self.data2 = [ [-1], [], [], [] ] #keep track of all fig2 data for later replotting
+        self.fig2DataPoint = None  # Keep track of DataPoint object fig 2 is plotting from
         
         self.last_data1checksum = checksum(self.data1)
         self.last_data2checksum = checksum(self.data2)
@@ -693,6 +694,8 @@ class Plotter(Logger):
         _, _, xval, yval = get_axval_axlabels(
                                 self.master.GUI.fig2selection.get()
                                 )
+        
+        self.fig2DataPoint = DATAPOINT
         
         # Get the data
         if isinstance(DATAPOINT, ADCDataPoint):

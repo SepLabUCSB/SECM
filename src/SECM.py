@@ -842,10 +842,11 @@ class GUI(Logger):
         path = filedialog.asksaveasfilename(defaultextension='.csv')
         if not path:
             return
-        pts = self.master.Plotter.ln.get_xydata()
+        # Clear file
         with open(path, 'w') as f:
-            for (x, y) in pts:
-                f.write(f'{x},{y}\n')
+            f.close()
+        pt = self.master.Plotter.fig2DataPoint
+        pt._save(path)        
         self.log(f'Saved to {path}')
         
      
