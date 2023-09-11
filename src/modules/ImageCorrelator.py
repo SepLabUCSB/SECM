@@ -91,11 +91,8 @@ class ImageCorrelator(Logger):
         self.ax.set_ylim(self.original_axlim[1])
         self.loc1   = self.loc2   = (0,0)
         self.coord1 = self.coord2 = (0,0)
+        self.clear_gridlines()
         self.draw_rect()
-        if hasattr(self, 'gridlns'):
-            for artist in self.gridlns:
-                artist.remove()
-            self.gridlns = []
         plt.pause(0.001)
      
         
@@ -175,13 +172,16 @@ class ImageCorrelator(Logger):
         self.coord1 = self.coord2 = (0,0)
         self.draw_rect()
         plt.pause(0.001)
-    
-    
-    def draw_grid(self):
+   
+    def clear_gridlines(self):
         if hasattr(self, 'gridlns'):
             for artist in self.gridlns:
                 artist.remove()
-            self.gridlns = []
+        self.gridlns = []
+            
+    
+    def draw_grid(self):
+        self.clear_gridlines()
         plt.pause(0.001)
         
         n_pts = len(self.master.expt.data[0]) # points per row/ column
@@ -265,10 +265,7 @@ class ImageCorrelator(Logger):
             ]
         
         # Draw the box
-        if hasattr(self, 'gridlns'):
-            for artist in self.gridlns:
-                artist.remove()
-        self.gridlns = []
+        self.clear_gridlines()
         self.gridlns.extend(lns)
         for artist in self.gridlns:
             self.ax.draw_artist(artist)
