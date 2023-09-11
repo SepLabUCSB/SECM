@@ -808,7 +808,7 @@ class Plotter(Logger):
         x = np.real(Z)
         y = -np.imag(Z)
         
-        minimum = min(min(x), min(y))
+        minimum = min(0, min(min(x), min(y)))
         maximum = max(max(x), max(y))
         
         # Clear old artists
