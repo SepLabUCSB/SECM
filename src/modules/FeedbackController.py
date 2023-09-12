@@ -438,7 +438,8 @@ class FeedbackController(Logger):
         if expt_type == 'CV then EIS':
             # We setup potentiostat settings twice at each point:
             # first for CV then for EIS. Done in run_echems()
-            return True
+            # Do initial setup for approach
+            return self.potentiostat_setup('CV')
         
         # if expt_type == 'Custom':
         #     self.master.GUI.set_amplifier()
