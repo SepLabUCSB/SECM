@@ -180,7 +180,7 @@ def E0_finder_analysis(CVDataPoint, *args):
     ln  = matplotlib.lines.Line2D( [E0, E0],
                                    [I[fpeak], I[bpeak]], color='black')
     avgln = matplotlib.lines.Line2D( V, I, color='navy')
-    CVDataPoint.analysis[(E0_finder_analysis_new, *args)] = E0
+    CVDataPoint.analysis[(E0_finder_analysis, *args)] = E0
     CVDataPoint.artists = [pts, ln, avgln]
     return CVDataPoint
 
