@@ -265,13 +265,17 @@ class PicoMotor(Logger):
         
         Assuming ~30 nm/step for +y, ~ -13.8 nm/step for -y
         
+        With those values, measured distance between grids on SEM. Requested
+        distance of 200 um, measured distance was 300 um. So each step in the
+        -y direction is actually 50% larger than that, = 20.7 nm.
+        
         Args:
             dist: int, distance in microns
         '''
         if dist >= 0:
             n_steps = int(dist/0.03)
         elif dist < 0:
-            n_steps = int(dist/0.0138)
+            n_steps = int(dist/0.0207)
             
         self.log(f'Moving {n_steps} steps on y piezo.')
         
