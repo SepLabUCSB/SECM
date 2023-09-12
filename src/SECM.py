@@ -18,6 +18,7 @@ from .modules.FeedbackController import FeedbackController, make_datapoint_from_
 from .modules.Plotter import Plotter, ExporterGenerator
 from .modules.DataStorage import Experiment, EISDataPoint, load_from_file
 from .modules.Picomotor import PicoMotor
+from .modules.ImageCorrelator import ImageCorrelator
 from .utils.utils import run, Logger
 from .gui import *
 from .gui.hopping_popup import HoppingPopup
@@ -28,7 +29,7 @@ default_stderr = sys.stderr
 
 matplotlib.use('TkAgg')
 
-TEST_MODE = False
+TEST_MODE = True
 
 
     
@@ -256,10 +257,12 @@ class GUI(Logger):
         menu_settings   = Menu(menubar)
         menu_analysis   = Menu(menubar)
         menu_image      = Menu(menubar)
+        menu_image_corr = Menu(menubar)
         menubar.add_cascade(menu=menu_file, label='File')
         menubar.add_cascade(menu=menu_settings, label='Settings')
         menubar.add_cascade(menu=menu_analysis, label='Analysis')
         menubar.add_cascade(menu=menu_image, label='Image')
+        menubar.add_cascade(menu=menu_image_corr, label='SEM Correlation')
         
         
         menu_file.add_command(label='New', command=self.newFile)
@@ -279,6 +282,7 @@ class GUI(Logger):
         menu_image.add_command(label='Export heatmap data...', command=self.export_heatmap_data)
         menu_image.add_command(label='Export echem data...', command=self.export_echem_fig_data)
         
+        menu_image_corr.add_command(label='Load SEM image...', command=self.load_SEM_image)
         
                 
         # Left panel: potentiostat/ SECM parameters
@@ -842,11 +846,18 @@ class GUI(Logger):
         path = filedialog.asksaveasfilename(defaultextension='.csv')
         if not path:
             return
-        pts = self.master.Plotter.ln.get_xydata()
+        # Clear file
         with open(path, 'w') as f:
-            for (x, y) in pts:
-                f.write(f'{x},{y}\n')
+            f.close()
+        pt = self.master.Plotter.fig2DataPoint
+        pt._save(path)        
         self.log(f'Saved to {path}')
+        
+    def load_SEM_image(self):
+        f = filedialog.askopenfilename()
+        if not f:
+            return
+        self.master.ImageCorrelator.load_image(f)
         
      
     ########## DISPLAY FIGURE CALLBACKS ###########
@@ -1156,6 +1167,7 @@ def run_main():
         adc    = ADC(master)
         piezo  = Piezo(master)
         motor  = PicoMotor(master)
+        corr   = ImageCorrelator(master)
         fbc    = FeedbackController(master) # must be loaded last
     
     except Exception as e:
@@ -1170,6 +1182,7 @@ def run_main():
         adc    = ADC(master)
         piezo  = Piezo(master)
         motor  = PicoMotor(master)
+        corr   = ImageCorrelator(master)
         fbc    = FeedbackController(master) # must be loaded last
     
     root = Tk()

@@ -295,6 +295,7 @@ class Plotter(Logger):
         
         self.data1 = np.array([0,])
         self.data2 = [ [-1], [], [], [] ] #keep track of all fig2 data for later replotting
+        self.fig2DataPoint = None  # Keep track of DataPoint object fig 2 is plotting from
         
         self.last_data1checksum = checksum(self.data1)
         self.last_data2checksum = checksum(self.data2)
@@ -350,6 +351,7 @@ class Plotter(Logger):
             if type(z0) == tuple:
                 z0 = z0[0] # Handle early bug in some saved data
             val = self.data1.flatten()[idx]
+            self.master.ImageCorrelator.draw_on_pt(x0, y0)
             print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {unit_label(val, dec=3)}')
         if event.inaxes == self.ax2:
             x, y = event.xdata, event.ydata
@@ -694,6 +696,8 @@ class Plotter(Logger):
                                 self.master.GUI.fig2selection.get()
                                 )
         
+        self.fig2DataPoint = DATAPOINT
+        
         # Get the data
         if isinstance(DATAPOINT, ADCDataPoint):
             if self.FIG2_FORCED:
@@ -805,7 +809,7 @@ class Plotter(Logger):
         x = np.real(Z)
         y = -np.imag(Z)
         
-        minimum = min(min(x), min(y))
+        minimum = min(0, min(min(x), min(y)))
         maximum = max(max(x), max(y))
         
         # Clear old artists

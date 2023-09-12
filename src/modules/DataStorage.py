@@ -481,9 +481,9 @@ class EISDataPoint(DataPoint):
         
     def _save(self, path):
         with open(path, 'a') as f:
-            f.write("f/Hz\tZ'/Ohm\tZ''/Ohm")
-            for f, Z in zip(self.data[0], self.data[1]):
-                f.write(f'{f}\t{np.real(Z)}\t{np.imag(Z)}')
+            f.write("<Frequency>\t<Re(Z)>\t<Im(Z)>\n")
+            for freq, Z in zip(self.data[0], self.data[3]):
+                f.write(f'{freq}\t{np.real(Z)}\t{np.imag(Z)}\n')
         
 
 class PointsList():
