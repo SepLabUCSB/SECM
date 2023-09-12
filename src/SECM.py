@@ -921,7 +921,7 @@ class GUI(Logger):
                 continue
             # if val != self.amp_params.get(key, None):
             cmds.append(f'Set {key} {val}')
-            cmds.append('Set E TestDacToStim1 0')
+        cmds.append('Set E TestDacToStim1 0')
         
         self.master.HekaWriter.send_multiple_cmds(cmds)
         
