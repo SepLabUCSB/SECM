@@ -29,7 +29,7 @@ default_stderr = sys.stderr
 
 matplotlib.use('TkAgg')
 
-TEST_MODE = True
+TEST_MODE = False
 
 
     
@@ -219,9 +219,15 @@ class PrintLogger():
     '''
     def __init__(self, textbox): 
         self.textbox = textbox # tk.Text object
+        self.textbox.tag_config("red", foreground="red")
+        self.textbox.tag_config('black', foreground='black')
 
     def write(self, text):
-        self.textbox.insert(END, text) # write text to textbox
+        color='black'
+        for msg in ('Warning', 'warning', 'Error', 'error'):
+            if msg in text:
+                color='red'
+        self.textbox.insert(END, text, color) # write text to textbox
         self.textbox.see('end') # scroll to end
 
     def flush(self): # needed for file like object
@@ -1189,6 +1195,8 @@ def run_main():
     
     try:
         gui = GUI(root, master)
+        if master.TEST_MODE:
+            print('\nWarning: controller loaded in test mode! Can view data, but cannot control instrument.\n')
         
         gui._update_piezo_display()
         root.after(1000, master.Plotter.update_figs)
