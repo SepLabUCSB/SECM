@@ -134,9 +134,12 @@ class MasterModule(Logger):
         self.log(f'Loaded {module.__class__.__name__}')
     
     
-    def set_expt(self, expt):
+    def set_expt(self, expt, name=None):
         self.check_save()
         self.expt = expt
+        title = name if name else 'SECM Controller'
+        self.GUI.root.title(title)
+            
     
     
     def check_save(self):
@@ -704,7 +707,7 @@ class GUI(Logger):
         if not f.endswith('.secmdata'):
             return
         expt = load_from_file(f)
-        self.master.set_expt(expt)
+        self.master.set_expt(expt, name=f.split('/')[-1])
         self.master.Plotter.load_from_expt(expt)
         if hasattr(expt, 'settings') and expt.settings is not None:
             answer = messagebox.askyesno('Load settings', 
