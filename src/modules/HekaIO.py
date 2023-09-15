@@ -377,7 +377,7 @@ class HekaWriter(Logger):
         self.CV_params   = values
         self.CV_duration = duration
         self.idle()
-        self.log('Set CV parameters')
+        self.log('Set CV parameters', 1)
     
     
     def run_CV(self, mode='normal'):
@@ -441,7 +441,7 @@ class HekaWriter(Logger):
         
         self.EIS_WF_params = EIS_WF_params
         self.idle()
-        self.log('Set EIS parameters')
+        self.log('Set EIS parameters', 1)
         return
     
     

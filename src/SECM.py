@@ -676,7 +676,7 @@ class GUI(Logger):
         max_pts = self.master.expt.max_points_per_loc()
         menu_length = self.fig2ptoptmenu['menu'].index("end") + 1
         if (max_pts > 1) and (max_pts != menu_length):
-            self.log(f'Detected {max_pts} pts per location, currently {menu_length} in menu')
+            self.log(f'Detected {max_pts} pts per location, currently {menu_length} in menu', quiet=True)
             menu = self.fig2ptoptmenu['menu']
             menu.delete(0, 'end')
             opts = [i for i in range(max_pts)]
