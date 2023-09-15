@@ -859,6 +859,9 @@ class GUI(Logger):
         with open(path, 'w') as f:
             f.close()
         pt = self.master.Plotter.fig2DataPoint
+        if str(pt) == 'PointsList':
+            idx = self.fig2ptselection.get()
+            pt = pt[idx]
         pt._save(path)        
         self.log(f'Saved to {path}')
         
@@ -877,7 +880,7 @@ class GUI(Logger):
         #     data = self.master.Plotter.data2
         #     )
         self.master.Plotter.set_echemdata(
-            DATAPOINT = self.master.Plotter.fig2data 
+            DATAPOINT = self.master.Plotter.fig2DataPoint
             )
         return
     
