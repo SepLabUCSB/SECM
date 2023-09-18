@@ -295,7 +295,9 @@ class Plotter(Logger):
         
         self.data1 = np.array([0,])
         self.data2 = [ [-1], [], [], [] ] #keep track of all fig2 data for later replotting
-        self.fig2DataPoint = None  # Keep track of DataPoint object fig 2 is plotting from
+        self.fig2DataPoint = None  # Keep track of DataPoint object fig 2 is plotting from. 
+                                   # Can be a PointsList. Not necessarily the same as self.fig2data,
+                                   # which is what is actually plotted to the axes
         
         self.last_data1checksum = checksum(self.data1)
         self.last_data2checksum = checksum(self.data2)
@@ -690,7 +692,7 @@ class Plotter(Logger):
         self.set_echemdata(DATAPOINT)
 
     
-    def set_echemdata(self, DATAPOINT, sample_freq=10):
+    def set_echemdata(self, DATAPOINT, sample_freq=1000):
         # Determine what to plot
         _, _, xval, yval = get_axval_axlabels(
                                 self.master.GUI.fig2selection.get()
@@ -712,20 +714,19 @@ class Plotter(Logger):
                 self.ax1.draw_artist(self.rect)
                 self.fig1.canvas.draw_idle()
                 
-        elif isinstance(DATAPOINT, PointsList):
+        if isinstance(DATAPOINT, PointsList):
             # Determine which to plot
             selected_idx = self.master.GUI.fig2ptselection.get()
-            pt = DATAPOINT[selected_idx]
-            return self.set_echemdata(pt, sample_freq)
+            DATAPOINT = DATAPOINT[selected_idx]
             
-        elif isinstance(DATAPOINT, CVDataPoint):
+        if isinstance(DATAPOINT, CVDataPoint):
             t, V, I = DATAPOINT.get_data()
             self.FIG2_FORCED = True
         
-        elif isinstance(DATAPOINT, SinglePoint):
+        if isinstance(DATAPOINT, SinglePoint):
             t, V, I = [0], [0], [0]
             
-        elif isinstance(DATAPOINT, EISDataPoint):
+        if isinstance(DATAPOINT, EISDataPoint):
             self.FIG2_FORCED = True
             option = self.master.GUI.params['EIS']['EIS_view_option'].get()
             if option == 'Nyquist':
@@ -735,12 +736,12 @@ class Plotter(Logger):
             elif option == 'Phase Bode':
                 return self.draw_Bode(DATAPOINT, 'Phase')
         
-        else:
-            print(type(DATAPOINT))
-        
-        d = {'t': t,
-             'V': V,
-             'I': I}
+        try:
+            d = {'t': t,
+                 'V': V,
+                 'I': I}
+        except:
+            self.log(f'Plotting error plotting {type(DATAPOINT)}')
         
         t = d['t']
         x = d[xval]

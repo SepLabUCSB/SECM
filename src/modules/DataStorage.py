@@ -181,8 +181,8 @@ class Experiment:
                 min_dist = distance
                 closest = datapoint
                 idx = i
-        if isinstance(closest, PointsList):
-            closest = closest[pt_idx]
+        # if isinstance(closest, PointsList):
+        #     closest = closest[pt_idx]
             
         return idx, closest
     

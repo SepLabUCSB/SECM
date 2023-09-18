@@ -237,7 +237,7 @@ class FeedbackController(Logger):
         if height:
             z_start = height
             
-        self.log(f'Starting approach curve from {x}, {y}, {z_start}')
+        self.log(f'Starting approach curve from {x}, {y}, {z_start}', quiet=True)
         self.Piezo.stop_monitoring()
         # self.Piezo.goto(x, y, z_start)
         
@@ -279,7 +279,7 @@ class FeedbackController(Logger):
                 self.log('Stopped approach on abort')
                 break
             if self.Piezo.counter != self._piezo_counter:
-                self.log('Piezo stop detected')
+                self.log('Piezo stop detected', quiet=True)
                 break
             
             _, _, I = self.ADC.pollingdata.get_data(10)
@@ -294,7 +294,7 @@ class FeedbackController(Logger):
         if on_surface:
             self.log('Found surface')
         else:
-            self.log('Did not find surface')
+            self.log('Did not find surface', quiet=True)
         
         self.ADC.STOP_POLLING()  
         self.Piezo.start_monitoring()

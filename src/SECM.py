@@ -134,9 +134,12 @@ class MasterModule(Logger):
         self.log(f'Loaded {module.__class__.__name__}')
     
     
-    def set_expt(self, expt):
+    def set_expt(self, expt, name=None):
         self.check_save()
         self.expt = expt
+        title = name if name else 'SECM Controller'
+        self.GUI.root.title(title)
+            
     
     
     def check_save(self):
@@ -673,7 +676,7 @@ class GUI(Logger):
         max_pts = self.master.expt.max_points_per_loc()
         menu_length = self.fig2ptoptmenu['menu'].index("end") + 1
         if (max_pts > 1) and (max_pts != menu_length):
-            self.log(f'Detected {max_pts} pts per location, currently {menu_length} in menu')
+            self.log(f'Detected {max_pts} pts per location, currently {menu_length} in menu', quiet=True)
             menu = self.fig2ptoptmenu['menu']
             menu.delete(0, 'end')
             opts = [i for i in range(max_pts)]
@@ -704,7 +707,7 @@ class GUI(Logger):
         if not f.endswith('.secmdata'):
             return
         expt = load_from_file(f)
-        self.master.set_expt(expt)
+        self.master.set_expt(expt, name=f.split('/')[-1])
         self.master.Plotter.load_from_expt(expt)
         if hasattr(expt, 'settings') and expt.settings is not None:
             answer = messagebox.askyesno('Load settings', 
@@ -856,6 +859,9 @@ class GUI(Logger):
         with open(path, 'w') as f:
             f.close()
         pt = self.master.Plotter.fig2DataPoint
+        if str(pt) == 'PointsList':
+            idx = self.fig2ptselection.get()
+            pt = pt[idx]
         pt._save(path)        
         self.log(f'Saved to {path}')
         
@@ -874,7 +880,7 @@ class GUI(Logger):
         #     data = self.master.Plotter.data2
         #     )
         self.master.Plotter.set_echemdata(
-            DATAPOINT = self.master.Plotter.fig2data 
+            DATAPOINT = self.master.Plotter.fig2DataPoint
             )
         return
     
