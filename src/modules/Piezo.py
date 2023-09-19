@@ -208,7 +208,7 @@ class Piezo(Logger):
         
         if forced_step_size:
             step_size = forced_step_size
-            step_delay = 0.001
+            step_delay = 0.0001
         
         self.log(f'Running approach curve with step size {step_size} um, dwell time {step_delay} s')
         

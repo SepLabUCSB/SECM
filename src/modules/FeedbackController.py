@@ -178,7 +178,8 @@ class FeedbackController(Logger):
                 break
             
             time.sleep(3)
-            _, on_surface = self.approach(height=height)
+            _, on_surface = self.approach(height=height, 
+                                          forced_step_size = 0.01)
             
             if self.master.ABORT:
                 break
