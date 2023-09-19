@@ -4,7 +4,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
-from libtiff import TIFF
+# from libtiff import TIFF
+from PIL import Image
 from ..utils.utils import Logger
 
 
@@ -29,8 +30,10 @@ class ImageCorrelator(Logger):
         
         # Open the image file
         try:        
-            tif = TIFF.open(file)
-            img = tif.read_image()
+            # tif = TIFF.open(file)
+            # img = tif.read_image()
+            img = Image.open(file)
+            img = np.array(img)
         except:
             self.log(f'Error: cannot open {file}')
             return
