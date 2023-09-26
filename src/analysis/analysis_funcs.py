@@ -107,6 +107,108 @@ def find_redox_peaks(t, V, I):
         return None
 
 
+
+def find_peak_bounds(t, V, I, fpeak, bpeak):
+    '''
+    fpeak, bpeak: indices corresponding to peaks in forward and reverse scan
+    
+    returns: 2-tuple of 2-tuples, corresponding to L and R bounds of forward
+             and reverse peaks, respectively
+             
+    Starting from the peak, draw flat horizontal line. Move it down until
+    one side no longer intersects the data. Fix that side's bound as the last point.
+    Then, draw a line from that point to the other slide of the peak. Every point
+    in the peak (that has been checked so far) will be above that line. Keep stepping
+    the point on the other side down, drawing a slanted line, until it reaches
+    the local minimum and starts tracing back, causing the line to intersect the data
+    inside of the bound. Use that last point as the other bound.
+    '''
+    half = len(t)//2
+        
+    ft, fV, fI = t[:half], V[:half], I[:half]
+    bt, bV, bI = t[half:], V[half:], I[half:]
+    
+    # Same peak choosing parameters as in find_redox_peaks()
+    min_peak_width = max(4, int(len(t)//100)) # Don't choose spiky peaks
+    prominence = 5e-12   
+    
+    def find_bounds(I, peak, add = 0):
+        if I[peak] < 0:
+            I = -I + min(-I)
+        lbound = rbound = peak
+        found = None
+        # Forward peak
+        for i in range(1, min(len(I) - peak, peak) ):
+            lbound = peak - i
+            rbound = peak + i
+            # Check left side
+            if all( I[:peak] - I[lbound] >= 0):
+                found = 'left'
+                break
+            # Check right side
+            if all( I[peak:] - I[rbound] >= 0):
+                found = 'right'
+                break
+        
+        if found == 'right':
+            # rbound was fixed, draw lines to set lbound
+            x = np.arange(len(I))
+            x2, y2 = rbound, I[rbound]
+            for lbound in reversed(range(0, peak-i)):
+                x1, y1 = lbound, I[lbound]
+
+                m = (y2 - y1) / (x2 - x1)
+                b = y1 - m*x1
+                
+                subtracted = I - (m*x + b)
+                
+                if min(subtracted[lbound:rbound]) < 0:
+                    lbound += 1
+                    break
+                
+        elif found == 'left':
+            # lbound was fixed, draw lines to set rbound
+            x = np.arange(len(I))
+            x2, y2 = lbound, I[lbound]
+            for rbound in reversed(range(peak+i, len(I))):
+                x1, y1 = rbound, I[rbound]
+
+                m = (y2 - y1) / (x2 - x1)
+                b = y1 - m*x1
+                
+                subtracted = I - (m*x + b)
+                
+                if min(subtracted[lbound:rbound]) < 0:
+                    rbound -= 1
+                    break
+        return lbound+add, rbound+add
+    
+    fbounds = find_bounds(fI, fpeak)
+    rbounds = find_bounds(bI, bpeak-half, add = half)
+    
+    return fbounds, rbounds
+    
+
+def integrate(t, I, start_idx, end_idx):
+    '''
+    Integrates from start_idx to end_idx. Draws and subtracts a straight
+    baseline between those two points.
+    '''
+    t = t[start_idx:end_idx]
+    I = I[start_idx:end_idx]
+    
+    ln = np.linspace(I[0], I[-1], len(I))
+    
+    bline_I = I - ln
+    
+    integral = np.trapz(bline_I, x=t)
+    return integral
+        
+        
+    
+    
+
+
 #############################################
 ########                             ########
 ########     MAIN ANALYSIS FUNCS     ########
@@ -184,114 +286,100 @@ def E0_finder_analysis(CVDataPoint, *args):
     CVDataPoint.artists = [pts, ln, avgln]
     return CVDataPoint
 
-    
 
 
-def E0_finder_analysis_old(CVDataPoint, *args):
+
+def forward_peak_integration(CVDataPoint, *args):
     '''
-    Assumes 1 CV cycle!!!
+    Integrate forward and reverse peaks. Returns integral of forward peak
     
-    Determines the locations of the forward and backward peak currents
+    Peak integrals are only calculated once (by _peak_integration), and 
+    stored in the .analysis dictionary under the keys (_peak_integration, 'forward'), 
+    (_peak_integration, 'reverse'), and (_peak_integration, 'ratio').
     
-    Returns E0 = halfway between them
+    These get mapped to the appropriate key (this function, these *args)
+    so it can get found the same as other analysis results. 
     '''
+    CVDataPoint = _peak_integration(CVDataPoint)
+    CVDataPoint.analysis[(forward_peak_integration, *args)] = CVDataPoint.analysis[(_peak_integration, 'forward')]
+    return CVDataPoint
+
+def reverse_peak_integration(CVDataPoint, *args):
+    '''
+    Integrate forward and reverse peaks. Returns integral of reverse peak
     
-    Vpp_CUTOFF = 0.6   # Don't return E0 if peak-to-peak separation exceeds this value
+    Peak integrals are only calculated once (by _peak_integration), and 
+    stored in the .analysis dictionary under the keys (_peak_integration, 'forward'), 
+    (_peak_integration, 'reverse'), and (_peak_integration, 'ratio').
+    
+    These get mapped to the appropriate key (this function, these *args)
+    so it can get found the same as other analysis results. 
+    '''
+    CVDataPoint = _peak_integration(CVDataPoint)
+    CVDataPoint.analysis[(reverse_peak_integration, *args)] = CVDataPoint.analysis[(_peak_integration, 'reverse')]
+    return CVDataPoint
+
+def peak_integration_ratio(CVDataPoint, *args):
+    '''
+    Integrate forward and reverse peaks. Returns ratio of forward Q/ reverse Q
+    
+    Peak integrals are only calculated once (by _peak_integration), and 
+    stored in the .analysis dictionary under the keys (_peak_integration, 'forward'), 
+    (_peak_integration, 'reverse'), and (_peak_integration, 'ratio').
+    
+    These get mapped to the appropriate key (this function, these *args)
+    so it can get found the same as other analysis results. 
+    '''
+    CVDataPoint = _peak_integration(CVDataPoint)
+    CVDataPoint.analysis[(peak_integration_ratio, *args)] = CVDataPoint.analysis[(_peak_integration, 'ratio')]
+    return CVDataPoint
+
+
+def _peak_integration(CVDataPoint):
     
     if not hasattr(CVDataPoint, 'analysis'):
         CVDataPoint.analysis = {}
         
     if 'CVDataPoint' not in CVDataPoint.__repr__():
-        CVDataPoint.analysis[(E0_finder_analysis, *args)] = 0.0
+        CVDataPoint.analysis[(_peak_integration, 'forward')] = 0.0
+        CVDataPoint.analysis[(_peak_integration, 'reverse')] = 0.0
+        CVDataPoint.analysis[(_peak_integration, 'ratio')] = 0.0
+        return CVDataPoint
+    
+    if (_peak_integration, 'forward') in CVDataPoint.analysis:
+        # Previously integrated this datapoint
         return CVDataPoint
     
     t, V, I = CVDataPoint.data
-    dt = np.mean(np.diff(t[:1000]))
-    t = np.arange(t[0], dt*len(t), dt)
-    
-    half = len(I)//2
-    
-    pos_scan_first = True
-    
-    current = savgol_filter(I, 15, 1)  # Do a little filtering
-    if np.mean(np.diff(V[:20])) < 0:
-        pos_scan_first = False
-        current = -current  # Makes sure forward scan peak is positive
-    
-    forw = current[:half]
-    back = -current[half:] - min(-current[half:])  # get everything positive
-    
-    
-    def choose_most_prominent(arr, prominence):
-        peaks, props = find_peaks(arr, prominence = prominence)
-        if len(peaks) == 0:
-            return None, None
-        idx = [i for i, prom in enumerate(props['prominences']) 
-               if prom == max(props['prominences'])][0]
-        peak = np.array([peaks[idx]])
-        prop = {key: np.array([arr[idx]]) for key, arr in props.items()}
-        return peak, prop
-    
-    fpeak, fprop = choose_most_prominent(forw, prominence=10e-12)
-    bpeak, bprop = choose_most_prominent(back, prominence=10e-12)
-    
-    if (not fpeak) or (not bpeak):
-        CVDataPoint.analysis[(E0_finder_analysis, *args)] = 0.0
+    I = savgol_filter(I, 15, 1)  # Do a little filtering
+    peaks = find_redox_peaks(t,V,I)
+    if not peaks:
+        CVDataPoint.analysis[(_peak_integration, 'forward')] = 0.0
+        CVDataPoint.analysis[(_peak_integration, 'reverse')] = 0.0
+        CVDataPoint.analysis[(_peak_integration, 'ratio')] = 0.0
         return CVDataPoint
     
-    # find peak voltages and get E0
-    f_peak_idx = fpeak
-    b_peak_idx = bpeak + half
+    fbounds, rbounds = find_peak_bounds(t, V, I, *peaks)
     
-    fV = V[f_peak_idx]
-    bV = V[b_peak_idx]
+    forward_integral = integrate(t, I, *fbounds)
+    reverse_integral = integrate(t, I, *rbounds)
     
-    # Check that peaks are in correct order
-    if (
-        (pos_scan_first and (bV > fV)) or   # Backwards (red) peak is at a more positive potential than forward (ox) peak
-        (not pos_scan_first and (fV > bV))  # Backwards (ox) peak is at a more positive potential than forward (red) peak
-        ):
-        
-        CVDataPoint.analysis[(E0_finder_analysis, *args)] = 0.0
-        return CVDataPoint
     
-    E0 = (fV + bV)/2
-    E0 = E0[0]
+    fln  = matplotlib.lines.Line2D([t[fbounds[0]], t[fbounds[1]]],
+                                   [I[fbounds[0]], I[fbounds[1]]], 
+                                   linestyle='--', color='orange',
+                                   marker='o')
+    bln  = matplotlib.lines.Line2D([t[rbounds[0]], t[rbounds[1]]],
+                                   [I[rbounds[0]], I[rbounds[1]]], 
+                                   linestyle='--', color='orange',
+                                   marker='o')
+    smoothed_data = matplotlib.lines.Line2D(t, I, color='navy')
     
-    if (abs(V[f_peak_idx] - V[b_peak_idx]) > Vpp_CUTOFF or
-        abs(V[b_peak_idx] - V[f_peak_idx]) > Vpp_CUTOFF):
-        CVDataPoint.analysis[(E0_finder_analysis, *args)] = 0.0
-        return CVDataPoint
-    
-    # draw point artists on peaks
-    x = [fV, bV]
-    y = [I[f_peak_idx], I[b_peak_idx]]
-    pts= matplotlib.lines.Line2D(x, y, linestyle='', marker='o', color='red')
-    ln = matplotlib.lines.Line2D([E0, E0], 
-                                 [I[f_peak_idx], I[b_peak_idx]],
-                                 color='black')
-    
-    CVDataPoint.analysis[(E0_finder_analysis, *args)] = E0
-    CVDataPoint.artists = [pts, ln]
+    CVDataPoint.analysis[(_peak_integration, 'forward')] = forward_integral
+    CVDataPoint.analysis[(_peak_integration, 'reverse')] = reverse_integral
+    CVDataPoint.analysis[(_peak_integration, 'ratio')]   = abs(forward_integral/reverse_integral)
+    CVDataPoint.artists = [fln, bln, smoothed_data]
     return CVDataPoint
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
 
-
-
-
-
+  
+ 
