@@ -634,7 +634,9 @@ class Plotter(Logger):
         # Add any new functions to this dictionary to make them selectable
         functions = {'CV decay': analysis_funcs.CV_decay_analysis,
                      'E0 finder': analysis_funcs.E0_finder_analysis,
-                     
+                     'Peak integral (forward)': analysis_funcs.forward_peak_integration,
+                     'Peak integral (reverse)': analysis_funcs.reverse_peak_integration,
+                     'Peak integral (ratio)': analysis_funcs.peak_integration_ratio,
                      }
         
         popup = Toplevel()
