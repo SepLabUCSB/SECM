@@ -768,7 +768,10 @@ class GUI(Logger):
     
     
     def save_settings(self, ask_prompt=True):
-
+        '''
+        Convert all user-input fields to a dictionary. Return that settings
+        dictionary and (optionally) prompt user to save it to a json file
+        '''
         def convert_field(field):
             if isinstance(field, StringVar):
                 return field.get()
@@ -800,6 +803,12 @@ class GUI(Logger):
     
     
     def load_settings(self, loaded = None):
+        '''
+        loaded: dictionary of settings
+        
+        Load user-input field values from a dictionary or from a (prompted) 
+        json file
+        '''
         if loaded is None:
             if not os.path.exists('./settings/'):
                 os.mkdir('./settings')
@@ -876,9 +885,6 @@ class GUI(Logger):
     
     # Selected new view for fig2
     def fig_opt_changed(self, _):
-        # self.master.Plotter.update_fig2data(
-        #     data = self.master.Plotter.data2
-        #     )
         self.master.Plotter.set_echemdata(
             DATAPOINT = self.master.Plotter.fig2DataPoint
             )
@@ -894,25 +900,14 @@ class GUI(Logger):
         return 'break'
     
     
-    
     def heatmap_rect_zoom(self):
+        '''
+        Lets user draw a square on the heatmap that will set the bounds
+        for the next grid scan. Probably never needed.
+        '''
         self.master.Plotter.heatmap_zoom()
-            
-    
-    def set_heatmap_scale(self):
-        '''
-        Open popup for user to adjust max/min value and colormap for heatmap
-        '''
-        self.master.Plotter.heatmap_scale_popup()
-        
-        
-    def set_heatmap_colors(self):
-        '''
-        Open popup for user to set the color map
-        '''
-        self.master.Plotter.heatmap_color_popup()
-    
-    
+
+
     def set_analysis_func(self):
         '''
         Open popup for user to select the analysis function
@@ -921,6 +916,9 @@ class GUI(Logger):
     
     
     def set_new_area(self):
+        '''
+        Set the new bounds after heatmap_rect_zoom()
+        '''
         corners = self.master.Plotter.RectangleSelector.get_coords()
         if all([c == (0,0) for c in corners]):
             return
@@ -935,14 +933,13 @@ class GUI(Logger):
     # Take parameters from CV window and send to HEKA    
     def set_amplifier(self):
         if not self.master.HekaReader.PatchmasterRunning():
-            self.log('PATCHMASTER not opened!')
+            self.log('Error: PATCHMASTER not opened!')
             return
         new_params = convert_to_index(self.params['amp'])
         cmds = []
         for key, val in new_params.items():
             if key == 'float_gain':
                 continue
-            # if val != self.amp_params.get(key, None):
             cmds.append(f'Set {key} {val}')
         cmds.append('Set E TestDacToStim1 0')
         
