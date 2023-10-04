@@ -1,3 +1,5 @@
+from tkinter import *
+from tkinter.ttk import *
 import matplotlib
 import numpy as np
 from scipy.signal import find_peaks, savgol_filter
@@ -11,6 +13,24 @@ Analysis functions should all:
       Values are floats, which can be displayed on the heatmap.
     - Artists to draw on the right figure should be appended to DataPoint.artists
 '''
+
+def get_functions():
+    '''
+    Dictionary of {name: (func, description)}
+    '''
+    return {
+        'CV decay': (CV_decay_analysis,
+                    'Fractional current (at negative limit) decayed after n cycles'),
+        'E0 finder': (E0_finder_analysis,
+                     'Half potential of detected redox waves larger than 5 pA'),
+        'Peak integral (forward)': (forward_peak_integration,
+                                    'Integral of the forward redox peak'),
+        'Peak integral (reverse)': (reverse_peak_integration,
+                                    'Integral of the reverse redox peak'),
+        'Peak integral (ratio)': (peak_integration_ratio,
+                                  'Ratio of the forward to reverse charges'),
+        }
+
 
 #############################################
 ########                             ########
@@ -381,5 +401,52 @@ def _peak_integration(CVDataPoint):
     CVDataPoint.artists = [fln, bln, smoothed_data]
     return CVDataPoint
 
-  
+
+
+
+class AnalysisFunctionSelector():
+    '''
+    Class which creates a popup for analysis function selection.
+    '''
+    def __init__(self, root):
+        self.root = root
+        self.functions = get_functions()
+        self.selection = list(self.functions.keys())[0]
+        
+    def get_selection(self):
+        '''
+        Make the popup window, set the dropdown to the previous selected
+        function (if any, default to 1st in list), and write the description
+        for that function. Closing window returns the selected function object
+        '''
+        popup = Toplevel()
+        frame = Frame(popup)
+        frame = Frame(popup)
+        frame.grid(row=0, column=0)
+        selectionVar = StringVar()
+        self.description = StringVar(value='')
+        
+        OptionMenu(frame, selectionVar, self.selection,
+                   *list(self.functions.keys()), command=self.changed).grid(row=0, column=0)
+        Label(frame, textvariable=self.description).grid(row=1, column=0)
+        Button(frame, text='OK', command=popup.destroy).grid(
+            row=2, column=0)
+        self.changed(self.selection)
+        x = self.root.winfo_x()
+        y = self.root.winfo_y()
+        popup.geometry("+%d+%d" % (x, y))
+        popup.wait_window()
+        self.selection = selectionVar.get()
+        return self.functions[self.selection][0]
+    
+    def changed(self, val):
+        'Dropdown changed. Update the description field'
+        description = self.functions[val][1]
+        self.description.set(description)
+        
+        
+        
+
+
+ 
  
