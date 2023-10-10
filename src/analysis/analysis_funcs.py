@@ -20,15 +20,19 @@ def get_functions():
     '''
     return {
         'CV decay': (CV_decay_analysis,
-                    'Fractional current (at negative limit) decayed after n cycles'),
+                    'Fractional current (at negative limit) decayed after n cycles.\nInput format: "n" = cycle number (starting from 0)'),
+        'Threshold current': (threshold_current_analysis,
+                    'Voltage at which x current is first reached.\nInput format: "x" = current threshold'),
+        'Threshold current decay': (threshold_current_decay_analysis,
+                    'Shift in voltage (relative to first cycle) required to reach x current after n cycles.\nInput format: "x,n"'),
         'E0 finder': (E0_finder_analysis,
-                     'Half potential of detected redox waves larger than 5 pA'),
+                     'Half potential of detected redox waves larger than 5 pA.\nInput: none'),
         'Peak integral (forward)': (forward_peak_integration,
-                                    'Integral of the forward redox peak'),
+                                    'Integral of the forward redox peak.\nInput: none'),
         'Peak integral (reverse)': (reverse_peak_integration,
-                                    'Integral of the reverse redox peak'),
+                                    'Integral of the reverse redox peak.\nInput: none'),
         'Peak integral (ratio)': (peak_integration_ratio,
-                                  'Ratio of the forward to reverse charges'),
+                                  'Ratio of the forward to reverse charges.\nInput: none'),
         }
 
 
@@ -223,8 +227,35 @@ def integrate(t, I, start_idx, end_idx):
     
     integral = np.trapz(bline_I, x=t)
     return integral
-        
-        
+
+
+def current_threshold(V, I, threshold):
+    '''
+    Returns first voltage v such that I(v) reaches or passes the threshold
+    '''
+    negative = False
+    if threshold < V[0]:
+        negative = True
+    for i, v in zip(I, V):
+        if negative:
+            if i <= threshold:
+                break
+        elif not negative:
+            if i >= threshold:
+                break
+    return v
+
+
+def count_CV_cycles(V):
+    '''
+    Returns number of cycles present in voltage data
+    '''
+    # number of differently-sloped segments
+    # TODO: might fail if recording at a constant voltage due to noise
+    # might try: (np.diff(np.sign(np.diff(V)[abs(np.diff(V)) >= 0.001])) != 0).sum()
+    # removes segments of V where the slope is very close to 0
+    n_scans = (np.diff(np.sign(np.diff(V))) != 0).sum() 
+    return int(np.ceil(n_scans/2))   
     
     
 
@@ -276,6 +307,124 @@ def CV_decay_analysis(CVDataPoint, n):
     
     CVDataPoint.analysis[(CV_decay_analysis, n)] = val
     return CVDataPoint
+
+
+def threshold_current_analysis(CVDataPoint, thresh):
+    if not hasattr(CVDataPoint, 'analysis'):
+        CVDataPoint.analysis = {}
+        
+    if 'CVDataPoint' not in CVDataPoint.__repr__():
+        CVDataPoint.analysis[(threshold_current_analysis, thresh)] = 0.0
+        return CVDataPoint
+    
+    if (threshold_current_analysis, thresh) in CVDataPoint.analysis.keys():
+        # Already did this function at this condition
+        return CVDataPoint
+    
+    
+    d = {'p':'e-12',
+         'n':'e-9',
+         'u':'e-6',
+         'm':'e-3'}
+    
+    str_thresh = thresh  # Make local copy to not overwrite analysis dict args
+    for key in d.keys():
+        str_thresh = str_thresh.replace(key, d[key])
+    
+    float_thresh = float(str_thresh)
+    
+    t, V, I = CVDataPoint.data
+    I = savgol_filter(I, 15, 1)
+    
+    v = current_threshold(V, I, float_thresh)
+    
+    ln = matplotlib.lines.Line2D( [v, v],
+                                  [min(I), float_thresh], color='black')
+    
+    CVDataPoint.analysis[(threshold_current_analysis, thresh)] = v
+    CVDataPoint.artists = [ln]
+    return CVDataPoint
+
+
+
+def threshold_current_decay_analysis(CVDataPoint, thresh_and_n):
+    '''
+    thresh_and_n: string of format '-100p,1' -> threshold = -100 pA, n = 1
+    Returns the change in voltage required to pass 'thresh' current after 'n'
+    cycles, relative to the voltage required in the first cycle.
+    '''
+    if not hasattr(CVDataPoint, 'analysis'):
+        CVDataPoint.analysis = {}
+        
+    if 'CVDataPoint' not in CVDataPoint.__repr__():
+        CVDataPoint.analysis[(threshold_current_decay_analysis, thresh_and_n)] = 0.0
+        return CVDataPoint
+    
+    try:
+        thresh, n = thresh_and_n.split(',')
+
+        d = {'p':'e-12',
+             'n':'e-9',
+             'u':'e-6',
+             'm':'e-3'}
+        
+        str_thresh = thresh  # Make local copy to not overwrite analysis dict args
+        for key in d.keys():
+            str_thresh = str_thresh.replace(key, d[key])
+        
+        float_thresh = float(str_thresh)
+        int_n = int(n)
+    except:
+        print(f'Invalid input for analysis function: {thresh_and_n}')
+        print(f"Requires both threshold and n cycles to evaluate after, i.e. '-200p,2' evaluates at -200 pA after 2 cycles")
+        CVDataPoint.analysis[(threshold_current_decay_analysis, thresh_and_n)] = 0.0
+        return CVDataPoint
+    
+    if (threshold_current_decay_analysis, thresh_and_n) in CVDataPoint.analysis.keys():
+        # Already did this function at this condition
+        return CVDataPoint  
+    
+    
+    t, V, I = CVDataPoint.data
+    
+    
+    # Find how many cycles
+    n_cycles = count_CV_cycles(V)
+    if n_cycles < int_n:
+        print(f'Cannot evaluate after {int_n} cycles, only detected {n_cycles} in the CV')
+        CVDataPoint.analysis[(threshold_current_decay_analysis, thresh_and_n)] = 0.0
+        return CVDataPoint
+    
+    # number of points per cycle
+    n_pts = len(t)//n_cycles
+    
+    # do threshold at 1st cycle
+    cycle_1_thresh = current_threshold(V[:n_pts], I[:n_pts], float_thresh)
+    
+    # do threshold at nth cycle
+    cycle_n_thresh = current_threshold( V[(int_n)*n_pts : (int_n + 1)*n_pts],
+                                        I[(int_n)*n_pts : (int_n + 1)*n_pts],
+                                        float_thresh)
+    
+    delta = cycle_n_thresh - cycle_1_thresh
+    
+    ln1 = matplotlib.lines.Line2D( [cycle_1_thresh, cycle_1_thresh],
+                                   [min(I), float_thresh], color='black')
+    
+    ln2 = matplotlib.lines.Line2D( [cycle_n_thresh, cycle_n_thresh],
+                                   [min(I), float_thresh], color='red')
+    
+    
+    # return difference
+    CVDataPoint.analysis[(threshold_current_decay_analysis, thresh_and_n)] = delta
+    CVDataPoint.artists = [ln1, ln2]
+    return CVDataPoint
+    
+    
+    
+    
+    
+    
 
 
 def E0_finder_analysis(CVDataPoint, *args):
@@ -447,6 +596,8 @@ class AnalysisFunctionSelector():
         
         
 
-
+if __name__ == '__main__':
+    file = r'C:/Users/BRoehrich/Desktop/cv_data.csv'
+    t, V, I = np.loadtxt(file, unpack=True, skiprows=1, delimiter='\t')
  
  
