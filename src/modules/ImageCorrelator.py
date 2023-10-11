@@ -33,7 +33,7 @@ class ImageCorrelator(Logger):
             # tif = TIFF.open(file)
             # img = tif.read_image()
             img = Image.open(file)
-            img = np.array(img)
+            self.img = np.array(img)
         except:
             self.log(f'Error: cannot open {file}')
             return
@@ -53,7 +53,7 @@ class ImageCorrelator(Logger):
         
         
         
-        self.image1 = self.ax.imshow(img, cmap='gray', origin='upper')
+        self.image1 = self.ax.imshow(self.img, cmap='gray', origin='upper')
         self.ax.set_xticks([])
         self.ax.set_yticks([])
         for sp in ['right', 'top', 'left', 'bottom']:
@@ -82,8 +82,37 @@ class ImageCorrelator(Logger):
             row=0, column=0, sticky=(W,E), )
         Button(self.topframe, text='\n     Draw Grid     \n', command=self.draw_grid
                ).grid(row=0, column=1, sticky=(W,E))
+        Button(self.topframe, text='\n     Rotate 180     \n', command=self.rotate_180
+               ).grid(row=0, column=2, sticky=(W,E))
+        Button(self.topframe, text='\n     Flip Vertical     \n', command=self.flip_vert
+               ).grid(row=0, column=3, sticky=(W,E))
+        Button(self.topframe, text='\n     Flip Horizontal     \n', command=self.flip_horiz
+               ).grid(row=0, column=4, sticky=(W,E))
         
         self._popup_shown = True
+    
+        
+    def rotate_180(self):
+        self.img = np.rot90(self.img, 2)
+        self._redraw()
+        
+    
+    def flip_vert(self):
+        self.img = np.flipud(self.img)
+        self._redraw()
+        
+    
+    def flip_horiz(self):
+        self.img = np.fliplr(self.img)
+        self._redraw()
+        
+        
+    def _redraw(self):
+        self.image1.set_data(self.img)
+        
+        self.ax.draw_artist(self.image1)
+        self.fig.canvas.draw_idle()
+        plt.pause(0.001)
         
         
     def reset(self):

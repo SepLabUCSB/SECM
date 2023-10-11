@@ -13,6 +13,7 @@ from .DataStorage import (ADCDataPoint, CVDataPoint,
 
 # Import any analysis functions here and add to Plotter.set_analysis_popup()!
 from ..analysis import analysis_funcs
+from ..analysis.analysis_funcs import AnalysisFunctionSelector
 
 
 # For time domain plotting
@@ -631,28 +632,10 @@ class Plotter(Logger):
     def set_analysis_popup(self):
         # Opens a window where user can choose what function to apply
         # to each datapoint in the heatmap
-        # Add any new functions to this dictionary to make them selectable
-        functions = {'CV decay': analysis_funcs.CV_decay_analysis,
-                     'E0 finder': analysis_funcs.E0_finder_analysis,
-                     'Peak integral (forward)': analysis_funcs.forward_peak_integration,
-                     'Peak integral (reverse)': analysis_funcs.reverse_peak_integration,
-                     'Peak integral (ratio)': analysis_funcs.peak_integration_ratio,
-                     }
-        
-        popup = Toplevel()
-        frame = Frame(popup)
-        frame.grid(row=0, column=0)
-        selection = StringVar()
-        OptionMenu(frame, selection, list(functions.keys())[0],
-                   *list(functions.keys())).grid(row=0, column=0)
-        Button(frame, text='Close', command=popup.destroy).grid(
-            row=1, column=0)
-        x = self.master.GUI.root.winfo_x()
-        y = self.master.GUI.root.winfo_y()
-        popup.geometry("+%d+%d" % (x, y))
-        popup.wait_window()
-        
-        self.analysis_function = functions[selection.get()]
+        if not hasattr(self, 'AnalysisFuncSelector'):
+            self.AnalysisFuncSelector = AnalysisFunctionSelector(self.master.GUI.root)
+        func = self.AnalysisFuncSelector.get_selection()
+        self.analysis_function = func
 
     
 

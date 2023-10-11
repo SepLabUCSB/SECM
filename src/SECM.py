@@ -383,10 +383,15 @@ class GUI(Logger):
                                                             sticky=(W,E))
         self.heatmapselection.trace('w', self.heatmap_opt_changed)
         
-        self.HeatMapDisplayParam = Text(topfigframe, height=1, width=5)
-        self.HeatMapDisplayParam.insert('1.0', '')
-        self.HeatMapDisplayParam.grid(column=3, row=1, sticky=(W,E))
-        self.HeatMapDisplayParam.bind('<Return>', self.heatmap_opt_changed)
+        # self.HeatMapDisplayParam = Text(topfigframe, height=1, width=8)
+        # self.HeatMapDisplayParam.insert('1.0', '')
+        # self.HeatMapDisplayParam.grid(column=3, row=1, sticky=(W,E))
+        # self.HeatMapDisplayParam.bind('<Return>', self.heatmap_opt_changed)
+        
+        self.HeatMapDisplayParam = StringVar()
+        heatmapentry = Entry(topfigframe, width=8, textvariable=self.HeatMapDisplayParam)
+        heatmapentry.grid(row=1, column=3, sticky=(W,E))
+        heatmapentry.bind('<Return>', self.heatmap_opt_changed)
         
         Button(topfigframe, text='Zoom to grid...', 
                command=self.heatmap_rect_zoom).grid(column=0, row=1,
@@ -894,7 +899,7 @@ class GUI(Logger):
     def heatmap_opt_changed(self, *args):
         # selected a new view for heatmap
         option = self.heatmapselection.get()
-        value  = self.HeatMapDisplayParam.get('1.0', 'end')
+        value  = self.HeatMapDisplayParam.get()
         
         self.master.Plotter.update_heatmap(option, value)        
         return 'break'
