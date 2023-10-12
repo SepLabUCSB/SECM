@@ -1113,8 +1113,8 @@ class GUI(Logger):
             time.sleep(2 + abs(n_steps)/1000)
         
         # Move far away after completing scans
-        self.log(f'Multi hopping mode complete. Moving additional {10*dist} um')
-        n_steps = self.master.PicoMotor.move_y(-3*dist)
+        self.log(f'Multi hopping mode complete. Moving additional {2*dist} um')
+        n_steps = self.master.PicoMotor.move_y(-2*dist)
         if not n_steps:
             return
         time.sleep(0.5 + abs(n_steps)/1000)
