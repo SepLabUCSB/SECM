@@ -450,24 +450,37 @@ class GUI(Logger):
         heatmapscaleframe.grid(row=2, column=0)
         self.heatmap_min_val = StringVar(value='0')
         self.heatmap_max_val = StringVar(value='0')
-        Button(heatmapscaleframe, text='-', 
+        Button(heatmapscaleframe, text='Zoom out', 
                command=self.master.Plotter.zoom_out).grid(
-               row=1, column=1, sticky=(W,E))
-        Button(heatmapscaleframe, text='+', 
-               command=self.master.Plotter.zoom_in).grid(
                row=1, column=2, sticky=(W,E))
+        Button(heatmapscaleframe, text='Zoom in', 
+               command=self.master.Plotter.zoom_in).grid(
+               row=1, column=3, sticky=(W,E))
         
+        Button(heatmapscaleframe, text='-', width=1,
+               command=self.master.Plotter.zoom_lower_subt).grid(
+               row=2, column=0, sticky=(W,E))  
+        Button(heatmapscaleframe, text='+', width=1,
+               command=self.master.Plotter.zoom_lower_add).grid(
+               row=2, column=1, sticky=(W,E))         
         Entry(heatmapscaleframe, textvariable=self.heatmap_min_val, width=5).grid(
-            row=2, column=1, sticky=(W,E))
-        Entry(heatmapscaleframe, textvariable=self.heatmap_max_val, width=5).grid(
             row=2, column=2, sticky=(W,E))
+        Entry(heatmapscaleframe, textvariable=self.heatmap_max_val, width=5).grid(
+            row=2, column=3, sticky=(W,E))
+        Button(heatmapscaleframe, text='-', width=1,
+               command=self.master.Plotter.zoom_upper_subt).grid(
+               row=2, column=4)
+        Button(heatmapscaleframe, text='+', width=1,
+               command=self.master.Plotter.zoom_upper_add).grid(
+               row=2, column=5)
+        
         
         Button(heatmapscaleframe, text='Apply', 
                command=self.master.Plotter.apply_minmax_fields).grid(
-               row=3, column=1, sticky=(W,E))
+               row=3, column=2, sticky=(W,E))
         Button(heatmapscaleframe, text='Reset', 
                command=self.master.Plotter.cancel_popup).grid(
-               row=3, column=2, sticky=(W,E))
+               row=3, column=3, sticky=(W,E))
                    
                    
         ### Color map ###

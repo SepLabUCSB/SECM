@@ -596,31 +596,53 @@ class Plotter(Logger):
         self.update_fig1()
         
     def zoom_in(self):
-        minval = float(self.master.GUI.heatmap_min_val.get())
-        maxval = float(self.master.GUI.heatmap_max_val.get())
-        mean = (maxval + minval) / 2
-        diff = (maxval - minval) / 2
-        diff *= 0.5
-        new_minval = mean - diff
-        new_maxval = mean + diff
-        self.master.GUI.heatmap_min_val.set(f'{new_minval:0.3g}')
-        self.master.GUI.heatmap_max_val.set(f'{new_maxval:0.3g}')  
-        self.force_minmax = True
+        'Make the heatmap color scale smaller by 10%'
+        self._zoom_bound('upper', 'subtract')
+        self._zoom_bound('lower', 'add')
         self.update_fig1()
     
     def zoom_out(self):
-        minval = float(self.master.GUI.heatmap_min_val.get())
-        maxval = float(self.master.GUI.heatmap_max_val.get())
-        mean = (maxval + minval) / 2
-        diff = (maxval - minval) / 2
-        diff *= 1.5
-        new_minval = mean - diff
-        new_maxval = mean + diff
-        self.master.GUI.heatmap_min_val.set(f'{new_minval:0.3g}')
-        self.master.GUI.heatmap_max_val.set(f'{new_maxval:0.3g}') 
-        self.force_minmax = True
+        'Make the heatmap color scale larger by 10%'
+        self._zoom_bound('upper', 'add')
+        self._zoom_bound('lower', 'subtract')
         self.update_fig1()
+    
+    def zoom_lower_add(self):
+        'Add 10% to lower heatmap color scale bound'
+        self._zoom_bound('lower', 'add')
+        self.update_fig1()
+    
+    def zoom_lower_subt(self):
+        'Subtract 10% to lower heatmap color scale bound'
+        self._zoom_bound('lower', 'subtract')
+        self.update_fig1()
+    
+    def zoom_upper_add(self):
+        'Add 10% to upper heatmap color scale bound'
+        self._zoom_bound('upper', 'add')
+        self.update_fig1()
+    
+    def zoom_upper_subt(self):
+        'Subtract 10% to upper heatmap color scale bound'
+        self._zoom_bound('upper', 'subtract')
+        self.update_fig1()
+    
+    def _zoom_bound(self, bound, direction):
+        minval = self.master.GUI.heatmap_min_val
+        maxval = self.master.GUI.heatmap_max_val
+                
+        val = minval if bound == 'lower' else maxval
         
+        floatval = float(val.get())
+        delta = float(maxval.get()) - float(minval.get())
+        if direction == 'add':
+            floatval += abs(0.1*delta)
+        elif direction == 'subtract':
+            floatval -= abs(0.1*delta)
+        
+        val.set(f'{floatval:0.3g}')
+        self.force_minmax = True
+    
         
     def cancel_popup(self):
         # Reset minval and maxval to None
