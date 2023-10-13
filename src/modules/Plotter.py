@@ -443,7 +443,7 @@ class Plotter(Logger):
         
         if option == value == None:
             option = self.master.GUI.heatmapselection.get()
-            value = self.master.GUI.HeatMapDisplayParam.get('1.0', 'end')
+            value = self.master.GUI.HeatMapDisplayParam.get()
         
         if option == 'Max. current':
             pts = expt.get_heatmap_data('max')
