@@ -487,7 +487,9 @@ class GUI(Logger):
         cmaps = ['viridis', 'hot', 'gist_gray', 'afmhot', 'plasma', 'inferno', 
                  'magma', 'cividis','Greys', 'Purples', 'Blues', 'Greens', 
                  'Oranges', 'Reds', 'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 
-                 'BuPu','GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn']
+                 'BuPu','GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn',
+                 'PiYG', 'PRGn', 'BrBG', 'PuOr', 'RdGy', 'RdBu', 'RdYlBu',
+                 'RdYlGn', 'coolwarm', 'bwr']
         
         
         self.heatmap_cmap = StringVar()
