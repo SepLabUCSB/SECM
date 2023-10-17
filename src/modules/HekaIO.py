@@ -8,7 +8,7 @@ from tkinter import messagebox
 from .FeedbackController import read_heka_data
 from .DataStorage import EISDataPoint
 from ..utils.utils import run, Logger
-from ..utils.EIS_util import generate_tpl
+from ..utils.EIS_util import generate_tpl, get_EIS_sample_rate
 from functools import partial
 
 
@@ -558,7 +558,10 @@ class HekaWriter(Logger):
         '''
         Send command to run single EIS scan
         '''
-        self.send_command('ExecuteSequence _auto_eis')
+        fmax = max(self.EIS_WF_params['f0'], self.EIS_WF_params['f1'])
+        sample_rate = get_EIS_sample_rate(fmax)
+        cmd = f'_auto_eis-{sample_rate//1000}kHz'
+        self.send_command(f'ExecuteSequence {cmd}')
         self.running()
         return
     

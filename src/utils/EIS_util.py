@@ -140,6 +140,17 @@ def optimize_waveform_default(freqs, phases, n_cycles, mVpp):
     return make_time_domain(freqs, phases, n_cycles, mVpp)
 
 
+def get_sample_rate(fmax):
+    '''
+    Returns sampling rate (int) based on maximum recorded frequency
+    '''
+    if fmax <= 2500:
+        return 10000
+    if fmax <= 10000:
+        return 25000
+    if fmax <= 25000:
+        return 100000
+    return 200000
         
 
 def plot_freqs(freqs, amps):
