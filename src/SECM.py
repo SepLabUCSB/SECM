@@ -410,21 +410,28 @@ class GUI(Logger):
         #### FIGURE 2 ####
         ##################    
                  
-        fig2Options = [
-             'V vs t',
-             'I vs t',
-             'I vs V',
-             ]
+        fig2Options = ['V vs t','I vs t','I vs V',]
+        EIS_options = ['Nyquist', '|Z| Bode', 'Phase Bode']
         Label(botfigframe, text='Electrochemistry').grid(column=0, row=0)
+        
+        # Voltammetry view options
         self.fig2selection = StringVar(botfigframe)
         self.fig2typeoptmenu = OptionMenu(botfigframe, self.fig2selection, fig2Options[2], 
                    *fig2Options, command=self.fig_opt_changed)
         self.fig2typeoptmenu.grid(column=0, row=1, sticky=(W,E))
+        
+        # PointsList selection options
         self.fig2ptselection = IntVar(botfigframe)
         self.fig2ptoptmenu = OptionMenu(botfigframe, self.fig2ptselection, 0, 
                     *[0,], command=self.fig_opt_changed)
         self.fig2ptoptmenu.grid(column=1, row=1, sticky=(W,E))                      
-                              
+        
+        # EIS view options
+        self.EIS_view_selection = StringVar()    
+        OptionMenu(botfigframe, self.EIS_view_selection, EIS_options[0],
+                   *EIS_options, command=self.fig_opt_changed).grid(
+                       column=2, row=1, sticky=(W,E))
+                       
         FigureCanvasTkAgg(self.botfig, master=botfigframe
                           ).get_tk_widget().grid(
                                               row=2, column=0,
@@ -648,6 +655,7 @@ class GUI(Logger):
             'Heatmap_minval': self.heatmap_cmap_minval,         # StringVar
             'Heatmap_maxval': self.heatmap_cmap_maxval,         # StringVar
             'fig2selection': self.fig2selection,                # StringVar
+            'fig2EISselection': self.EIS_view_selection,        # StringVar
             'params': {
                 'CV': self.params['CV'],            # dict
                 'amp': self.params['amp'],          # dict

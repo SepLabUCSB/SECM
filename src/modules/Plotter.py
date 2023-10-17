@@ -735,7 +735,7 @@ class Plotter(Logger):
             
         if isinstance(DATAPOINT, EISDataPoint):
             self.FIG2_FORCED = True
-            option = self.master.GUI.params['EIS']['EIS_view_option'].get()
+            option = self.master.GUI.EIS_view_selection.get()
             if option == 'Nyquist':
                 return self.draw_nyquist(DATAPOINT)
             elif option == '|Z| Bode':
@@ -830,6 +830,8 @@ class Plotter(Logger):
         self.set_axlim('fig2', (minimum, maximum), (minimum, maximum))
         self.ax2.set_xlabel(r"Z'/ $\Omega$")
         self.ax2.set_ylabel(r"-Z''/ $\Omega$")
+        self.ax2.xaxis.set_major_locator(matplotlib.ticker.AutoLocator())
+        self.ax2.yaxis.set_major_locator(matplotlib.ticker.AutoLocator())
         self.fig2.tight_layout()
         self.fig2.canvas.draw_idle()
         plt.pause(0.001)
@@ -857,17 +859,14 @@ class Plotter(Logger):
         elif option == 'Phase':
             y = np.angle(Z, deg=True)
             ylabel = r'Phase/ $\degree$'
-            phase_ticks = [-180, -135, -90, -45, 0, 45, 90, 135, 180]
-            self.ax2.set_yticks(phase_ticks)
             self.ax2.set_ylim(min(y)-15, max(y)+15)
-            
         
         self.ln.set_data(x,y)
         self.ln.set_marker('o')
         
         self.ax2.set_xscale('log')
         self.ax2.set_xticks([1e-2,1e-1,1e0,1e1,1e2,1e3,1e4,1e5,1e6])
-        self.ax2.set_xlim(min(x), max(x))
+        self.ax2.set_xlim(min(x) - 0.05*min(x), max(x) + 0.05*max(x))
         self.ax2.set_xlabel('Frequency/ Hz')
         self.ax2.set_ylabel(ylabel)
         

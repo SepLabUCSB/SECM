@@ -67,15 +67,8 @@ def make_EIS_window(gui, master_frame):
     Label(frame, text='Hz').grid(column=3, row=2, sticky=(W))
     Label(frame, text='points').grid(column=3, row=3, sticky=(W))
     Label(frame, text='mVpp').grid(column=3, row=5, sticky=(W))   
-    
-    EIS_selection = StringVar()
-    
-    EIS_options = ['Nyquist', '|Z| Bode', 'Phase Bode']
-    
-    Label(frame, text='Show: ').grid(column=1, row=6, sticky=(E))
-    OptionMenu(frame, EIS_selection, EIS_options[0], *EIS_options,
-               command=gui.fig_opt_changed).grid(column=2, row=6, 
-                                                 columnspan=2, sticky=(E,W))
+        
+    Label(frame, text='').grid(column=2, row=6)
     
     Button(frame, text='Run EIS', command=
             partial(run, gui.run_EIS)).grid(column=2, row=7, columnspan=2,
@@ -90,29 +83,8 @@ def make_EIS_window(gui, master_frame):
                   'f1':f1_field,
                   'n_pts':n_pts_field,
                   'n_cycles':n_cycles_field,
-                  'amp':amp_field,
-                  'EIS_view_option': EIS_selection}
+                  'amp':amp_field}
     
     return EIS_params
-
-
-if __name__ == '__main__':
-    class this_gui:
-        def __init__(self):
-            self.run_CV = lambda x:0
-            self.master = self
-            self.abort = lambda x:0
-            
-    # gui = this_gui()   
-    root = Tk()
-    root.title('test')
-    frame = Frame(root)
-    # frame.grid(column=0, row=0, sticky=(N, S, E, W))
-       
-    EIS_params = make_EIS_window(frame)    
-    print(EIS_params)
-    
-    root.mainloop()
-
 
 
