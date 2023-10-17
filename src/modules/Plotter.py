@@ -819,12 +819,14 @@ class Plotter(Logger):
         
         minimum = min(0, min(min(x), min(y)))
         maximum = max(max(x), max(y))
+        maximum += 0.1*maximum
         
         # Clear old artists
         self.clear_fig2_artists()
         
         self.ln.set_data(x, y)
         self.ln.set_marker('o')
+        self.ax2.set_xscale('linear')
         self.set_axlim('fig2', (minimum, maximum), (minimum, maximum))
         self.ax2.set_xlabel(r"Z'/ $\Omega$")
         self.ax2.set_ylabel(r"-Z''/ $\Omega$")

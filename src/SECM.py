@@ -1026,6 +1026,13 @@ class GUI(Logger):
         self.master.make_ready()
         return
     
+    def run_EIS_corrections(self):
+        eis_params = self.get_EIS_params()
+        self.master.HekaWriter.setup_EIS(*eis_params, force_waveform_rewrite=True)
+        return
+        
+            
+    
     def run_custom(self):
         ''' Run custom, user-set PGF file '''
         self.set_amplifier()

@@ -439,7 +439,13 @@ class FeedbackController(Logger):
         if expt_type == 'CV then EIS':
             # We setup potentiostat settings twice at each point:
             # first for CV then for EIS. Done in run_echems()
-            # Do initial setup for approach
+            
+            # Do EIS setup first to make waveform and check for pre-recorded
+            # EIS correction factors
+            if not self.potentiostat_setup('EIS'):
+                return False
+            
+            # Then do CV setup to set up for approach curve and 1st CV
             return self.potentiostat_setup('CV')
         
         # if expt_type == 'Custom':
