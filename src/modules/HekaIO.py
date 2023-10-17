@@ -447,9 +447,11 @@ class HekaWriter(Logger):
     
     
     def make_EIS_waveform(self, E0, f0, f1, n_pts, n_cycles, amp):
+        sample_rate = get_EIS_sample_rate(max(f0, f1))
+        file = f'D:/SECM/_auto_eis-{sample_rate//1000}kHz_1.tpl'
         applied_freqs = generate_tpl(f0, f1, n_pts, n_cycles, 
-                                     amp, 'D:/SECM/_auto_eis_1.tpl')
-        self.log('Wrote new EIS waveform')
+                                     amp, file)
+        self.log(f'Wrote new EIS waveform to {file}')
         return applied_freqs
     
     
@@ -486,7 +488,6 @@ class HekaWriter(Logger):
         else:
             d = {}
                 
-        
         # Prompt for model circuit
         connected = messagebox.askokcancel('Waveform corrections', 
                                            message=
@@ -496,6 +497,7 @@ class HekaWriter(Logger):
             self.EIS_corrections = None
             return
         
+        self.EIS_WF_params = EIS_WF_params
         
         '''
         Model circuit 10MOhm resistor is in parallel (or series?) with a capacitor
@@ -560,6 +562,7 @@ class HekaWriter(Logger):
         '''
         fmax = max(self.EIS_WF_params['f0'], self.EIS_WF_params['f1'])
         sample_rate = get_EIS_sample_rate(fmax)
+        # Possible sampling rates are 10k, 20k, 40k, 100k, 200k
         cmd = f'_auto_eis-{sample_rate//1000}kHz'
         self.send_command(f'ExecuteSequence {cmd}')
         self.running()

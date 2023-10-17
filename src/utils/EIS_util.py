@@ -104,6 +104,7 @@ def make_time_domain(freqs, phases, n_cycles, mVpp):
         mVpp = [mVpp for _ in freqs]
     
     sample_rate = 50000 # TODO: set this dynamically, choose between i.e. 10, 25, 100kHz
+    sample_rate = get_EIS_sample_rate(max(freqs))
     
     N = (1/min(freqs)) * sample_rate * n_cycles
     N = int(np.ceil(N)) # collect 1 extra point if N is not an integer
@@ -140,14 +141,16 @@ def optimize_waveform_default(freqs, phases, n_cycles, mVpp):
     return make_time_domain(freqs, phases, n_cycles, mVpp)
 
 
-def get_sample_rate(fmax):
+def get_EIS_sample_rate(fmax):
     '''
     Returns sampling rate (int) based on maximum recorded frequency
     '''
     if fmax <= 2500:
         return 10000
+    if fmax <= 5000:
+        return 20000
     if fmax <= 10000:
-        return 25000
+        return 40000
     if fmax <= 25000:
         return 100000
     return 200000
