@@ -45,8 +45,7 @@ def generate_tpl(f0, f1, n_pts, n_cycles, mVpp, fname, Z=None):
     # if Z is None:
     #     v = make_time_domain(freqs, phases, mVpp)
     # else:
-    v = optimize_waveform_default(freqs, phases, n_cycles, mVpp)
-        
+    v = optimize_waveform_default(freqs, phases, n_cycles, mVpp)  
     write_tpl_file(v, fname)
     # print(f'Wrote waveform to {fname}')
     return freqs

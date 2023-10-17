@@ -406,14 +406,15 @@ class HekaWriter(Logger):
         self.running()
       
 
-    def setup_EIS(self, E0, f0, f1, n_pts, n_cycles, amp):
+    def setup_EIS(self, E0, f0, f1, n_pts, n_cycles, amp,
+                  force_waveform_rewrite = False):
         '''
         Set amplifier to hold DC bias
         Set filters
         Update EIS parameters in PATCHMASTER
         '''
         if self.isRunning(): return
-        values, duration = generate_EIS_params(E0/1000, n_cycles*min(f0, f1))
+        values, duration = generate_EIS_params(E0/1000, n_cycles*1/min(f0, f1))
         
         self.running()
         
@@ -435,9 +436,9 @@ class HekaWriter(Logger):
         EIS_WF_params = {'E0':E0, 'f0':f0, 'f1':f1, 'n_pts':n_pts, 
                          'n_cycles': n_cycles, 'amp':amp}
         
-        if EIS_WF_params != self.EIS_WF_params:
+        if (EIS_WF_params != self.EIS_WF_params) or force_waveform_rewrite:
             self.EIS_applied_freqs = self.make_EIS_waveform(E0, f0, f1, n_pts, n_cycles, amp)
-            self.check_EIS_corrections(EIS_WF_params)
+            self.check_EIS_corrections(EIS_WF_params, forced=force_waveform_rewrite)
         
         self.EIS_WF_params = EIS_WF_params
         self.idle()
@@ -452,11 +453,12 @@ class HekaWriter(Logger):
         return applied_freqs
     
     
-    def check_EIS_corrections(self, EIS_WF_params):
+    def check_EIS_corrections(self, EIS_WF_params, forced=False):
         '''
         Checks if the current waveform is in the stored corrections file.
         
         If it is, take its correction factors from the file.
+        If forced == True, re-record correction factors
         
         Otherwise, prompt user to plug in the model circuit to record
         a reference waveform
@@ -478,7 +480,7 @@ class HekaWriter(Logger):
         file  = 'src/utils/EIS_waveforms.json'
         if os.path.exists(file):
             d = json.load(open(file, 'r'))
-            if key in d:
+            if (key in d) and not forced:
                 self.EIS_corrections = d[key]
                 return
         else:
