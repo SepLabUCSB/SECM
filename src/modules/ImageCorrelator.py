@@ -51,9 +51,9 @@ class ImageCorrelator(Logger):
         self.fig.add_subplot(111)
         self.ax = self.fig.gca()
         
+        self.image1 = self.ax.imshow(self.img, cmap='gray', origin='upper',
+                                     alpha=0.5)
         
-        
-        self.image1 = self.ax.imshow(self.img, cmap='gray', origin='upper')
         self.ax.set_xticks([])
         self.ax.set_yticks([])
         for sp in ['right', 'top', 'left', 'bottom']:
@@ -80,7 +80,7 @@ class ImageCorrelator(Logger):
         # Make other buttons in popup
         Button(self.topframe, text='\n     Reset     \n', command=self.reset).grid(
             row=0, column=0, sticky=(W,E), )
-        Button(self.topframe, text='\n     Draw Grid     \n', command=self.draw_grid
+        Button(self.topframe, text='\n     Draw Overlay     \n', command=self.draw_overlay
                ).grid(row=0, column=1, sticky=(W,E))
         Button(self.topframe, text='\n     Rotate 180     \n', command=self.rotate_180
                ).grid(row=0, column=2, sticky=(W,E))
@@ -304,6 +304,26 @@ class ImageCorrelator(Logger):
         self.fig.canvas.draw_idle()
         plt.pause(0.01)
         
+    
+    def draw_overlay(self):
+        '''
+        Pull heatmap data from master.Plotter.image1 and plot it on top of
+        the loaded SEM image
+        '''
+        data = self.master.Plotter.image1.get_array()
+        cmap = self.master.Plotter.image1.cmap
+        
+        if not hasattr(self, 'image2'):
+            self.image2 = self.ax.imshow(data, cmap='viridis',
+                                     origin='upper', aspect='auto', alpha=0.3)
+        
+        self.image2.set_data(data)
+        self.image2.set(cmap = cmap)
+        self.image2.set(extent = self.image1.get_extent())
+        
+        self.ax.draw_artist(self.image2)
+        self.fig.canvas.draw_idle()
+        plt.pause(0.001)
         
 
 
