@@ -113,12 +113,13 @@ class MasterModule(Logger):
     Submodules should check for master.ABORT to break out of loops.
    
     '''
-    def __init__(self, TEST_MODE):
+    def __init__(self, TEST_MODE, channel):
         # TEST_MODE: bool, True = record fake data
         self.willStop   = False
         self.STOP       = False
         self.ABORT      = False
         self.TEST_MODE  = TEST_MODE
+        self.channel    = channel
         
         self.modules    = [self]
         
@@ -131,6 +132,7 @@ class MasterModule(Logger):
     def register(self, module):
         # register a submodule to master
         setattr(self, module.__class__.__name__, module)
+        setattr(module, 'channel', self.channel)
         self.modules.append(getattr(self, module.__class__.__name__))
         self.log(f'Loaded {module.__class__.__name__}')
     
@@ -139,7 +141,7 @@ class MasterModule(Logger):
         self.check_save()
         self.expt = expt
         title = name if name else 'SECM Controller'
-        self.GUI.root.title(title)
+        # self.GUI.root.title(title)
             
     
     
@@ -245,9 +247,11 @@ class MasterGUI(Logger):
     
     Console and menu bar are shared between channels.
     '''
-    def __init__(self, root, master):
-        self.master = master
-        self.master.register(self)
+    def __init__(self, root, master1, master2):
+        self.master1 = master1
+        self.master1.register(self)
+        self.master2 = master2
+        self.master2.register(self)
         self.willStop = False
         
         self.root = root
@@ -312,8 +316,11 @@ class MasterGUI(Logger):
         self.channel_tabs.add(channel2_frame, text='Channel 2')
         self.channel_tabs.pack(expand=1, fill='both')
         
-        ch1 = ChannelTab(channel1_frame, self.master)
-        ch2 = ChannelTab(channel2_frame, self.master)
+        ch1 = GUI(channel1_frame, self.master1)
+        ch2 = GUI(channel2_frame, self.master2)
+        
+        ch1._update_piezo_display()
+        ch2._update_piezo_display()
         
         self.channels = [ch1, ch2]
         
@@ -377,21 +384,21 @@ class GUI(Logger):
     Graphical user interface
     '''
     
-    def __init__(self, root, master):
+    def __init__(self, notebook_frame, master):
         self.master = master
         self.master.register(self)
         self.willStop = False
         
-        self.root = root
+        self.notebook_frame = notebook_frame
         self.params = {} # master dict to store all parameters
         self.amp_params = {} # stores current state of amplifier
         
         # Left panel: potentiostat/ SECM parameters
-        leftpanel = Frame(self.root)
+        leftpanel = Frame(self.notebook_frame)
         leftpanel.grid(row=1, column=0, sticky=(N,S,W,E))
         
         # Right panel: Figures
-        rightpanel = Frame(self.root)
+        rightpanel = Frame(self.notebook_frame)
         rightpanel.grid(row=1, column=1, sticky=(N,S,W,E))
         
         abortbuttonframe = Frame(leftpanel)
@@ -775,7 +782,7 @@ class GUI(Logger):
         
         # Update point selection dropdown field
         self.update_fig2_dropdowns()        
-        self.root.after(250, self._update_piezo_display)
+        self.notebook_frame.after(250, self._update_piezo_display)
         
         
     def update_fig2_dropdowns(self):
@@ -792,17 +799,7 @@ class GUI(Logger):
             menu.delete(0, 'end')
             opts = [i for i in range(max_pts)]
             self.fig2ptoptmenu.set_menu(opts[0], *opts)
-            
-        # Set dropdown to select display type (I/V/t or EIS-type)
-        # if hasattr(self.master.Plotter, 'fig2_datapoint'):
-        #     if isinstance(self.master.Plotter.fig2_datapoint, EISDataPoint):
-        #         desired_optlist = ['Nyquist', 'Bode Z', 'Bode Phase']
-        #         if not all([opt in self.fig2typeoptmenu for opt in desired_optlist]):
-                    
-        #         pass
-        #     else:
-        #         menu =
-                
+                            
             
             
         
@@ -1288,40 +1285,43 @@ class GUI(Logger):
 
 
 def run_main():
-    try:
-        master = MasterModule(TEST_MODE = TEST_MODE)
-        reader = HekaReader(master)
-        writer = HekaWriter(master)
-        adc    = ADC(master)
-        piezo  = Piezo(master)
-        motor  = PicoMotor(master)
-        corr   = ImageCorrelator(master)
-        fbc    = FeedbackController(master) # must be loaded last
     
-    except Exception as e:
-        print('Error loading modules: ')
-        print(e)
-        sel = input('Load in test mode? (y/n) >>>')
-        if sel != 'y':
-            sys.exit()
-        master = MasterModule(TEST_MODE = True)
-        reader = HekaReader(master)
-        writer = HekaWriter(master)
-        adc    = ADC(master)
-        piezo  = Piezo(master)
-        motor  = PicoMotor(master)
-        corr   = ImageCorrelator(master)
-        fbc    = FeedbackController(master) # must be loaded last
+    # Channel 1
+    master1 = MasterModule(TEST_MODE = TEST_MODE, channel=1)
+    adc1    = ADC(master1)
+    piezo1  = Piezo(master1)
+    motor1  = PicoMotor(master1)
+    corr1   = ImageCorrelator(master1)
+    reader = HekaReader(master1)
+    writer = HekaWriter(master1)
+    fbc1    = FeedbackController(master1) # must be loaded last
+
+
+    # Channel 2
+    master2 = MasterModule(TEST_MODE = TEST_MODE, channel=2)
+    adc2    = ADC(master2)
+    piezo2  = Piezo(master2)
+    motor2  = PicoMotor(master2)
+    corr2   = ImageCorrelator(master2)
+    reader = HekaReader(master2)
+    writer = HekaWriter(master2)
+    fbc2    = FeedbackController(master2) # must be loaded last
     
+    
+    # Shared modules
+    reader = HekaReader(master1)
+    writer = HekaWriter(master1)
     root = Tk()
-    
+
     try:
-        gui = GUI(root, master)
-        if master.TEST_MODE:
-            print('\nWarning: controller loaded in test mode! Can view data, but cannot control instrument.\n')
+        gui = MasterGUI(root, master1, master2)
+        for m in (master1, master2):
+            if m.TEST_MODE:
+                print('\nWarning: controller loaded in test mode! Can view data, but cannot control instrument.\n')
         
         # gui._update_piezo_display()
-        root.after(1000, master.Plotter.update_figs)
+        root.after(1000, master1.Plotter.update_figs)
+        root.after(1000, master2.Plotter.update_figs)
         # root.after(1000, master.malloc_snapshot)
         root.mainloop()
         root.quit()
@@ -1340,11 +1340,12 @@ def run_main():
         print(traceback.format_exc())
         root.quit()
         gui.willStop = True
-
-    if not master.TEST_MODE:
-        adc.stop()
-        piezo.stop()
-        motor.stop()
+    
+    for m in (master1, master2):
+        if not m.TEST_MODE:
+            m.ADC.stop()
+            m.Piezo.stop()
+            m.PicoMotor.stop()
     
     sys.stdout = default_stdout
     sys.stdin  = default_stdin

@@ -387,7 +387,7 @@ class Plotter(Logger):
             self.log(f'Error updating echem figure!')
             self.log(e)
         
-        self.master.GUI.root.after(100, self.update_figs)
+        self.master.GUI.notebook_frame.after(100, self.update_figs)
         return
     
     
@@ -655,7 +655,7 @@ class Plotter(Logger):
         # Opens a window where user can choose what function to apply
         # to each datapoint in the heatmap
         if not hasattr(self, 'AnalysisFuncSelector'):
-            self.AnalysisFuncSelector = AnalysisFunctionSelector(self.master.GUI.root)
+            self.AnalysisFuncSelector = AnalysisFunctionSelector(self.master.GUI.notebook_frame)
         func = self.AnalysisFuncSelector.get_selection()
         self.analysis_function = func
 

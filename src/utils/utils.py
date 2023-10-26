@@ -52,11 +52,12 @@ class Logger():
         t   = datetime.datetime.now()
         log_time = t.strftime('%Y%m%d-%H:%M:%S.%f')
         prnt_time = t.strftime('%H:%M:%S')
+        channel = self.channel
         module = self.__class__.__name__[:12]
         
         if not quiet:
-            print(f'{prnt_time} | {module.ljust(12)} | {string}')
-        msg = f'{log_time} | {module.ljust(12)} | {string}\n'
+            print(f'{prnt_time} | {module.ljust(12)} | Ch{channel} | {string}')
+        msg = f'{log_time} | {module.ljust(12)} | Ch{channel} | {string}\n'
         
         with open(self.LOG_FILE, 'a') as f:
             f.write(msg)
