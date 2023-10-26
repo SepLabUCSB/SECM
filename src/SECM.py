@@ -230,6 +230,10 @@ class PrintLogger():
         for msg in ('Warning', 'warning', 'Error', 'error'):
             if msg in text:
                 color='red'
+        if 'Found surface' in text:
+            color='blue'
+        if 'Finished running' in text:
+            color='green'
         self.textbox.insert(END, text, color) # write text to textbox
         self.textbox.see('end') # scroll to end
 
@@ -614,6 +618,7 @@ class GUI(Logger):
         Label(piezo_control, textvariable=self._y_display).grid(row=0, column=3, sticky=(W,E))
         Label(piezo_control, text='  Z:').grid(row=0, column=4, sticky=(W,E))
         Label(piezo_control, textvariable=self._z_display).grid(row=0, column=5, sticky=(W,E))
+        Label(piezo_control, text= ' (μm)').grid(row=0, column=6, sticky=(W))
         
         Entry(piezo_control, textvariable=self._x_set, width=6).grid(row=1, column=0, columnspan=2, sticky=(W,E))
         Entry(piezo_control, textvariable=self._y_set, width=6).grid(row=1, column=2, columnspan=2, sticky=(W,E))
@@ -635,7 +640,7 @@ class GUI(Logger):
         Entry(z_piezo_control, textvariable=self._y_piezosteps, width=8).grid(row=1, column=1, sticky=(W,E))
         Button(z_piezo_control, text='Go Y', command=self.y_piezo_go).grid(row=1, column=2, sticky=(W,E))
         
-        Label(z_piezo_control, text='(1 step = ~30 nm)').grid(row=0, column=3, sticky=(W))
+        Label(z_piezo_control, text='(1000 steps = ~30 μm)').grid(row=0, column=3, sticky=(W))
         Button(z_piezo_control, text='Stop', command=self.z_piezo_stop).grid(row=2, column=1, columnspan=2, sticky=(W,E))
         
         
@@ -994,6 +999,9 @@ class GUI(Logger):
         return E0, E1, E2, E3, v, t0
     
     def run_CV(self):
+        if self.master.Piezo.isMoving():
+            self.log('Error: cannot run CV while piezo is moving')
+            return
         self.set_amplifier()
         E0, E1, E2, E3, v, t0 = self.get_CV_params()
         self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
@@ -1002,6 +1010,7 @@ class GUI(Logger):
         if DataPoint:
             self.master.ADC.force_data(DataPoint)
         self.master.make_ready()
+        self.log('Finished running CV.')
         return path
     
     
@@ -1023,6 +1032,9 @@ class GUI(Logger):
         return E0, f0, f1, n_pts, n_cycles, amp
     
     def run_EIS(self):
+        if self.master.Piezo.isMoving():
+            self.log('Error: cannot run EIS while piezo is moving')
+            return
         eis_params = self.get_EIS_params()
         self.master.HekaWriter.setup_EIS(*eis_params)
         path = self.master.HekaWriter.run_measurement_loop('EIS')
@@ -1032,6 +1044,7 @@ class GUI(Logger):
         if DataPoint:
             self.master.ADC.force_data(DataPoint)
         self.master.make_ready()
+        self.log('Finished running EIS')
         return
     
     def run_EIS_corrections(self):
@@ -1043,6 +1056,9 @@ class GUI(Logger):
     
     def run_custom(self):
         ''' Run custom, user-set PGF file '''
+        if self.master.Piezo.isMoving():
+            self.log('Error: cannot run custom waveform while piezo is moving')
+            return
         self.set_amplifier()
         E0, E1, E2, E3, v, t0 = self.get_CV_params()
         self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
@@ -1051,6 +1067,7 @@ class GUI(Logger):
         if DataPoint:
             self.master.ADC.force_data(DataPoint)
         self.master.make_ready()
+        self.log('Finished running Custom.')
         return path
     
     
@@ -1078,6 +1095,9 @@ class GUI(Logger):
         
     
     def run_hopping(self):
+        if self.master.Piezo.isMoving():
+            self.log('Error: cannot run hopping mode while piezo is moving')
+            return
         self.set_amplifier()
         func = partial(self.master.FeedbackController.hopping_mode,
                         self.params['hopping'])
@@ -1085,6 +1105,9 @@ class GUI(Logger):
         
     
     def run_multi_hopping(self):
+        if self.master.Piezo.isMoving():
+            self.log('Error: cannot run hopping mode while piezo is moving')
+            return
         popup = HoppingPopup(self)
         popup.make_popup()
         if not popup.ready:

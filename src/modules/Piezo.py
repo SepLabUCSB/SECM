@@ -26,6 +26,10 @@ class Piezo(Logger):
             self.setup_piezo()
     
     
+    def isMoving(self):
+        return self._moving
+    
+    
     def stop(self):
         if not hasattr(self, 'port'):
             return
