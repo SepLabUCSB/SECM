@@ -99,6 +99,7 @@ plt_style_dict = {
     }
 plt.style.use(plt_style_dict)
 
+
 class MasterModule(Logger):
     '''
     MasterModule controlls all submodules and lets them communicate with each other.
@@ -238,7 +239,7 @@ class PrintLogger():
     
 
 
-class GUI(Logger):
+class MasterGUI(Logger):
     '''
     Main GUI window. Has tabs for each channel.
     
@@ -279,16 +280,16 @@ class GUI(Logger):
         menu_settings.add_command(label='Save settings...', command=self.save_settings)
         menu_settings.add_command(label='Load settings...', command=self.load_settings)
         
-        # menu_analysis.add_command(label='Set analysis function...', command=self.set_analysis_func)
+        menu_analysis.add_command(label='Set analysis function...', command=self.set_analysis_func)
         
-        # menu_image.add_command(label='Export heatmap...', command=self.export_heatmap)
-        # menu_image.add_command(label='Export echem figure...', command=self.export_echem_fig)
-        # menu_image.add_command(label='Export heatmap data...', command=self.export_heatmap_data)
-        # menu_image.add_command(label='Export echem data...', command=self.export_echem_fig_data)
+        menu_image.add_command(label='Export heatmap...', command=self.export_heatmap)
+        menu_image.add_command(label='Export echem figure...', command=self.export_echem_fig)
+        menu_image.add_command(label='Export heatmap data...', command=self.export_heatmap_data)
+        menu_image.add_command(label='Export echem data...', command=self.export_echem_fig_data)
         
         menu_image_corr.add_command(label='Load SEM image...', command=self.load_SEM_image)
-        
-        
+              
+                
         # Set up main Frames
         # main_panel: top frame containing channel tabs
         # console_panel: bottom frame containing console
@@ -303,203 +304,75 @@ class GUI(Logger):
         sys.stdout = pl
         
         # Add Tabs to main_panel for each channel
-        channel_tabs   = Notebook(main_panel)
-        channel_tabs.grid(row=0, column=0, sticky=(N,S,W,E))
-        channel1_frame = Frame(channel_tabs)
-        channel2_frame = Frame(channel_tabs)
-        channel_tabs.add(channel1_frame, text='Channel 1')
-        channel_tabs.add(channel2_frame, text='Channel 2')
-        channel_tabs.pack(expand=1, fill='both')
+        self.channel_tabs   = Notebook(main_panel)
+        self.channel_tabs.grid(row=0, column=0, sticky=(N,S,W,E))
+        channel1_frame = Frame(self.channel_tabs)
+        channel2_frame = Frame(self.channel_tabs)
+        self.channel_tabs.add(channel1_frame, text='Channel 1')
+        self.channel_tabs.add(channel2_frame, text='Channel 2')
+        self.channel_tabs.pack(expand=1, fill='both')
         
-        ChannelTab(channel1_frame, self.master)
-        ChannelTab(channel2_frame, self.master)
+        ch1 = ChannelTab(channel1_frame, self.master)
+        ch2 = ChannelTab(channel2_frame, self.master)
+        
+        self.channels = [ch1, ch2]
+        
+        
+    # Get the currently selected channel tab object
+    def active_tab(self):
+        index = self.channel_tabs.index(self.channel_tabs.select())
+        return self.channels[index]
+        
     
-    # create new measurement file
+    # MENU CALLBACKS GET PASSED TO ACTIVE CHANNEL TAB
     def newFile(self):
-        pass
+        return self.active_tab().newFile()
     
-    # load previous data
     def openFile(self):
-        f = filedialog.askopenfilename(initialdir='D:\SECM\Data')
-        if not f.endswith('.secmdata'):
-            return
-        expt = load_from_file(f)
-        self.master.set_expt(expt, name=f.split('/')[-1])
-        self.master.Plotter.load_from_expt(expt)
-        if hasattr(expt, 'settings') and expt.settings is not None:
-            answer = messagebox.askyesno('Load settings', 
-                          'Load settings associated with this experiment file?')
-            if answer:
-                self.load_settings(expt.settings)
+        return self.active_tab().openFile()
             
-    
-    # save current file to disk
     def save(self):
-        if self.master.expt:
-            settings = self.save_settings(ask_prompt=False)
-            self.master.expt.save_settings(settings)
-            if self.master.expt.path == 'temp.secmdata':
-                return self.saveAs()
-            self.master.expt.save()
+        return self.active_tab().save()
     
-    # save current file under new path
     def saveAs(self):
-        if self.master.expt:
-            settings = self.save_settings(ask_prompt=False)
-            self.master.expt.save_settings(settings)
-            f = filedialog.asksaveasfilename(
-                defaultextension='.secmdata', initialdir='D:\SECM\Data')
-            if not f: return
-            self.master.expt.save(f)
+        return self.active_tab().saveAs()
             
-    # export current file to folder of CSV's for each data point
     def export(self):
-        if self.master.expt:
-            f = filedialog.askdirectory(
-                title='Select folder to save to',
-                initialdir='D:\SECM\Data', mustexist=False)
-            if not f: return
+        return self.active_tab().export()
             
-            if os.path.exists(f):
-                if len(os.listdir(f)) > 0:
-                    confirm = messagebox.askyesno('Save to existing folder?',
-                              'Warning! Folder already exists and is not empty. Data in folder may be overwritten. Continue saving?')
-                    if not confirm:
-                        return
-            
-            self.master.expt.save_to_folder(f)
-            
-    
     def savePrevious(self):
-        if self.master.TEST_MODE: return
-        answer = messagebox.askyesno('Save previous?', 
-                          'Do you want to save the unsaved data?')
-        if not answer:
-            return
-        self.saveAs()
-                          
-    
-    # Exit program
+        return self.active_tab().savePrevious()
+                     
     def Quit(self):
-        self.root.destroy()
-    
+        return self.active_tab().Quit()
     
     def save_settings(self, ask_prompt=True):
-        '''
-        Convert all user-input fields to a dictionary. Return that settings
-        dictionary and (optionally) prompt user to save it to a json file
-        '''
-        def convert_field(field):
-            if isinstance(field, StringVar):
-                return field.get()
-            elif isinstance(field, Text):
-                return field.get('1.0', 'end').rstrip('\n')
-            return None
-
-        def convert_all(d):
-            # Recursively iterate through settings dict and sub-dicts
-            d2 = dict() # Copy everything to a new output dict to avoid
-                        # modifying self.__settings
-            for key, value in d.items():
-                if isinstance(value, dict):
-                    d2[key] = convert_all(value)
-                    continue
-                d2[key] = convert_field(value)
-            return d2
-        
-        settings = convert_all(self.__settings)
-        if ask_prompt:
-            SETTINGS_FILE = filedialog.asksaveasfilename(initialdir='settings/',
-                                                     defaultextension='.json')
-            if SETTINGS_FILE:
-                with open(SETTINGS_FILE, 'w') as f:
-                    json.dump(settings, f)
-                
-        return settings
+        return self.active_tab().save_settings(ask_prompt=ask_prompt)
           
-    
-    
     def load_settings(self, loaded = None):
-        '''
-        loaded: dictionary of settings
-        
-        Load user-input field values from a dictionary or from a (prompted) 
-        json file
-        '''
-        if loaded is None:
-            if not os.path.exists('./settings/'):
-                os.mkdir('./settings')
-            SETTINGS_FILE = filedialog.askopenfilename(initialdir='./settings/')
-            if not SETTINGS_FILE: return
-            with open(SETTINGS_FILE, 'r') as f:
-                loaded = json.load(f)
-        
-        
-        def set_value(field, value):
-            if isinstance(field, StringVar):
-                field.set(value)
-            if isinstance(field, Text):
-                field.delete('1.0', 'end')
-                field.insert('1.0', value)
-
-        def set_all(settings_dict, loaded_dict):
-            # Recursively iterate through settings dict and sub-dicts
-            for key in settings_dict:
-                if key not in loaded_dict:
-                    # Backwards compatibility - may not have had this field
-                    # in the past.
-                    continue
-                field = settings_dict[key]
-                value = loaded_dict[key]
-                if isinstance(value, dict):
-                    settings_dict[key] = set_all(settings_dict[key], value)
-                    continue
-                set_value(settings_dict[key], value)
-            return settings_dict
-        
-        set_all(self.__settings, loaded)
-        
-        return
+        return self.active_tab().load_settings(loaded=loaded)
     
+    def set_analysis_func(self):
+        return self.active_tab().set_analysis_func()
     
     def export_heatmap(self):
-        if not hasattr(self, 'ExporterGenerator'):
-            self.ExporterGenerator = ExporterGenerator()
-        exporter = self.ExporterGenerator.get('Heatmap', self, self.master.Plotter.data1.copy())
-        
+        return self.active_tab().export_heatmap()
         
     def export_echem_fig(self):
-        if not hasattr(self, 'ExporterGenerator'):
-            self.ExporterGenerator = ExporterGenerator()
-        self.ExporterGenerator.get('Echem', self, self.master.Plotter.ln.get_xydata())
-        
+        return self.active_tab().export_echem_fig()
         
     def export_heatmap_data(self):
-        print('Heatmap data export not implemented')
+        return self.active_tab().export_heatmap_data()
     
     def export_echem_fig_data(self):
-        path = filedialog.asksaveasfilename(defaultextension='.csv')
-        if not path:
-            return
-        # Clear file
-        with open(path, 'w') as f:
-            f.close()
-        pt = self.master.Plotter.fig2DataPoint
-        if str(pt) == 'PointsList':
-            idx = self.fig2ptselection.get()
-            pt = pt[idx]
-        pt._save(path)        
-        self.log(f'Saved to {path}')
-        
+        return self.active_tab().export_echem_fig_data()
+    
     def load_SEM_image(self):
-        f = filedialog.askopenfilename()
-        if not f:
-            return
-        self.master.ImageCorrelator.load_image(f)
+        return self.active_tab().load_SEM_image()
      
         
 
-class ChannelTab(Logger):
+class GUI(Logger):
     '''
     Graphical user interface
     '''
@@ -512,7 +385,7 @@ class ChannelTab(Logger):
         self.root = root
         self.params = {} # master dict to store all parameters
         self.amp_params = {} # stores current state of amplifier
-              
+        
         # Left panel: potentiostat/ SECM parameters
         leftpanel = Frame(self.root)
         leftpanel.grid(row=1, column=0, sticky=(N,S,W,E))
@@ -935,6 +808,189 @@ class ChannelTab(Logger):
         
     ########## GUI CALLBACKS ###########    
     
+    # create new measurement file
+    def newFile(self):
+        print(self)
+        pass
+    
+    # load previous data
+    def openFile(self):
+        f = filedialog.askopenfilename(initialdir='D:\SECM\Data')
+        if not f.endswith('.secmdata'):
+            return
+        expt = load_from_file(f)
+        self.master.set_expt(expt, name=f.split('/')[-1])
+        self.master.Plotter.load_from_expt(expt)
+        if hasattr(expt, 'settings') and expt.settings is not None:
+            answer = messagebox.askyesno('Load settings', 
+                          'Load settings associated with this experiment file?')
+            if answer:
+                self.load_settings(expt.settings)
+            
+    
+    # save current file to disk
+    def save(self):
+        if self.master.expt:
+            settings = self.save_settings(ask_prompt=False)
+            self.master.expt.save_settings(settings)
+            if self.master.expt.path == 'temp.secmdata':
+                return self.saveAs()
+            self.master.expt.save()
+    
+    # save current file under new path
+    def saveAs(self):
+        if self.master.expt:
+            settings = self.save_settings(ask_prompt=False)
+            self.master.expt.save_settings(settings)
+            f = filedialog.asksaveasfilename(
+                defaultextension='.secmdata', initialdir='D:\SECM\Data')
+            if not f: return
+            self.master.expt.save(f)
+            
+    # export current file to folder of CSV's for each data point
+    def export(self):
+        if self.master.expt:
+            f = filedialog.askdirectory(
+                title='Select folder to save to',
+                initialdir='D:\SECM\Data', mustexist=False)
+            if not f: return
+            
+            if os.path.exists(f):
+                if len(os.listdir(f)) > 0:
+                    confirm = messagebox.askyesno('Save to existing folder?',
+                              'Warning! Folder already exists and is not empty. Data in folder may be overwritten. Continue saving?')
+                    if not confirm:
+                        return
+            
+            self.master.expt.save_to_folder(f)
+            
+    
+    def savePrevious(self):
+        if self.master.TEST_MODE: return
+        answer = messagebox.askyesno('Save previous?', 
+                          'Do you want to save the unsaved data?')
+        if not answer:
+            return
+        self.saveAs()
+                          
+    
+    # Exit program
+    def Quit(self):
+        self.root.destroy()
+    
+    
+    def save_settings(self, ask_prompt=True):
+        '''
+        Convert all user-input fields to a dictionary. Return that settings
+        dictionary and (optionally) prompt user to save it to a json file
+        '''
+        def convert_field(field):
+            if isinstance(field, StringVar):
+                return field.get()
+            elif isinstance(field, Text):
+                return field.get('1.0', 'end').rstrip('\n')
+            return None
+
+        def convert_all(d):
+            # Recursively iterate through settings dict and sub-dicts
+            d2 = dict() # Copy everything to a new output dict to avoid
+                        # modifying self.__settings
+            for key, value in d.items():
+                if isinstance(value, dict):
+                    d2[key] = convert_all(value)
+                    continue
+                d2[key] = convert_field(value)
+            return d2
+        
+        settings = convert_all(self.__settings)
+        if ask_prompt:
+            SETTINGS_FILE = filedialog.asksaveasfilename(initialdir='settings/',
+                                                     defaultextension='.json')
+            if SETTINGS_FILE:
+                with open(SETTINGS_FILE, 'w') as f:
+                    json.dump(settings, f)
+                
+        return settings
+          
+    
+    
+    def load_settings(self, loaded = None):
+        '''
+        loaded: dictionary of settings
+        
+        Load user-input field values from a dictionary or from a (prompted) 
+        json file
+        '''
+        if loaded is None:
+            if not os.path.exists('./settings/'):
+                os.mkdir('./settings')
+            SETTINGS_FILE = filedialog.askopenfilename(initialdir='./settings/')
+            if not SETTINGS_FILE: return
+            with open(SETTINGS_FILE, 'r') as f:
+                loaded = json.load(f)
+        
+        
+        def set_value(field, value):
+            if isinstance(field, StringVar):
+                field.set(value)
+            if isinstance(field, Text):
+                field.delete('1.0', 'end')
+                field.insert('1.0', value)
+
+        def set_all(settings_dict, loaded_dict):
+            # Recursively iterate through settings dict and sub-dicts
+            for key in settings_dict:
+                if key not in loaded_dict:
+                    # Backwards compatibility - may not have had this field
+                    # in the past.
+                    continue
+                field = settings_dict[key]
+                value = loaded_dict[key]
+                if isinstance(value, dict):
+                    settings_dict[key] = set_all(settings_dict[key], value)
+                    continue
+                set_value(settings_dict[key], value)
+            return settings_dict
+        
+        set_all(self.__settings, loaded)
+        
+        return
+    
+    
+    def export_heatmap(self):
+        if not hasattr(self, 'ExporterGenerator'):
+            self.ExporterGenerator = ExporterGenerator()
+        exporter = self.ExporterGenerator.get('Heatmap', self, self.master.Plotter.data1.copy())
+        
+        
+    def export_echem_fig(self):
+        if not hasattr(self, 'ExporterGenerator'):
+            self.ExporterGenerator = ExporterGenerator()
+        self.ExporterGenerator.get('Echem', self, self.master.Plotter.ln.get_xydata())
+        
+        
+    def export_heatmap_data(self):
+        print('Heatmap data export not implemented')
+    
+    def export_echem_fig_data(self):
+        path = filedialog.asksaveasfilename(defaultextension='.csv')
+        if not path:
+            return
+        # Clear file
+        with open(path, 'w') as f:
+            f.close()
+        pt = self.master.Plotter.fig2DataPoint
+        if str(pt) == 'PointsList':
+            idx = self.fig2ptselection.get()
+            pt = pt[idx]
+        pt._save(path)        
+        self.log(f'Saved to {path}')
+        
+    def load_SEM_image(self):
+        f = filedialog.askopenfilename()
+        if not f:
+            return
+        self.master.ImageCorrelator.load_image(f)
        
      
     ########## DISPLAY FIGURE CALLBACKS ###########
