@@ -270,6 +270,12 @@ class SharedHekaWriter(Logger):
        
         
     def send_multiple_cmds(self, channel, cmds):
+        # Set active amplifier
+        if channel == 1:
+            cmds = ['Set E Ampl1 1'] + cmds
+        if channel == 2:
+            cmds = ['Set E Ampl2 1'] + cmds
+            
         with open(self.file, 'w') as f:
             f.write(f'+{self.num}\n')
             for cmd in cmds:
@@ -283,27 +289,16 @@ class SharedHekaWriter(Logger):
             f.close()
         self.num = 0
     
-    
-    def macro(self, channel, cmd):
-        '''
-        Send a macro command as given in docs/HEKA Macro Commands.txt
-        '''
-        if not self.isRunning():
-            self.running()
-            self.send_command(f'Set {cmd}')
-            self.idle()
-    
-    
-    
+        
     def abort(self, channel):
         # Send commands to halt measurement
         self.idle() # Overwrite self.status
-        self.macro('N Break 1')
-        self.macro('N Stop 1')
+        self.send_multiple_cmds(channel, ['Set N Break 1',
+                                          'Set N Stop 1'])
         self.idle()
-        self.macro('N Break 1')
-        self.macro('N Stop 1')
-        self.macro('N Store 1')
+        self.send_multiple_cmds(channel, ['Set N Break 1',
+                                          'Set N Stop 1',
+                                          'Set N Store 1'])
         self.idle()
     
     
@@ -533,9 +528,9 @@ class SharedHekaWriter(Logger):
         cmds.append('Set E TestDacToStim1 2')   # Turn on external input for Stim-1
         cmds.append('Set E ExtScale 1')         # Set external scale to 1
         cmds.append('Set E Mode 3')
+        cmds.append(f'Set E Vhold {E0}')        # Set DC bias
         self.send_multiple_cmds(cmds)
         
-        self.send_command(f'Set E Vhold {E0}')  # Set DC bias
         time.sleep(1)
         
         # Update pgf fields

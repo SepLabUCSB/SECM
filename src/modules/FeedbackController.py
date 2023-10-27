@@ -168,10 +168,10 @@ class FeedbackController(Logger):
         voltage = self.master.GUI.params['approach']['voltage'].get('1.0', 'end')
         voltage = float(voltage) 
         self.Piezo.goto(80,80,height)
-        self.HekaWriter.macro('E Vhold 0')
+        self.HekaWriter.send_multiple_cmds(['Set E Vhold 0'])
         time.sleep(1)
-        self.HekaWriter.macro('E AutoCFast')
-        self.HekaWriter.macro(f'E Vhold {voltage}')
+        self.HekaWriter.send_multiple_cmds(['E AutoCFast',
+                                            f'E Vhold {voltage}'])
         
         while True:
             if self.master.ABORT:
@@ -243,7 +243,7 @@ class FeedbackController(Logger):
         
         
         # Setup potentiostat and ADC
-        self.HekaWriter.macro(f'E Vhold {voltage}')
+        self.HekaWriter.send_multiple_cmds([f'Set E Vhold {voltage}'])
         gain  = 1e9 * self.master.GUI.amp_params['float_gain']
         srate = 1000
         self.ADC.set_sample_rate(srate)
@@ -514,7 +514,7 @@ class FeedbackController(Logger):
                 return None
             self.HekaWriter.reset_amplifier()
             time.sleep(0.2)
-            self.HekaWriter.send_command(f'Set E Vhold {start_V}')
+            self.HekaWriter.send_multiple_cmds([f'Set E Vhold {start_V}'])
             time.sleep(2)
             EISdata = EISDataPoint(loc = loc, data = [t, voltage, current],
                                    applied_freqs = self.HekaWriter.EIS_applied_freqs,
