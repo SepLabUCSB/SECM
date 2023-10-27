@@ -52,7 +52,10 @@ class Logger():
         t   = datetime.datetime.now()
         log_time = t.strftime('%Y%m%d-%H:%M:%S.%f')
         prnt_time = t.strftime('%H:%M:%S')
-        channel = self.channel
+        try:
+            channel = self.channel
+        except:
+            channel = 0
         module = self.__class__.__name__[:12]
         
         if not quiet:

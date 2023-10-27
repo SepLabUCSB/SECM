@@ -11,7 +11,7 @@ from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib
-from .modules.HekaIO import HekaReader, HekaWriter
+from .modules.HekaIO import HekaReader, HekaWriter, SharedHekaReader, SharedHekaWriter
 from .modules.ADC import ADC
 from .modules.Piezo import Piezo
 from .modules.FeedbackController import FeedbackController, make_datapoint_from_file
@@ -323,8 +323,8 @@ class MasterGUI(Logger):
         ch2._update_piezo_display()
         
         self.channels = [ch1, ch2]
-        
-        
+
+    
     # Get the currently selected channel tab object
     def active_tab(self):
         index = self.channel_tabs.index(self.channel_tabs.select())
@@ -757,9 +757,9 @@ class GUI(Logger):
     
         # Always-running functions
         masterthread    = run(self.master.run)
-        readerthread    = run(self.master.HekaReader.read_stream)
+        # self.master.HekaReader.read_stream()
     
-        self.threads = [masterthread, readerthread]
+        # self.threads = [masterthread, readerthread]
         return
     #################### END __init__ ##############################
     
@@ -807,7 +807,6 @@ class GUI(Logger):
     
     # create new measurement file
     def newFile(self):
-        print(self)
         pass
     
     # load previous data
@@ -1286,14 +1285,19 @@ class GUI(Logger):
 
 def run_main():
     
+    # Shared HEKA communication modules.
+    sharedReader = SharedHekaReader()
+    sharedWriter = SharedHekaWriter()
+    
+    
     # Channel 1
-    master1 = MasterModule(TEST_MODE = TEST_MODE, channel=1)
+    master1 = MasterModule(TEST_MODE = TEST_MODE, channel=1)    
     adc1    = ADC(master1)
     piezo1  = Piezo(master1)
     motor1  = PicoMotor(master1)
     corr1   = ImageCorrelator(master1)
-    reader = HekaReader(master1)
-    writer = HekaWriter(master1)
+    reader1 = HekaReader(master1, sharedReader)
+    writer1 = HekaWriter(master1, sharedWriter)
     fbc1    = FeedbackController(master1) # must be loaded last
 
 
@@ -1303,14 +1307,12 @@ def run_main():
     piezo2  = Piezo(master2)
     motor2  = PicoMotor(master2)
     corr2   = ImageCorrelator(master2)
-    reader = HekaReader(master2)
-    writer = HekaWriter(master2)
+    reader2 = HekaReader(master2, sharedReader)
+    writer2 = HekaWriter(master2, sharedWriter)
     fbc2    = FeedbackController(master2) # must be loaded last
     
+        
     
-    # Shared modules
-    reader = HekaReader(master1)
-    writer = HekaWriter(master1)
     root = Tk()
 
     try:

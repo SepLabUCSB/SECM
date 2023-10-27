@@ -27,8 +27,39 @@ gl_st = time.time()
         #####     HEKA READER CLASS      #####                            
         #####                            #####
         ######################################
-        
+
+
 class HekaReader(Logger):
+    'Pass all commands to module shared between channels'
+    def __init__(self, master, sharedReader):
+        self.master = master
+        self.master.register(self) # Also sets self.channel
+        self.willStop = False
+        
+        self.Reader = sharedReader
+    
+    def PatchmasterRunning(self):
+        self.Reader.PatchmasterRunning(self.channel)
+            
+    def read_stream(self):
+        run(self.Reader.read_stream)
+        run(self.check_for_stop)
+    
+    def check_for_stop(self):
+        while True:
+            if self.master.STOP:
+                self.Reader.STOP = True
+                break
+        self.log('Stopping')
+        
+    def get_last(self):
+        'Returns most recent output from Patchmaster'
+        return self.Reader.last
+        
+
+
+        
+class SharedHekaReader(Logger):
     '''
     Class for reading PATCHMASTER's responses in /E9Batch.Out
     
@@ -36,33 +67,21 @@ class HekaReader(Logger):
     immediately after a command is sent, because it could get overwritten
     by a subsequent message
     '''
-    def __init__(self, master, output_file=output_file):
-        self.master = master
-        self.master.register(self)
+    def __init__(self, output_file=output_file):
         self.file = output_file
         self.last = None
-        self.willStop = False
+        self.STOP = False
+        self.isReading = False
         if os.path.exists(self.file):
             with open(self.file, 'w') as f: 
                 f.close()
     
-    def PatchmasterRunning(self):
+    def PatchmasterRunning(self, channel):
         # Checks if PATCHMASTER is currently running
         for p in psutil.process_iter():
             if 'PatchMaster.exe' in p.name():
                 return True
         return False
-        
-    
-    def test_read(self, timeout=60):
-        # Test function
-        st = time.time()
-        while True:
-            if time.time() - st > timeout:
-                break
-            if self.master.STOP:
-                break
-        self.willStop = True
     
     
     def read_stream(self):
@@ -71,9 +90,13 @@ class HekaReader(Logger):
         until receives stop command from master. Stores the last
         output in self.last.
         '''
+        if self.isReading:
+            # Other channel already initialized reading
+            return
+        
         while True:
-            if self.master.STOP:
-                self.willStop = True
+            self.isReading = True
+            if self.STOP:
                 break
             
             if not os.path.exists(self.file): continue
@@ -98,6 +121,96 @@ class HekaReader(Logger):
         ######################################
 
 class HekaWriter(Logger):
+    'Pass all commands to module shared between channels'
+    def __init__(self, master, sharedWriter):
+        self.master = master
+        self.master.register(self)
+        self.willStop = False
+        
+        self.Writer = sharedWriter
+    
+    def __getattr__(self, name, *args, **kwargs):
+        return partial(getattr(self.Writer, name), self.channel, *args, **kwargs)
+        
+    # def isRunning(self):
+    #     return self.Writer.isRunning()
+         
+    # def send_command(self, cmd):
+    #     return self.Writer.send_command(self.channel, cmd)
+        
+    # def send_multiple_cmds(self, cmds):
+    #     return self.Writer.send_multiple_cmds(self.channel, cmds)
+    
+    # def clear_file(self):
+    #     return self.Writer.clear_file()
+    
+    # def macro(self, cmd):
+    #     return self.Writer.macro(self.channel, cmd)
+
+    # def abort(self):
+    #     return self.Writer.abort(self.channel)
+    
+    # def isDataFile(self):
+    #     return self.Writer.isDataFile()
+    
+    # def set_ascii_export(self):
+    #     return self.Writer.set_ascii_export()
+        
+    # def set_matlab_export(self):
+    #     return self.Writer.set_matlab_export()
+               
+    # def save_last_experiment(self, path=None):
+    #     return self.Writer.save_last_experiment(self.channel, path=path)
+
+    # def reset_amplifier(self):
+    #     return self.Writer.reset_amplifier(self.channel)
+         
+    # def update_Values(self, values):
+    #     return self.Writer.update_Values(values=values)
+        
+    # def setup_CV(self, E0, E1, E2, E3, scan_rate, quiet_time):
+    #     return self.Writer.setup_CV(self.channel, E0, E1, E2, E3, 
+    #                                 scan_rate, quiet_time)
+    
+    
+    # def run_CV(self, mode='normal'):
+    #     return self.Writer.run_CV(self.channel, mode=mode)
+      
+
+    # def setup_EIS(self, E0, f0, f1, n_pts, n_cycles, amp,
+    #               force_waveform_rewrite = False):
+    #     return self.Writer.setup_EIS(self.channel, E0, f0, f1, n_pts, n_cycles, 
+    #                                  amp, force_waveform_rewrite = False)
+    
+    
+    # def make_EIS_waveform(self, E0, f0, f1, n_pts, n_cycles, amp):
+    #     return self.Writer.make_EIS_waveform(self.channel, E0, f0, f1, n_pts, 
+    #                                          n_cycles, amp)
+    
+    
+    # def check_EIS_corrections(self, EIS_WF_params, forced=False):
+    #     return self.Writer.check_EIS_corrections(self.channel, EIS_WF_params,
+    #                                              forced=forced)
+            
+    
+    # def run_EIS(self):
+    #     return self.Writer.run_EIS(self.channel)
+    
+    
+    # def run_custom(self):
+    #     return self.Writer.run_custom(self.channel)
+    
+    
+    # def run_measurement_loop(self, measurement_type, save_path=None, name=''):
+    #     return self.Writer.run_measurement_loop(self.channel, 
+    #                                             measurement_type=measurement_type, 
+    #                                             save_path=save_path, 
+    #                                             name=name)
+        
+        
+        
+        
+class SharedHekaWriter(Logger):
     '''
     Class to control writing commands to PATCHMASTER
     
@@ -114,13 +227,10 @@ class HekaWriter(Logger):
     each command. 
     
     '''
-    def __init__(self, master, input_file=input_file):
-        self.master = master
-        self.master.register(self)
+    def __init__(self, input_file=input_file):
         self.willStop = False
         self.status = 'idle'
-        if self.master.TEST_MODE:
-            return
+        return
         
         self.file = input_file   # For EPC10 batch communication
         self.num = 0
@@ -137,19 +247,19 @@ class HekaWriter(Logger):
         
     
         
-    def running(self):
+    def running(self, channel):
         self.status = 'running'
     
     
-    def idle(self):
+    def idle(self, channel):
         self.status = 'idle'
      
         
-    def isRunning(self):
+    def isRunning(self, channel):
         return self.status == 'running'
          
         
-    def send_command(self, cmd):
+    def send_command(self, channel, cmd):
         # print(f'Sending: {self.num} {cmd}')
         if self.master.TEST_MODE:
             return
@@ -159,7 +269,7 @@ class HekaWriter(Logger):
         time.sleep(0.1)
        
         
-    def send_multiple_cmds(self, cmds):
+    def send_multiple_cmds(self, channel, cmds):
         with open(self.file, 'w') as f:
             f.write(f'+{self.num}\n')
             for cmd in cmds:
@@ -168,13 +278,13 @@ class HekaWriter(Logger):
         time.sleep(0.1)
     
     
-    def clear_file(self):
+    def clear_file(self, channel):
         with open(self.file, 'w') as f:
             f.close()
         self.num = 0
     
     
-    def macro(self, cmd):
+    def macro(self, channel, cmd):
         '''
         Send a macro command as given in docs/HEKA Macro Commands.txt
         '''
@@ -185,7 +295,7 @@ class HekaWriter(Logger):
     
     
     
-    def abort(self):
+    def abort(self, channel):
         # Send commands to halt measurement
         self.idle() # Overwrite self.status
         self.macro('N Break 1')
@@ -197,7 +307,7 @@ class HekaWriter(Logger):
         self.idle()
     
     
-    def isDataFile(self):
+    def isDataFile(self, channel):
         '''
         Query PATCHMASTER to check whether a DataFile is 
         currently open to save to
@@ -216,15 +326,15 @@ class HekaWriter(Logger):
         return False
     
 
-    def set_ascii_export(self):
+    def set_ascii_export(self, channel):
         self.send_command('Set @  ExportTarget  "ASCII"')
         
         
-    def set_matlab_export(self):
+    def set_matlab_export(self, channel):
         self.send_command('Set @  ExportTarget  "MatLab"')
                
     
-    def save_last_experiment(self, path=None):
+    def save_last_experiment(self, channel, path=None):
         '''
         There is a bug in PATCHMASTER which does not allow the
         "Export" macro to accept a user-defined path. So, we
@@ -323,7 +433,7 @@ class HekaWriter(Logger):
      
     #### EXPERIMENT DEFINITIONS ####
     
-    def reset_amplifier(self):
+    def reset_amplifier(self, channel):
         '''
         Sends commands to set amplifier back to default (CV) state
         '''
@@ -356,7 +466,7 @@ class HekaWriter(Logger):
         self.pgf_params = values
       
         
-    def setup_CV(self, E0, E1, E2, E3, scan_rate, quiet_time):
+    def setup_CV(self, channel, E0, E1, E2, E3, scan_rate, quiet_time):
         '''
         Apply amplifier/ filter settings
         
@@ -380,7 +490,7 @@ class HekaWriter(Logger):
         self.log('Set CV parameters', 1)
     
     
-    def run_CV(self, mode='normal'):
+    def run_CV(self, channel, mode='normal'):
         cmds = {
                 '10Hz'  : '_CV-10Hz', 
                 '100Hz' : '_CV-100Hz',
@@ -406,7 +516,7 @@ class HekaWriter(Logger):
         self.running()
       
 
-    def setup_EIS(self, E0, f0, f1, n_pts, n_cycles, amp,
+    def setup_EIS(self, channel, E0, f0, f1, n_pts, n_cycles, amp,
                   force_waveform_rewrite = False):
         '''
         Set amplifier to hold DC bias
@@ -446,7 +556,7 @@ class HekaWriter(Logger):
         return
     
     
-    def make_EIS_waveform(self, E0, f0, f1, n_pts, n_cycles, amp):
+    def make_EIS_waveform(self, channel, E0, f0, f1, n_pts, n_cycles, amp):
         sample_rate = get_EIS_sample_rate(max(f0, f1))
         file = f'D:/SECM/_auto_eis-{sample_rate//1000}kHz_1.tpl'
         applied_freqs = generate_tpl(f0, f1, n_pts, n_cycles, 
@@ -455,7 +565,7 @@ class HekaWriter(Logger):
         return applied_freqs
     
     
-    def check_EIS_corrections(self, EIS_WF_params, forced=False):
+    def check_EIS_corrections(self, channel, EIS_WF_params, forced=False):
         '''
         Checks if the current waveform is in the stored corrections file.
         
@@ -556,7 +666,7 @@ class HekaWriter(Logger):
             
     
     
-    def run_EIS(self):
+    def run_EIS(self, channel):
         '''
         Send command to run single EIS scan
         '''
@@ -569,7 +679,7 @@ class HekaWriter(Logger):
         return
     
     
-    def run_custom(self):
+    def run_custom(self, channel):
         '''
         Run the custom, user-set PGF file
         '''
@@ -578,7 +688,7 @@ class HekaWriter(Logger):
         return
     
     
-    def run_measurement_loop(self, measurement_type, save_path=None, name=''):
+    def run_measurement_loop(self, channel, measurement_type, save_path=None, name=''):
         '''
         Runs measurement of the requested type. Starts ADC polling in another
         thread. Saves the data.
