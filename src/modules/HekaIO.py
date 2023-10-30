@@ -3,6 +3,7 @@ import os
 import psutil
 import shutil
 import json
+from collections import deque
 import numpy as np
 from tkinter import messagebox
 from .FeedbackController import read_heka_data
@@ -130,83 +131,27 @@ class HekaWriter(Logger):
         self.Writer = sharedWriter
     
     def __getattr__(self, name, *args, **kwargs):
-        return partial(getattr(self.Writer, name), self.channel, *args, **kwargs)
+        func = partial(getattr(self.Writer, name), self.channel, *args, **kwargs)
+        self.Writer.add_to_queue(func)
+        return
+    
+    def run_command_stream(self):
+        run(self.Writer.run_command_stream)
+        run(self.check_for_stop)
+    
+    def check_for_stop(self):
+        while True:
+            if self.master.STOP:
+                self.Writer.STOP = True
+                break
+        self.log('Stopping')
         
-    # def isRunning(self):
-    #     return self.Writer.isRunning()
-         
-    # def send_command(self, cmd):
-    #     return self.Writer.send_command(self.channel, cmd)
+    def abort(self):
+        'Send abort command at top of queue'
+        func = partial(self.Writer.abort, self.channel)
+        self.Writer.queue.appendleft(func)
         
-    # def send_multiple_cmds(self, cmds):
-    #     return self.Writer.send_multiple_cmds(self.channel, cmds)
-    
-    # def clear_file(self):
-    #     return self.Writer.clear_file()
-    
-    # def macro(self, cmd):
-    #     return self.Writer.macro(self.channel, cmd)
-
-    # def abort(self):
-    #     return self.Writer.abort(self.channel)
-    
-    # def isDataFile(self):
-    #     return self.Writer.isDataFile()
-    
-    # def set_ascii_export(self):
-    #     return self.Writer.set_ascii_export()
-        
-    # def set_matlab_export(self):
-    #     return self.Writer.set_matlab_export()
-               
-    # def save_last_experiment(self, path=None):
-    #     return self.Writer.save_last_experiment(self.channel, path=path)
-
-    # def reset_amplifier(self):
-    #     return self.Writer.reset_amplifier(self.channel)
-         
-    # def update_Values(self, values):
-    #     return self.Writer.update_Values(values=values)
-        
-    # def setup_CV(self, E0, E1, E2, E3, scan_rate, quiet_time):
-    #     return self.Writer.setup_CV(self.channel, E0, E1, E2, E3, 
-    #                                 scan_rate, quiet_time)
-    
-    
-    # def run_CV(self, mode='normal'):
-    #     return self.Writer.run_CV(self.channel, mode=mode)
-      
-
-    # def setup_EIS(self, E0, f0, f1, n_pts, n_cycles, amp,
-    #               force_waveform_rewrite = False):
-    #     return self.Writer.setup_EIS(self.channel, E0, f0, f1, n_pts, n_cycles, 
-    #                                  amp, force_waveform_rewrite = False)
-    
-    
-    # def make_EIS_waveform(self, E0, f0, f1, n_pts, n_cycles, amp):
-    #     return self.Writer.make_EIS_waveform(self.channel, E0, f0, f1, n_pts, 
-    #                                          n_cycles, amp)
-    
-    
-    # def check_EIS_corrections(self, EIS_WF_params, forced=False):
-    #     return self.Writer.check_EIS_corrections(self.channel, EIS_WF_params,
-    #                                              forced=forced)
-            
-    
-    # def run_EIS(self):
-    #     return self.Writer.run_EIS(self.channel)
-    
-    
-    # def run_custom(self):
-    #     return self.Writer.run_custom(self.channel)
-    
-    
-    # def run_measurement_loop(self, measurement_type, save_path=None, name=''):
-    #     return self.Writer.run_measurement_loop(self.channel, 
-    #                                             measurement_type=measurement_type, 
-    #                                             save_path=save_path, 
-    #                                             name=name)
-        
+           
         
         
         
@@ -228,8 +173,10 @@ class SharedHekaWriter(Logger):
     
     '''
     def __init__(self, input_file=input_file):
-        self.willStop = False
+        self.STOP = False
+        self.cmdStreamRunning = False
         self.status = 'idle'
+        self.queue = deque()
         
         self.file = input_file   # For EPC10 batch communication
         self.num = 0
@@ -243,7 +190,22 @@ class SharedHekaWriter(Logger):
         self.EIS_params = None
         self.EIS_WF_params = None
         self.EIS_corrections = None
-        
+     
+    
+    def run_command_stream(self):
+        if self.cmdStreamRunning:
+            return
+        while True:
+            self.cmdStreamRunning = True
+            if self.STOP:
+                break
+            if len(self.queue) == 0:
+                continue
+            f = self.queue.popleft()
+            f()
+            
+    def add_to_queue(self, func):
+        self.queue.append(func)
     
         
     def running(self, channel):
