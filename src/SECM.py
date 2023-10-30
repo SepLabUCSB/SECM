@@ -797,9 +797,6 @@ class GUI(Logger):
     
         # Always-running functions
         masterthread    = run(self.master.run)
-        # self.master.HekaReader.read_stream()
-    
-        # self.threads = [masterthread, readerthread]
         return
     #################### END __init__ ##############################
     
@@ -1080,9 +1077,6 @@ class GUI(Logger):
     
     # Take parameters from CV window and send to HEKA    
     def set_amplifier(self):
-        if not self.master.HekaReader.PatchmasterRunning():
-            self.log('Error: PATCHMASTER not opened!')
-            return
         new_params = convert_to_index(self.params['amp'])
         cmds = []
         for key, val in new_params.items():

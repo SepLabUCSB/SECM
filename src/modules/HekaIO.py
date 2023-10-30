@@ -29,36 +29,6 @@ gl_st = time.time()
         #####                            #####
         ######################################
 
-
-class HekaReader(Logger):
-    'Pass all commands to module shared between channels'
-    def __init__(self, master, sharedReader):
-        self.master = master
-        self.master.register(self) # Also sets self.channel
-        self.willStop = False
-        
-        self.Reader = sharedReader
-    
-    def PatchmasterRunning(self):
-        self.Reader.PatchmasterRunning(self.channel)
-            
-    def read_stream(self):
-        run(self.Reader.read_stream)
-        run(self.check_for_stop)
-    
-    def check_for_stop(self):
-        while True:
-            if self.master.STOP:
-                self.Reader.STOP = True
-                break
-        self.log('Stopping')
-        
-    def get_last(self):
-        'Returns most recent output from Patchmaster'
-        return self.Reader.last
-        
-
-
         
 class SharedHekaReader(Logger):
     '''
@@ -144,6 +114,7 @@ class HekaWriter(Logger):
         while True:
             if self.master.STOP:
                 self.Writer.STOP = True
+                self.Writer.Reader.STOP = True
                 break
         self.log('Stopping')
         
@@ -173,11 +144,14 @@ class SharedHekaWriter(Logger):
     each command. 
     
     '''
-    def __init__(self, input_file=input_file):
+    def __init__(self, Reader, input_file=input_file):
         self.STOP = False
         self.cmdStreamRunning = False
         self.status = {1:'idle', 2:'idle'}
         self.queue = deque()
+        
+        self.Reader = Reader
+        run(self.Reader.read_stream)
         
         self.file = input_file   # For EPC10 batch communication
         self.num = 0
