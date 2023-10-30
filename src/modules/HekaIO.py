@@ -230,14 +230,13 @@ class SharedHekaWriter(Logger):
     def __init__(self, input_file=input_file):
         self.willStop = False
         self.status = 'idle'
-        return
         
         self.file = input_file   # For EPC10 batch communication
         self.num = 0
         
-        self.clear_file()
-        self.send_command('Echo startup')
-        self.send_command('SetSleep 0.01')
+        self.clear_file(1)
+        self.send_command(1, 'Echo startup')
+        self.send_command(1, 'SetSleep 0.01')
         
         self.pgf_params = {}
         self.CV_params  = None
@@ -261,8 +260,8 @@ class SharedHekaWriter(Logger):
         
     def send_command(self, channel, cmd):
         # print(f'Sending: {self.num} {cmd}')
-        if self.master.TEST_MODE:
-            return
+        # if self.master.TEST_MODE:
+        #     return
         with open(self.file, 'w') as f:
             f.write(f'+{self.num}\n{cmd}\n')
         self.num += 1

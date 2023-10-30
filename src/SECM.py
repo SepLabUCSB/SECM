@@ -149,15 +149,25 @@ class MasterModule(Logger):
             HekaReader(self, SharedHekaReader)
             HekaWriter(self, SharedHekaWriter)
             FeedbackController(self)
+            self.log('All modules loaded.')
+            return True
         except Exception as e:
             print(f'Error initializing Channel {self.channel}:')
             print(e)
             sel = input(f'Load Channel {self.channel} in test mode? (y/n) >>>')
-            if sel != 'y':
-                sys.exit()
-            self.test_mode_on()
-            return self.load_modules(SharedHekaReader, SharedHekaWriter)
-                
+        if sel != 'y':
+            return False
+        self.test_mode_on()
+        return self.load_modules(SharedHekaReader, SharedHekaWriter)
+     
+    def stop_modules(self):
+        for attr in ('Piezo', 'ADC', 'PicoMotor'):
+            if hasattr(self, attr):
+                try:
+                    module = getattr(self, attr)
+                    module.stop()
+                except:
+                    pass          
         
     def register(self, module):
         # register a submodule to master
@@ -1316,26 +1326,35 @@ class GUI(Logger):
 def run_main():
     
     # Shared HEKA communication modules.
+    END_PROG = False
     try:
         sharedReader = SharedHekaReader()
         sharedWriter = SharedHekaWriter()
     except Exception as e:
         print('Error communicating with HEKA:')
         print(e)
-        sel = input('Load both channels in test mode?')
+        sel = input('Load both channels in test mode? (y/n)>>>')
         if sel != 'y':
-            sys.exit()
+            END_PROG = True
         CH1_TEST_MODE = CH2_TEST_MODE = True
+    
+    if END_PROG:
+        # Can't call sys.exit() in try: except: loop
+        sys.exit()
         
     
     # Channel 1
-    master1 = MasterModule(TEST_MODE = CH1_TEST_MODE, channel=1)    
-    master1.load_modules(sharedReader, sharedWriter)
+    master1 = MasterModule(TEST_MODE = False, channel=1)    
+    m1_loaded = master1.load_modules(sharedReader, sharedWriter)
 
     # Channel 2
-    master2 = MasterModule(TEST_MODE = CH2_TEST_MODE, channel=2)
-    master2.load_modules(sharedReader, sharedWriter)
-        
+    master2 = MasterModule(TEST_MODE = True, channel=2)
+    m2_loaded = master2.load_modules(sharedReader, sharedWriter)
+    
+    if not (m1_loaded and m2_loaded):
+        for m in (master1, master2):
+            m.stop_modules()
+        sys.exit()
     
     root = Tk()
 
@@ -1368,13 +1387,13 @@ def run_main():
         gui.willStop = True
     
     for m in (master1, master2):
-        if not m.TEST_MODE:
-            m.ADC.stop()
-            m.Piezo.stop()
-            m.PicoMotor.stop()
+        # if not m.TEST_MODE:
+        m.ADC.stop()
+        m.Piezo.stop()
+        m.PicoMotor.stop()
     
     sys.stdout = default_stdout
     sys.stdin  = default_stdin
     sys.stderr = default_stderr
-
+    return master1
 
