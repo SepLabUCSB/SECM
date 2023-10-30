@@ -131,9 +131,10 @@ class HekaWriter(Logger):
         self.Writer = sharedWriter
     
     def __getattr__(self, name, *args, **kwargs):
-        func = partial(getattr(self.Writer, name), self.channel, *args, **kwargs)
-        self.Writer.add_to_queue(func)
-        return
+        # func = partial(getattr(self.Writer, name), self.channel, *args, **kwargs)
+        # self.Writer.add_to_queue(func)
+        return partial(getattr(self.Writer, name), self.channel, *args, **kwargs)
+        
     
     def run_command_stream(self):
         run(self.Writer.run_command_stream)
@@ -175,7 +176,7 @@ class SharedHekaWriter(Logger):
     def __init__(self, input_file=input_file):
         self.STOP = False
         self.cmdStreamRunning = False
-        self.status = 'idle'
+        self.status = {1:'idle', 2:'idle'}
         self.queue = deque()
         
         self.file = input_file   # For EPC10 batch communication
@@ -202,6 +203,7 @@ class SharedHekaWriter(Logger):
             if len(self.queue) == 0:
                 continue
             f = self.queue.popleft()
+            print(f)
             f()
             
     def add_to_queue(self, func):
@@ -209,15 +211,15 @@ class SharedHekaWriter(Logger):
     
         
     def running(self, channel):
-        self.status = 'running'
+        self.status[channel] = 'running'
     
     
     def idle(self, channel):
-        self.status = 'idle'
+        self.status[channel] = 'idle'
      
         
     def isRunning(self, channel):
-        return self.status == 'running'
+        return self.status[channel] == 'running'
          
         
     def send_command(self, channel, cmd):
@@ -268,7 +270,7 @@ class SharedHekaWriter(Logger):
         Query PATCHMASTER to check whether a DataFile is 
         currently open to save to
         '''
-        self.send_command('GetParameters DataFile')
+        self.send_command(channel, 'GetParameters DataFile')
         st = time.time()
         while time.time() - st < 1:
             try:
@@ -283,11 +285,11 @@ class SharedHekaWriter(Logger):
     
 
     def set_ascii_export(self, channel):
-        self.send_command('Set @  ExportTarget  "ASCII"')
+        self.send_command(channel, 'Set @  ExportTarget  "ASCII"')
         
         
     def set_matlab_export(self, channel):
-        self.send_command('Set @  ExportTarget  "MatLab"')
+        self.send_command(channel, 'Set @  ExportTarget  "MatLab"')
                
     
     def save_last_experiment(self, channel, path=None):
@@ -403,7 +405,7 @@ class SharedHekaWriter(Logger):
         
         
         
-    def update_Values(self, values):
+    def update_Values(self, channel, values):
         # Update Values which are used to define CV, CA, etc voltages, timings, ...
         # PATCHMASTER maps Value i to p{i+1}... but calls it Value-{i+1} in GUI
 
@@ -418,7 +420,7 @@ class SharedHekaWriter(Logger):
         for i, val in vals_to_update.items():
             cmds.append(f'SetValue {int(i)} {val}')
         cmds.append('ExecuteProtocol _update_pgf_params_') # Set PgfParams = Values
-        self.send_multiple_cmds(cmds)
+        self.send_multiple_cmds(channel, cmds)
         self.pgf_params = values
       
         
@@ -428,21 +430,21 @@ class SharedHekaWriter(Logger):
         
         Update CV parameters
         '''
-        if self.isRunning(): return
+        if self.isRunning(channel): return
         if scan_rate <= 0: raise ValueError('Scan rate must be > 0')
         values, duration = generate_CV_params(E0, E1, E2, E3, 
                                               scan_rate, quiet_time)
         
                 
         # Get and set amplifier params from GUI module        
-        self.running()
+        self.running(channel)
         
         # Set CV parameters
-        self.update_Values(values)
+        self.update_Values(channel, values)
         
         self.CV_params   = values
         self.CV_duration = duration
-        self.idle()
+        self.idle(channel)
         self.log('Set CV parameters', 1)
     
     
@@ -479,7 +481,7 @@ class SharedHekaWriter(Logger):
         Set filters
         Update EIS parameters in PATCHMASTER
         '''
-        if self.isRunning(): return
+        if self.isRunning(channel): return
         values, duration = generate_EIS_params(E0/1000, n_cycles*1/min(f0, f1))
         
         self.running()
@@ -495,7 +497,7 @@ class SharedHekaWriter(Logger):
         time.sleep(1)
         
         # Update pgf fields
-        self.update_Values(values)
+        self.update_Values(channel, values)
         self.EIS_params   = values
         self.EIS_duration = duration
         
@@ -653,16 +655,16 @@ class SharedHekaWriter(Logger):
         save_path: string, path to save to
         name: string, name to save as. save_path/{name}.asc
         '''
-        if self.isRunning():
+        if self.isRunning(channel):
             self.log('Got new CV command, but already running!')
             return
             
-        if not self.isDataFile():
+        if not self.isDataFile(channel):
             print('== Open a DataFile in PATCHMASTER before recording! ==')
             return
         
         if measurement_type == 'CV':
-            run_func = self.run_CV
+            run_func = partial(self.run_CV, channel)
             duration = self.CV_duration
         elif measurement_type == 'CA':
             run_func = self.run_CA
@@ -688,7 +690,7 @@ class SharedHekaWriter(Logger):
         # Measurement loop
         success = False
         while time.time() - st < duration + 3:
-            if not self.isRunning():
+            if not self.isRunning(channel):
                 # Wait for run command to get sent to PATCHMASTER
                 continue
             time.sleep(0.5)
