@@ -3,7 +3,10 @@ from ..utils.utils import run, Logger
 import serial
 import time
 
-PIEZO_COMPORT = 'COM7'
+PIEZO_COMPORTS = {
+    1:'COM7',
+    2:None,
+    }
 
 class Piezo(Logger):
     
@@ -56,8 +59,11 @@ class Piezo(Logger):
     
         
     def setup_piezo(self):
-        # try:
-        self.port = serial.Serial(PIEZO_COMPORT, timeout=0.5,
+        port = PIEZO_COMPORTS[self.channel]
+        if not port:
+            raise ValueError(f'No port defined for channel {self.channel}')
+            return
+        self.port = serial.Serial(port, timeout=0.5,
                               baudrate=19200,
                               xonxoff=True)
         # except Exception as e:

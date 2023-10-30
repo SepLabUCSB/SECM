@@ -29,8 +29,8 @@ default_stderr = sys.stderr
 
 matplotlib.use('TkAgg')
 
-TEST_MODE = True
-
+CH1_TEST_MODE = False
+CH2_TEST_MODE = False
 
     
 '''
@@ -127,7 +127,37 @@ class MasterModule(Logger):
         self.log('')
         self.log('')
         self.log('========= Master Initialized =========')
+    
+    def test_mode_on(self):
+        self.TEST_MODE = True
+    
+    def test_mode_off(self):
+        self.TEST_MODE = False
         
+    def load_modules(self, SharedHekaReader, SharedHekaWriter):
+        '''
+        Initialize submodules for controlling this channel's piezos,
+        ADC, etc. Submodules automatically call master.register(submodule)
+        
+        If the initialization fails, prompt user to load this channel in test mode
+        '''
+        try:
+            ADC(self)
+            Piezo(self)
+            PicoMotor(self)
+            ImageCorrelator(self)
+            HekaReader(self, SharedHekaReader)
+            HekaWriter(self, SharedHekaWriter)
+            FeedbackController(self)
+        except Exception as e:
+            print(f'Error initializing Channel {self.channel}:')
+            print(e)
+            sel = input(f'Load Channel {self.channel} in test mode? (y/n) >>>')
+            if sel != 'y':
+                sys.exit()
+            self.test_mode_on()
+            return self.load_modules(SharedHekaReader, SharedHekaWriter)
+                
         
     def register(self, module):
         # register a submodule to master
@@ -1286,31 +1316,25 @@ class GUI(Logger):
 def run_main():
     
     # Shared HEKA communication modules.
-    sharedReader = SharedHekaReader()
-    sharedWriter = SharedHekaWriter()
-    
+    try:
+        sharedReader = SharedHekaReader()
+        sharedWriter = SharedHekaWriter()
+    except Exception as e:
+        print('Error communicating with HEKA:')
+        print(e)
+        sel = input('Load both channels in test mode?')
+        if sel != 'y':
+            sys.exit()
+        CH1_TEST_MODE = CH2_TEST_MODE = True
+        
     
     # Channel 1
-    master1 = MasterModule(TEST_MODE = TEST_MODE, channel=1)    
-    adc1    = ADC(master1)
-    piezo1  = Piezo(master1)
-    motor1  = PicoMotor(master1)
-    corr1   = ImageCorrelator(master1)
-    reader1 = HekaReader(master1, sharedReader)
-    writer1 = HekaWriter(master1, sharedWriter)
-    fbc1    = FeedbackController(master1) # must be loaded last
-
+    master1 = MasterModule(TEST_MODE = CH1_TEST_MODE, channel=1)    
+    master1.load_modules(sharedReader, sharedWriter)
 
     # Channel 2
-    master2 = MasterModule(TEST_MODE = TEST_MODE, channel=2)
-    adc2    = ADC(master2)
-    piezo2  = Piezo(master2)
-    motor2  = PicoMotor(master2)
-    corr2   = ImageCorrelator(master2)
-    reader2 = HekaReader(master2, sharedReader)
-    writer2 = HekaWriter(master2, sharedWriter)
-    fbc2    = FeedbackController(master2) # must be loaded last
-    
+    master2 = MasterModule(TEST_MODE = CH2_TEST_MODE, channel=2)
+    master2.load_modules(sharedReader, sharedWriter)
         
     
     root = Tk()
@@ -1319,7 +1343,7 @@ def run_main():
         gui = MasterGUI(root, master1, master2)
         for m in (master1, master2):
             if m.TEST_MODE:
-                print('\nWarning: controller loaded in test mode! Can view data, but cannot control instrument.\n')
+                print(f'\nWarning: Channel {m.channel} loaded in test mode! Can view data, but cannot control instrument.\n')
         
         # gui._update_piezo_display()
         root.after(1000, master1.Plotter.update_figs)

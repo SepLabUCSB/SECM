@@ -6,7 +6,12 @@ import numpy as np
 from .DataStorage import ADCDataPoint
 from ..utils.utils import run, Logger
 
-CONST_SER_PORT = 'COM6'   #get the com port from device manger and enter it here
+# CONST_SER_PORT = 'COM6'   
+SER_PORTS = { #get the com port from device manger and enter it here for each channel
+    1: 'COM6',
+    2: None,
+    }
+
 
 
 class ADC(Logger):
@@ -19,10 +24,9 @@ class ADC(Logger):
     '''
     
     
-    def __init__(self, master=None, SER_PORT = CONST_SER_PORT):
-        if master:
-            self.master = master
-            self.master.register(self)
+    def __init__(self, master=None):
+        self.master = master
+        self.master.register(self)
         self.willStop   = False
         self._is_setup  = False
         self._is_polling  = False
@@ -40,7 +44,10 @@ class ADC(Logger):
         
         
         if not self.master.TEST_MODE:
-            self.port = serial.Serial(port = SER_PORT, timeout=0.5)
+            port = SER_PORTS[self.channel]
+            if not port:
+                raise ValueError(f'No port defined for channel {self.channel}')
+            self.port = serial.Serial(port = port, timeout=0.5)
             self.setup()
             
         self.pollingcount = 0
