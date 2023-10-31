@@ -99,16 +99,13 @@ class HekaWriter(Logger):
         self.willStop = False
         
         self.Writer = sharedWriter
+        run(self.check_for_stop)
     
     def __getattr__(self, name, *args, **kwargs):
         # func = partial(getattr(self.Writer, name), self.channel, *args, **kwargs)
         # self.Writer.add_to_queue(func)
         return partial(getattr(self.Writer, name), self.channel, *args, **kwargs)
-        
-    
-    def run_command_stream(self):
-        run(self.Writer.run_command_stream)
-        run(self.check_for_stop)
+     
     
     def check_for_stop(self):
         while True:
@@ -118,10 +115,8 @@ class HekaWriter(Logger):
                 break
         self.log('Stopping')
         
-    def abort(self):
-        'Send abort command at top of queue'
-        func = partial(self.Writer.abort, self.channel)
-        self.Writer.queue.appendleft(func)
+    
+    
         
            
         
@@ -146,9 +141,7 @@ class SharedHekaWriter(Logger):
     '''
     def __init__(self, Reader, input_file=input_file):
         self.STOP = False
-        self.cmdStreamRunning = False
         self.status = {1:'idle', 2:'idle'}
-        self.queue = deque()
         
         self.Reader = Reader
         run(self.Reader.read_stream)
@@ -165,23 +158,7 @@ class SharedHekaWriter(Logger):
         self.EIS_params = None
         self.EIS_WF_params = None
         self.EIS_corrections = None
-     
-    
-    def run_command_stream(self):
-        if self.cmdStreamRunning:
-            return
-        while True:
-            self.cmdStreamRunning = True
-            if self.STOP:
-                break
-            if len(self.queue) == 0:
-                continue
-            f = self.queue.popleft()
-            print(f)
-            f()
-            
-    def add_to_queue(self, func):
-        self.queue.append(func)
+ 
     
         
     def running(self, channel):
