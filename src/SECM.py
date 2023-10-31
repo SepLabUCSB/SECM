@@ -157,7 +157,7 @@ class MasterModule(Logger):
         if sel != 'y':
             return False
         self.test_mode_on()
-        return self.load_modules(SharedHekaReader, SharedHekaWriter)
+        return self.load_modules(SharedHekaWriter)
      
     def stop_modules(self):
         for attr in ('Piezo', 'ADC', 'PicoMotor'):
@@ -735,7 +735,7 @@ class GUI(Logger):
         self._y_set = StringVar(value='0')
         self._z_set = StringVar(value='0')
         
-        self._piezo_msg = StringVar()
+        self._heka_msg = StringVar()
         
         Label(piezo_control, text='  X:').grid(row=0, column=0, sticky=(W,E))
         Label(piezo_control, textvariable=self._x_display).grid(row=0, column=1, sticky=(W,E))
@@ -749,8 +749,8 @@ class GUI(Logger):
         Entry(piezo_control, textvariable=self._z_set, width=6).grid(row=1, column=4, columnspan=2, sticky=(W,E))
         Button(piezo_control, text='Set', command=self.piezo_goto).grid(row=1, column=6, sticky=(W,E))
         
-        Entry(piezo_control, textvariable=self._piezo_msg, width=20).grid(row=2, column=0, columnspan=6, sticky=(W,E))
-        Button(piezo_control, text='Send Cmd', command=self.piezo_msg_send).grid(row=2, column=6, sticky=(W,E))
+        Entry(piezo_control, textvariable=self._heka_msg, width=20).grid(row=2, column=0, columnspan=6, sticky=(W,E))
+        Button(piezo_control, text='Send HEKA Cmd', command=self.heka_msg_send).grid(row=2, column=6, sticky=(W,E))
         
         
         self._z_piezosteps  = StringVar(value='0')
@@ -1290,9 +1290,9 @@ class GUI(Logger):
         return
     
     
-    def piezo_msg_send(self):
-        msg = self._piezo_msg.get()
-        self.master.Piezo.write_and_read(msg)
+    def heka_msg_send(self):
+        msg = self._heka_msg.get()
+        self.master.HekaWriter.send_commands(msg)
         
     
     def z_piezo_go(self):
@@ -1343,7 +1343,7 @@ def run_main():
         
     
     # Channel 1
-    master1 = MasterModule(TEST_MODE = True, channel=1)    
+    master1 = MasterModule(TEST_MODE = False, channel=1)    
     m1_loaded = master1.load_modules(sharedWriter)
 
     # Channel 2

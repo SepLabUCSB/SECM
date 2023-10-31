@@ -101,10 +101,10 @@ class HekaWriter(Logger):
         self.Writer = sharedWriter
         run(self.check_for_stop)
     
-    def __getattr__(self, name, *args, **kwargs):
-        # func = partial(getattr(self.Writer, name), self.channel, *args, **kwargs)
-        # self.Writer.add_to_queue(func)
-        return partial(getattr(self.Writer, name), self.channel, *args, **kwargs)
+    # def __getattr__(self, name, *args, **kwargs):
+    #     # func = partial(getattr(self.Writer, name), self.channel, *args, **kwargs)
+    #     # self.Writer.add_to_queue(func)
+    #     return partial(getattr(self.Writer, name), self.channel, *args, **kwargs)
      
     
     def check_for_stop(self):
@@ -115,6 +115,22 @@ class HekaWriter(Logger):
                 break
             time.sleep(1)
         self.log('Stopping')
+        
+    def send_commands(self, cmds):
+        return self.Writer.send_commands(cmds)
+        
+        
+    def run_CV(self, E0, E1, E2, E3, scan_rate, quiet_time, amp_params):
+        return self.Writer.run_CV(self.channel, E0, E1, E2, E3, scan_rate, 
+                                  quiet_time, amp_params)
+    
+    
+    def run_EIS(self):
+        pass
+    
+    
+    def run_custom(self):
+        pass
         
     
     
@@ -167,10 +183,10 @@ class SharedHekaWriter(Logger):
         while True:
             if self.STOP:
                 break
-            if not len(self.queue):
-                continue
-            func = self.queue.popleft()
-            func()
+            if len(self.queue):
+                func = self.queue.popleft()
+                func()
+            time.sleep(0.1)
         return
     
     
@@ -299,6 +315,17 @@ class SharedHekaWriter(Logger):
     
     def export_data(self, channel):
         print(f'Exporting from channel {channel}')
+        
+        # Get the path to the current DataFile
+        self.send_command('GetParameters DataFile')
+        st = time.time()
+        while time.time() - st < 1:
+            try:
+                response = self.Reader.last[1]
+                if response[1].startswith('Reply_GetParameters'): 
+                    break
+            except:
+                pass
    
 
     
