@@ -142,6 +142,7 @@ class SharedHekaWriter(Logger):
     def __init__(self, Reader, input_file=input_file):
         self.STOP = False
         self.status = {1:'idle', 2:'idle'}
+        self.queue = deque()
         
         self.Reader = Reader
         run(self.Reader.read_stream)
@@ -152,26 +153,7 @@ class SharedHekaWriter(Logger):
         self.clear_file(1)
         self.send_command(1, 'Echo startup')
         self.send_command(1, 'SetSleep 0.01')
-        
-        self.pgf_params = {}
-        self.CV_params  = None
-        self.EIS_params = None
-        self.EIS_WF_params = None
-        self.EIS_corrections = None
- 
-    
-        
-    def running(self, channel):
-        self.status[channel] = 'running'
-    
-    
-    def idle(self, channel):
-        self.status[channel] = 'idle'
      
-        
-    def isRunning(self, channel):
-        return self.status[channel] == 'running'
-         
         
     def send_command(self, channel, cmd):
         # print(f'Sending: {self.num} {cmd}')
@@ -181,493 +163,87 @@ class SharedHekaWriter(Logger):
             f.write(f'+{self.num}\n{cmd}\n')
         self.num += 1
         time.sleep(0.1)
-       
         
-    def send_multiple_cmds(self, channel, cmds):
-        # Set active amplifier
-        if channel == 1:
-            cmds = ['Set E Ampl1 1'] + cmds
-        if channel == 2:
-            cmds = ['Set E Ampl2 1'] + cmds
-            
-        with open(self.file, 'w') as f:
-            f.write(f'+{self.num}\n')
-            for cmd in cmds:
-                f.write(f'{cmd}\n')
-        self.num += 1
-        time.sleep(0.1)
     
-    
-    def clear_file(self, channel):
-        with open(self.file, 'w') as f:
-            f.close()
-        self.num = 0
-    
-        
-    def abort(self, channel):
-        # Send commands to halt measurement
-        self.idle() # Overwrite self.status
-        self.send_multiple_cmds(channel, ['Set N Break 1',
-                                          'Set N Stop 1'])
-        self.idle()
-        self.send_multiple_cmds(channel, ['Set N Break 1',
-                                          'Set N Stop 1',
-                                          'Set N Store 1'])
-        self.idle()
-    
-    
-    def isDataFile(self, channel):
-        '''
-        Query PATCHMASTER to check whether a DataFile is 
-        currently open to save to
-        '''
-        self.send_command(channel, 'GetParameters DataFile')
-        st = time.time()
-        while time.time() - st < 1:
-            try:
-                response = self.master.HekaReader.last[1]
-                if response.split(' ')[-1] == '""':
-                    return False
-                return True
-            except:
-                continue
-        self.log('Timed out waiting for PATCHMASTER to respond with current data file')
-        return False
-    
-
-    def set_ascii_export(self, channel):
-        self.send_command(channel, 'Set @  ExportTarget  "ASCII"')
-        
-        
-    def set_matlab_export(self, channel):
-        self.send_command(channel, 'Set @  ExportTarget  "MatLab"')
-               
-    
-    def save_last_experiment(self, channel, path=None):
-        '''
-        There is a bug in PATCHMASTER which does not allow the
-        "Export" macro to accept a user-defined path. So, we
-        save to the default path (which is the same as the 
-        current DataFile path) and copy the file to the desired path
-        '''
-        self.send_command('GetParameters DataFile')
-        st = time.time()
-        while time.time() - st < 1:
-            try:
-                response = self.master.HekaReader.last[1]
-                if response[1].startswith('Reply_GetParameters'): 
-                    break
-            except:
-                pass
-        
-        savepath = response.lstrip('Reply_GetParameters ').strip('"')
-        savepath = savepath.replace('.dat', '')
-        savepath += '.asc'
-        if os.path.exists(savepath):
-            os.remove(savepath)
-        
-        # Select Series level for full export
-        self.send_command('GetTarget')
+    def run_tasks(self):
         while True:
-            if self.master.HekaReader.last[1].startswith('Reply_GetTarget'):
-                dat = self.master.HekaReader.last[1].split('  ')[1]
-                group, ser, sweep, trace, target = dat.split(',')
-                self.send_command(f'SetTarget {group},{ser},{sweep},{trace},2,TRUE,TRUE')
+            if self.STOP:
                 break
+            if not len(self.queue):
+                continue
+            func = self.queue.popleft()
+            func()
+        return
+    
+    def append_task(self, function):
+        self.queue.append(function)
+        return
+        
+        
+    def _schedule_task(self, function, delay):
+        time.sleep(delay)
+        self.append_task(function)
+        return 
+    
             
-        # Set oscilloscope to show full time, 0-> 100%. Otherwise,
-        # PATCHMASTER only exports the times displayed on the scope
-        time.sleep(0.1)
-        self.send_multiple_cmds([f'Set O Xmin 0',
-                                 f'Set O Xmax 100',
-                                 f'Set O AutoSweep'])
-        
-        # Hopping mode --> export as .mat
-        # Otherwise, as ascii
-        if (not path or path == 'None/.asc'):
-            self.set_ascii_export()
-        else:
-            self.set_matlab_export()
-            savepath = savepath.replace('.asc', '.mat')
-            path     = path.replace('.asc', '.mat')
-        
-        
-        self.send_command(f'Export overwrite, {savepath}')
-        
-        st = time.time()
-        while True: # Wait for file creation by PATCHMASTER
-            response = self.master.HekaReader.last
-            if time.time() - st > 30:
-                self.log('save_last_experiment timed out waiting for PATCHMASTER!')
-                return ''
-            try:
-                # if response[1].startswith('error'):
-                #     self.log('File export error!')
-                #     print('file export error!')
-                #     return ''
-                if response[1].startswith('Reply_Export'):
-                    break
-            except: pass # Response may be None or a single '+000xx'
-        
-        
-        if (not path or path == 'None/.asc'): 
-            # Data was not recorded as part of a scanning experiment
-            # Save it with the timestamp
-            self.send_command('GetParameters SeriesDate, SeriesTime')
-            time.sleep(0.01)
-            SeriesDate, SeriesTime = self.master.HekaReader.last[1].split(',')
-
-            SeriesDate = SeriesDate.lstrip('Reply_GetParameters ').replace('/', '')
-            SeriesTime = SeriesTime[:-4].replace(':', '-')
-
-            folder_path = os.path.join(DEFAULT_SAVE_PATH, SeriesDate)
-            os.makedirs(folder_path, exist_ok=True)
-            path = os.path.join(folder_path, f'{SeriesTime}.asc')
-        
-        
-        base_path = os.path.split(path)[0]
-        os.makedirs(base_path, exist_ok=True)
-        
-        try:
-            shutil.copy2(savepath, path)
-            self.log(f'Saved to {path}', 1)
-        except Exception as e:
-            self.log(f'savepath: {savepath}')
-            self.log(f'path: {path}')
-            self.log(f'Saving error: {e}')
-        return path
-    
-     
-        
-     
-    #### EXPERIMENT DEFINITIONS ####
-    
-    def reset_amplifier(self, channel):
+    def schedule_task(self, function:object, delay:float):
         '''
-        Sends commands to set amplifier back to default (CV) state
+        Create a new thread which will wait for *delay* seconds 
+        then put the function back in the queue
         '''
+        run(partial(self._schedule_task, function, delay))
+        return    
+    
+    
+    # Return list of commands to send to set the Values in Patchmaster    
+    # Values are used to dynamically set echem settings in the pgf file, 
+    # for example, CV bounds or EIS duration
+    def get_value_commands(self, values):
+        cmds = []
+        for i, val in values.items():
+            cmds.append(f'SetValue {int(i)} {val}')
+        return cmds
+    
+    
+    # Get list of commands to reset amplifier to the default state
+    def get_reset_amplifier_commands(self):
         cmds = ['Set E StimFilter 1',
                 'Set E TestDacToStim1 0',
                 'Set E Mode 3',
                 'Set E Filter1 2',
                 'Set E F2Response 0',
                 'Set E Filter2 0.5']
-        self.send_multiple_cmds(cmds)
+        return cmds
         
-        
-        
-    def update_Values(self, channel, values):
-        # Update Values which are used to define CV, CA, etc voltages, timings, ...
-        # PATCHMASTER maps Value i to p{i+1}... but calls it Value-{i+1} in GUI
-
-        old_params = self.pgf_params
-        vals_to_update = {}
-        for key, val in values.items():
-            old_val = old_params.get(key, None)
-            if val != old_val:
-                vals_to_update[key] = val
-        
-        cmds = []
-        for i, val in vals_to_update.items():
-            cmds.append(f'SetValue {int(i)} {val}')
-        cmds.append('ExecuteProtocol _update_pgf_params_') # Set PgfParams = Values
-        self.send_multiple_cmds(channel, cmds)
-        self.pgf_params = values
-      
-        
-    def setup_CV(self, channel, E0, E1, E2, E3, scan_rate, quiet_time):
-        '''
-        Apply amplifier/ filter settings
-        
-        Update CV parameters
-        '''
-        if self.isRunning(channel): return
-        if scan_rate <= 0: raise ValueError('Scan rate must be > 0')
+    
+    # Get list of commands to set amplifier and pgf to CV state
+    def get_CV_setup_commands(self, channel, E0, E1, E2, E3, 
+                              scan_rate, quiet_time):
+        if scan_rate <= 0: 
+            raise ValueError('Scan rate must be > 0')
         values, duration = generate_CV_params(E0, E1, E2, E3, 
                                               scan_rate, quiet_time)
         
-                
-        # Get and set amplifier params from GUI module        
-        self.running(channel)
         
-        # Set CV parameters
-        self.update_Values(channel, values)
+        cmds = [f'Set E Ampl{channel} 1']
+        cmds += get_value_commands(values)
         
         self.CV_params   = values
         self.CV_duration = duration
-        self.idle(channel)
         self.log('Set CV parameters', 1)
+        
+        
+    def set_amplifier(self, channel):
+        pass
     
     
-    def run_CV(self, channel, mode='normal'):
-        cmds = {
-                '10Hz'  : '_CV-10Hz', 
-                '100Hz' : '_CV-100Hz',
-                '1kHz'  : '_CV-1kHz',
-                '10kHz' : '_CV-10kHz',
-                }
-        
-        # Determine which sampling rate to use
-        E1 = self.CV_params[0] 
-        E0 = self.CV_params[2]
-        ti = self.CV_params[3]
-        scan_rate = abs(E1 - E0) / ti
-        if scan_rate <= 0.1:
-            mode = '10Hz'
-        elif scan_rate > 0.1 and scan_rate <= 0.5:
-            mode = '100Hz'
-        elif scan_rate > 0.5:
-            mode = '1kHz'
-        
-        cmd = cmds[mode]
-        self.log(f'CV {cmd}', quiet=True)
-        self.send_command(f'ExecuteSequence {cmd}')
-        self.running()
-      
+    def run_CV(self, channel):
+        pass
+   
 
-    def setup_EIS(self, channel, E0, f0, f1, n_pts, n_cycles, amp,
-                  force_waveform_rewrite = False):
-        '''
-        Set amplifier to hold DC bias
-        Set filters
-        Update EIS parameters in PATCHMASTER
-        '''
-        if self.isRunning(channel): return
-        values, duration = generate_EIS_params(E0/1000, n_cycles*1/min(f0, f1))
-        
-        self.running()
-        
-        cmds = get_filters(max(f0, f1))         # Set filters based on max frequency
-        cmds.append('Set E StimFilter 0')       # Set stim filter to 2 us
-        cmds.append('Set E TestDacToStim1 2')   # Turn on external input for Stim-1
-        cmds.append('Set E ExtScale 1')         # Set external scale to 1
-        cmds.append('Set E Mode 3')
-        cmds.append(f'Set E Vhold {E0}')        # Set DC bias
-        self.send_multiple_cmds(cmds)
-        
-        time.sleep(1)
-        
-        # Update pgf fields
-        self.update_Values(channel, values)
-        self.EIS_params   = values
-        self.EIS_duration = duration
-        
-        EIS_WF_params = {'E0':E0, 'f0':f0, 'f1':f1, 'n_pts':n_pts, 
-                         'n_cycles': n_cycles, 'amp':amp}
-        
-        if (EIS_WF_params != self.EIS_WF_params) or force_waveform_rewrite:
-            self.EIS_applied_freqs = self.make_EIS_waveform(E0, f0, f1, n_pts, n_cycles, amp)
-            self.check_EIS_corrections(EIS_WF_params, forced=force_waveform_rewrite)
-        
-        self.EIS_WF_params = EIS_WF_params
-        self.idle()
-        self.log('Set EIS parameters', 1)
-        return
     
-    
-    def make_EIS_waveform(self, channel, E0, f0, f1, n_pts, n_cycles, amp):
-        sample_rate = get_EIS_sample_rate(max(f0, f1))
-        file = f'D:/SECM/_auto_eis-{sample_rate//1000}kHz_1.tpl'
-        applied_freqs = generate_tpl(f0, f1, n_pts, n_cycles, 
-                                     amp, file)
-        self.log(f'Wrote new EIS waveform to {file}')
-        return applied_freqs
-    
-    
-    def check_EIS_corrections(self, channel, EIS_WF_params, forced=False):
-        '''
-        Checks if the current waveform is in the stored corrections file.
-        
-        If it is, take its correction factors from the file.
-        If forced == True, re-record correction factors
-        
-        Otherwise, prompt user to plug in the model circuit to record
-        a reference waveform
-        
-        Corrections file is a json which stores a dictionary. Dictionary keys
-        are defined by the waveform parameters: amplitude, number of points,
-        and all the applied frequencies.
-        
-        d = {
-            (amp, n_pts, *applied_frequencies) = [(f, Z_corr, phase_corr) for
-                                                  f in applied frequencies]            
-            }
-                
-        '''
-        amp   = EIS_WF_params['amp']
-        n_pts = EIS_WF_params['n_pts']
-        key   = (amp, n_pts, *self.EIS_applied_freqs)
-        key   = str(key)
-        file  = 'src/utils/EIS_waveforms.json'
-        if os.path.exists(file):
-            d = json.load(open(file, 'r'))
-            if (key in d) and not forced:
-                self.EIS_corrections = d[key]
-                return
-        else:
-            d = {}
-                
-        # Prompt for model circuit
-        connected = messagebox.askokcancel('Waveform corrections', 
-                                           message=
-                                           'EIS correction factors not found for this waveform.\nPlease plug in the model circuit and set to 10 MOhm.\nPress OK when ready.'
-                                           )
-        if not connected:
-            self.EIS_corrections = None
-            return
-        
-        self.EIS_WF_params = EIS_WF_params
-        
-        '''
-        Model circuit 10MOhm resistor is in parallel (or series?) with a capacitor
-        HEKA intends users to put the model circuit to the middle position
-        and click "Auto C-Fast" button on PATCHMASTER, which measures this capacitance
-        and then corrects for it (analog-ly) constantly. We separately use the 
-        C-fast feature to compensate for stray capacitance in the substrate or
-        probe (FeedbackController calls AutoCFast at the beginning of the 
-        automatic approach to the substrate), so we need to manually reset 
-        C-Fast to be correct for the model circuit. 5.56 pF and 0.6 us.
-        '''
-        
-        self.send_multiple_cmds([
-            'Set E CFastTot 5.56',
-            'Set E CFastTau 0.6'
-            ])
-               
-        # Do the measurement
-        self.idle()
-        path = self.run_measurement_loop('EIS', 'src/temp', 'EIS_corrections')
-        self.running()
-        
-        
-        # Read data from file
-        t, V, I = read_heka_data(path)
-        correction_datapoint = EISDataPoint(loc=(0,0,0), data=[t,V,I],
-                                            applied_freqs = self.EIS_applied_freqs,
-                                            corrections = None)
-        self.master.Plotter.set_echemdata(correction_datapoint)
-        freq, _, _, Z = correction_datapoint.data
-        
-        modZ  = np.abs(Z)
-        phase = np.angle(Z, deg=True)
-        
-        Z_corrections     = modZ / 10e6
-        phase_corrections = phase
-        
-        '''
-            Corrected |Z| = |Z| / Z_corrections
-            Corrected  p  =  p  - phase_corrections
-            Corrected  Z  = |Z| * exp(1j * phase * pi/180)
-        '''
-        self.log('|Z| corrections (multiplicative):')
-        self.log(Z_corrections)
-        self.log('Phase corrections (additive):')
-        self.log(phase_corrections)
-        self.EIS_corrections = list(zip(freq, Z_corrections, phase_corrections))
-        
-        # Save corrections to file
-        d[key] = self.EIS_corrections
-        json.dump(d, open(file, 'w'))
-        
-        messagebox.askokcancel('Waveform corrections',
-                               message='Correction factors recorded.')
-        
-            
-    
-    
-    def run_EIS(self, channel):
-        '''
-        Send command to run single EIS scan
-        '''
-        fmax = max(self.EIS_WF_params['f0'], self.EIS_WF_params['f1'])
-        sample_rate = get_EIS_sample_rate(fmax)
-        # Possible sampling rates are 10k, 20k, 40k, 100k, 200k
-        cmd = f'_auto_eis-{sample_rate//1000}kHz'
-        self.send_command(f'ExecuteSequence {cmd}')
-        self.running()
-        return
-    
-    
-    def run_custom(self, channel):
-        '''
-        Run the custom, user-set PGF file
-        '''
-        self.send_command('ExecuteSequence _custom')
-        self.running()
-        return
-    
-    
-    def run_measurement_loop(self, channel, measurement_type, save_path=None, name=''):
-        '''
-        Runs measurement of the requested type. Starts ADC polling in another
-        thread. Saves the data.
-        
-        measurement_type: 'CV', 'CA', 'EIS'. Defines what to run
-        save_path: string, path to save to
-        name: string, name to save as. save_path/{name}.asc
-        '''
-        if self.isRunning(channel):
-            self.log('Got new CV command, but already running!')
-            return
-            
-        if not self.isDataFile(channel):
-            print('== Open a DataFile in PATCHMASTER before recording! ==')
-            return
-        
-        if measurement_type == 'CV':
-            run_func = partial(self.run_CV, channel)
-            duration = self.CV_duration
-        elif measurement_type == 'CA':
-            run_func = self.run_CA
-            duration = self.CA_duration
-        elif measurement_type == 'EIS':
-            run_func = self.run_EIS
-            duration = self.EIS_duration
-        elif measurement_type == 'Custom':
-            run_func = self.run_custom
-            duration = 3600
-        else:
-            print('Internal error: invalid measurement_type')
-            return
 
-        
-        run_func()
-        st = time.time()
-        
-        # Start ADC polling
-        run(partial(self.master.ADC.polling, 
-                    timeout = duration))
-        
-        # Measurement loop
-        success = False
-        while time.time() - st < duration + 3:
-            if not self.isRunning(channel):
-                # Wait for run command to get sent to PATCHMASTER
-                continue
-            time.sleep(0.5)
-            if self.master.ABORT:
-                self.master.ADC.STOP_POLLING()
-                self.abort()
-                self.idle()
-                return 'MEAS_ABORT'
-            self.send_command('Query')
-            try:
-                if self.master.HekaReader.last[1] == 'Query_Idle':
-                    success = True
-                    break 
-            except:
-                pass
-            
-        if not success:
-            self.log(f'Experiment {measurement_type} failed!')         
-        
-        self.master.ADC.STOP_POLLING()
-        
-        path = self.save_last_experiment(path=f'{save_path}/{name}.asc')
-        self.idle()
-        return path
-    
-      
+   
         
 
 def generate_CV_params(E0, E1, E2, E3, scan_rate, quiet_time):
