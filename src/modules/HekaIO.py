@@ -113,6 +113,7 @@ class HekaWriter(Logger):
                 self.Writer.STOP = True
                 self.Writer.Reader.STOP = True
                 break
+            time.sleep(1)
         self.log('Stopping')
         
     
@@ -139,31 +140,28 @@ class SharedHekaWriter(Logger):
     each command. 
     
     '''
-    def __init__(self, Reader, input_file=input_file):
+    def __init__(self, input_file=input_file):
         self.STOP = False
         self.status = {1:'idle', 2:'idle'}
         self.queue = deque()
         
-        self.Reader = Reader
+        self.Reader = SharedHekaReader()
         run(self.Reader.read_stream)
+        run(self.run_tasks)
         
         self.file = input_file   # For EPC10 batch communication
         self.num = 0
         
-        self.clear_file(1)
-        self.send_command(1, 'Echo startup')
-        self.send_command(1, 'SetSleep 0.01')
+        self.clear_file()
+        self.send_commands('Echo startup')
+        self.send_commands('SetSleep 0.01')
      
-        
-    def send_command(self, channel, cmd):
-        # print(f'Sending: {self.num} {cmd}')
-        # if self.master.TEST_MODE:
-        #     return
+    
+    def clear_file(self):
         with open(self.file, 'w') as f:
-            f.write(f'+{self.num}\n{cmd}\n')
-        self.num += 1
-        time.sleep(0.1)
-        
+            f.close()
+        return
+     
     
     def run_tasks(self):
         while True:
@@ -174,6 +172,7 @@ class SharedHekaWriter(Logger):
             func = self.queue.popleft()
             func()
         return
+    
     
     def append_task(self, function):
         self.queue.append(function)
@@ -195,6 +194,33 @@ class SharedHekaWriter(Logger):
         return    
     
     
+    
+    # Immediately add a task to send commands to the queue
+    def send_commands(self, cmds):
+        func = partial(self._send_commands, cmds)
+        self.append_task(func)
+        return
+    
+    
+    # Schedule a task after *delay* seconds to send the commands    
+    def send_commands_delayed(self, cmds, delay):
+        func = partial(self._send_commands, cmds)
+        self.schedule_task(func, delay)
+        return
+    
+    
+    def _send_commands(self, cmds):
+        if type(cmds) == str:
+            cmds = [cmds]
+        with open(self.file, 'w') as f:
+            f.write(f'+{self.num}\n')
+            for cmd in cmds:
+                f.write(f'{cmd}\n')
+        self.num += 1
+        time.sleep(0.1)
+        return
+    
+    
     # Return list of commands to send to set the Values in Patchmaster    
     # Values are used to dynamically set echem settings in the pgf file, 
     # for example, CV bounds or EIS duration
@@ -214,31 +240,65 @@ class SharedHekaWriter(Logger):
                 'Set E F2Response 0',
                 'Set E Filter2 0.5']
         return cmds
-        
+    
+
+    # Get list of commands to set amplifier based on GUI inputs
+    def get_amplifier_commands(self, amp_params):
+        cmds = []
+        for key, val in amp_params.items():
+            cmds.append(f'Set {key} {val}')
+        return cmds
+    
     
     # Get list of commands to set amplifier and pgf to CV state
-    def get_CV_setup_commands(self, channel, E0, E1, E2, E3, 
+    def get_CV_setup_commands(self, E0, E1, E2, E3, 
                               scan_rate, quiet_time):
         if scan_rate <= 0: 
             raise ValueError('Scan rate must be > 0')
         values, duration = generate_CV_params(E0, E1, E2, E3, 
                                               scan_rate, quiet_time)
+
+        cmds = self.get_value_commands(values)
+        return cmds, duration
         
         
-        cmds = [f'Set E Ampl{channel} 1']
-        cmds += get_value_commands(values)
+    # Schedule task to setup and run a CV
+    def run_CV(self, channel, E0, E1, E2, E3, scan_rate, quiet_time,
+               amp_params):
+
+        # Setup commands
+        chann_cmd  = [f'Set E Ampl{channel} 1']
+        amp_cmds   = self.get_amplifier_commands(amp_params)
+        CV_cmds, duration = self.get_CV_setup_commands(E0, E1, E2, E3, scan_rate, 
+                                                       quiet_time)
         
-        self.CV_params   = values
-        self.CV_duration = duration
-        self.log('Set CV parameters', 1)
+        # Run command
+        cmds = {
+                '10Hz'  : '_CV-10Hz', 
+                '100Hz' : '_CV-100Hz',
+                '1kHz'  : '_CV-1kHz',
+                '10kHz' : '_CV-10kHz',
+                }
         
+        # Determine which sampling rate to use
+        if scan_rate <= 0.1:
+            mode = '10Hz'
+        elif scan_rate > 0.1 and scan_rate <= 0.5:
+            mode = '100Hz'
+        elif scan_rate > 0.5:
+            mode = '1kHz'
         
-    def set_amplifier(self, channel):
-        pass
+        run_cmd = [f'ExecuteSequence {cmds[mode]}']
+        
+        cmds_to_send = chann_cmd + amp_cmds + CV_cmds
+        
+        self.send_commands(cmds_to_send)
+        self.schedule_task(partial(self.export_data, channel), duration)
+        return
     
     
-    def run_CV(self, channel):
-        pass
+    def export_data(self, channel):
+        print(f'Exporting from channel {channel}')
    
 
     

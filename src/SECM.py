@@ -11,7 +11,7 @@ from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib
-from .modules.HekaIO import HekaReader, HekaWriter, SharedHekaReader, SharedHekaWriter
+from .modules.HekaIO import HekaWriter, SharedHekaReader, SharedHekaWriter
 from .modules.ADC import ADC
 from .modules.Piezo import Piezo
 from .modules.FeedbackController import FeedbackController, make_datapoint_from_file
@@ -134,7 +134,7 @@ class MasterModule(Logger):
     def test_mode_off(self):
         self.TEST_MODE = False
         
-    def load_modules(self, SharedHekaReader, SharedHekaWriter):
+    def load_modules(self, SharedHekaWriter):
         '''
         Initialize submodules for controlling this channel's piezos,
         ADC, etc. Submodules automatically call master.register(submodule)
@@ -146,7 +146,6 @@ class MasterModule(Logger):
             Piezo(self)
             PicoMotor(self)
             ImageCorrelator(self)
-            HekaReader(self, SharedHekaReader)
             HekaWriter(self, SharedHekaWriter)
             FeedbackController(self)
             self.log('All modules loaded.')
@@ -345,7 +344,7 @@ class MasterGUI(Logger):
         console = Text(console_panel, width=125, height=10)
         console.grid(row=0, column=0, sticky=(N,S,E,W))
         pl = PrintLogger(console)
-        sys.stdout = pl
+        # sys.stdout = pl
         
         # Add Tabs to main_panel for each channel
         self.channel_tabs   = Notebook(main_panel)
@@ -681,7 +680,7 @@ class GUI(Logger):
         self.params['EIS'] = make_EIS_window(self, eis_control)
         make_CA_window(self, ca_control)
         
-        self.amp_params = convert_to_index(self.params['amp'])
+        self.amp_params = convert_to_index(self.params['amp']) # From gui/amp_window.py
         ###  TODO: UNCOMMENT ME FOR FINAL CONFIG. STARTUP FROM KNOWN AMP. STATE ###
         # self.set_amplifier()
         ######################
@@ -1077,7 +1076,8 @@ class GUI(Logger):
     
     # Take parameters from CV window and send to HEKA    
     def set_amplifier(self):
-        new_params = convert_to_index(self.params['amp'])
+        pass
+        new_params = convert_to_index(self.params['amp']) # From gui/amp_window.py
         cmds = []
         for key, val in new_params.items():
             if key == 'float_gain':
@@ -1108,18 +1108,21 @@ class GUI(Logger):
         return E0, E1, E2, E3, v, t0
     
     def run_CV(self):
-        self.set_amplifier()
+        # self.set_amplifier()
+        amp_params = convert_to_index(self.params['amp'])
         E0, E1, E2, E3, v, t0 = self.get_CV_params()
-        self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
-        path = self.master.HekaWriter.run_measurement_loop('CV')
-        DataPoint = make_datapoint_from_file(path, 'CVDataPoint')
-        if DataPoint:
-            self.master.ADC.force_data(DataPoint)
+        # self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
+        # path = self.master.HekaWriter.run_measurement_loop('CV')
+        # DataPoint = make_datapoint_from_file(path, 'CVDataPoint')
+        # if DataPoint:
+        #     self.master.ADC.force_data(DataPoint)
+        self.master.HekaWriter.run_CV(E0, E1, E2, E3, v, t0, amp_params)
         self.master.make_ready()
         return path
     
     
     def get_EIS_params(self):
+        pass
         eis_params = self.params['EIS'].copy()
         E0      = eis_params['E0'].get('1.0', 'end')
         f0      = eis_params['f0'].get('1.0', 'end')
@@ -1137,6 +1140,7 @@ class GUI(Logger):
         return E0, f0, f1, n_pts, n_cycles, amp
     
     def run_EIS(self):
+        pass
         eis_params = self.get_EIS_params()
         self.master.HekaWriter.setup_EIS(*eis_params)
         path = self.master.HekaWriter.run_measurement_loop('EIS')
@@ -1149,6 +1153,7 @@ class GUI(Logger):
         return
     
     def run_EIS_corrections(self):
+        pass
         eis_params = self.get_EIS_params()
         self.master.HekaWriter.setup_EIS(*eis_params, force_waveform_rewrite=True)
         return
@@ -1156,6 +1161,7 @@ class GUI(Logger):
             
     
     def run_custom(self):
+        pass
         ''' Run custom, user-set PGF file '''
         self.set_amplifier()
         E0, E1, E2, E3, v, t0 = self.get_CV_params()
@@ -1322,7 +1328,6 @@ def run_main():
     # Shared HEKA communication modules.
     END_PROG = False
     try:
-        sharedReader = SharedHekaReader()
         sharedWriter = SharedHekaWriter()
     except Exception as e:
         print('Error communicating with HEKA:')
@@ -1338,12 +1343,12 @@ def run_main():
         
     
     # Channel 1
-    master1 = MasterModule(TEST_MODE = False, channel=1)    
-    m1_loaded = master1.load_modules(sharedReader, sharedWriter)
+    master1 = MasterModule(TEST_MODE = True, channel=1)    
+    m1_loaded = master1.load_modules(sharedWriter)
 
     # Channel 2
     master2 = MasterModule(TEST_MODE = True, channel=2)
-    m2_loaded = master2.load_modules(sharedReader, sharedWriter)
+    m2_loaded = master2.load_modules(sharedWriter)
     
     if not (m1_loaded and m2_loaded):
         for m in (master1, master2):
