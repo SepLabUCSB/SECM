@@ -112,7 +112,61 @@ def make_datapoint_from_file(file:str, DataPointType:str, **kwargs):
         print('Invalid DataPointType')
         return
     
+ 
+def load_echem_from_file(file):
+    '''
+    1. Autosave from HEKA -> timestamped .asc, comma separated
+    2. Export all points -> first line x y z, 2nd line coords, then data
+                         * csv or tab separated for CV/ EIS
+    3. Export echem data -> csv data for CV, tab separated for EIS
+    '''
+    datapoint = None
+    case = None
+    with open(file, 'r') as f:
+        line = f.readline()
+        if line.startswith('Series'):
+            case = 1            
+        
+        if line.startswith('xyz (um):'):
+            case = 2
+        
+        if (line.startswith('t/s') or line.startswith('<Frequency>')):
+            case = 3
     
+    datapoint = _read_file(file, case)
+    return datapoint
+
+
+def _read_file(file, case):
+    if case == 1:
+        return make_datapoint_from_file(file, 'CVDataPoint')
+    
+    if case == 2:
+        s = StringIO()
+        with open(file, 'r') as f:
+            for i, ln in enumerate(f):
+                if i < 2:
+                    continue
+                s.write(ln)
+            s.seek(0)
+    
+    if case == 3:
+        s = StringIO()
+        with open(file, 'r') as f:
+            for ln in f:
+                s.write(ln)
+            s.seek(0)
+    
+    headerline = s.readline()
+    if headerline.startswith('t/s'):
+        t,v,i = np.loadtxt(s, unpack=True)
+        datapoint = CVDataPoint(loc=(0,0,0), data = [t,v,i])
+        
+    if headerline.startswith('<Frequency>'):
+        f,re,im = np.loadtxt(s, unpack=True)
+        datapoint = EISDataPoint(loc=(0,0,0), data=[f,re,im],
+                                 input_FT_data=True)
+    return datapoint
 
 
 

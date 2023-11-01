@@ -1,4 +1,5 @@
 from datetime import datetime
+from io import StringIO
 import os
 import pickle
 import numpy as np
@@ -417,12 +418,13 @@ class CVDataPoint(DataPoint):
     
 class EISDataPoint(DataPoint):    
     def __init__(self, loc: tuple, data:list, applied_freqs:list,
-                 corrections: list=None):
+                 corrections: list=None, input_FT_data=False):
         self.loc      = loc
         self.data     = data
         self.applied_freqs = applied_freqs     # Recorded by HekaWriter
         self.corrections   = corrections       # Recorded by HekaWriter
-        self.FT() # do the Fourier transform
+        if not input_FT_data:
+            self.FT() # do the Fourier transform
         
     def __str__(self):
         return 'EISDataPoint'
@@ -542,3 +544,11 @@ def load_from_file(path):
 
 
 
+    
+        
+        
+    
+    
+    
+    
+    

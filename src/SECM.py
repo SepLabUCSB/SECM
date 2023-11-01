@@ -14,7 +14,7 @@ import matplotlib
 from .modules.HekaIO import HekaReader, HekaWriter
 from .modules.ADC import ADC
 from .modules.Piezo import Piezo
-from .modules.FeedbackController import FeedbackController, make_datapoint_from_file
+from .modules.FeedbackController import FeedbackController, make_datapoint_from_file, load_echem_from_file
 from .modules.Plotter import Plotter, ExporterGenerator
 from .modules.DataStorage import Experiment, EISDataPoint, load_from_file
 from .modules.Picomotor import PicoMotor
@@ -280,6 +280,7 @@ class GUI(Logger):
         
         menu_file.add_command(label='New', command=self.newFile)
         menu_file.add_command(label='Open...', command=self.openFile)
+        menu_file.add_command(label='Open Echem...', command=self.openEchemFile)
         menu_file.add_command(label='Save', command=self.save)
         menu_file.add_command(label='Save as...', command=self.saveAs)
         menu_file.add_command(label='Export...', command=self.export)
@@ -747,7 +748,16 @@ class GUI(Logger):
                           'Load settings associated with this experiment file?')
             if answer:
                 self.load_settings(expt.settings)
-            
+    
+                
+    # Load echem data from csv
+    def openEchemFile(self):
+        f = filedialog.askopenfilename()
+        point = load_echem_from_file(f)
+        if point:
+            self.master.Plotter.set_echemdata(DATAPOINT = point)
+        else:
+            self.log(f'Could not load echem data from file: {f}')
     
     # save current file to disk
     def save(self):
@@ -1043,6 +1053,7 @@ class GUI(Logger):
                                              corrections=self.master.HekaWriter.EIS_corrections)
         if DataPoint:
             self.master.ADC.force_data(DataPoint)
+            DataPoint._save(path[:-4] + '_EIS.asc')
         self.master.make_ready()
         self.log('Finished running EIS')
         return
