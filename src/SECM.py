@@ -1109,10 +1109,23 @@ class GUI(Logger):
         if self.master.Piezo.isMoving():
             self.log('Error: cannot run hopping mode while piezo is moving')
             return
+        
+        fname = filedialog.asksaveasfilename(
+                defaultextension='.secmdata', initialdir='D:\SECM\Data')
+        if not fname: 
+            return
+        
         self.set_amplifier()
-        func = partial(self.master.FeedbackController.hopping_mode,
-                        self.params['hopping'])
+        func = partial(self._run_hopping, fname)
         run(func)
+        
+    
+    def _run_hopping(self, fname):
+        success = self.master.FeedbackController.hopping_mode(self.params['hopping'])
+        settings = self.save_settings(ask_prompt = False)
+        self.master.expt.save_settings(settings)
+        self.master.expr.save(fname)
+        return success
         
     
     def run_multi_hopping(self):
@@ -1144,12 +1157,7 @@ class GUI(Logger):
             this_fname = fname.replace('.secmdata', f'_{(i+1):03d}.secmdata')
             
             # Run hopping mode scan
-            success = self.master.FeedbackController.hopping_mode(self.params['hopping'])
-            
-            # Save the data
-            settings = self.save_settings(ask_prompt=False)
-            self.master.expt.save_settings(settings)
-            self.master.expt.save(this_fname)
+            success = self._run_hopping(this_fname)
             
             if not success:
                 self.log('Multi hopping aborted due to incomplete scan')
