@@ -239,6 +239,7 @@ class FeedbackController(Logger):
                 break
             
             if on_surface:
+                time.sleep(0.1)
                 # Take a CV on the surface
                 self.master.GUI.run_CV()
                 # Slowly retract from surface by 10 um
