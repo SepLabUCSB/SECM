@@ -753,6 +753,7 @@ class GUI(Logger):
     # Load echem data from csv
     def openEchemFile(self):
         f = filedialog.askopenfilename()
+        if not f: return
         point = load_echem_from_file(f)
         if point:
             self.master.Plotter.set_echemdata(DATAPOINT = point)
@@ -912,6 +913,21 @@ class GUI(Logger):
             f.close()
         pt = self.master.Plotter.fig2DataPoint
         if str(pt) == 'PointsList':
+            n_pts = len(pt.data)
+            export_both = messagebox.askyesno(title='Export multiple',
+                                              message=f'Found {n_pts} echem experiments at this location. Export all of them?')
+            if export_both:
+                for i in range(n_pts):
+                    _pt = pt[i]
+                    pt_type = str(_pt)
+                    if pt_type == 'EISDataPoint':
+                        this_path = path.replace('.csv', '_EIS.txt')
+                        _pt._save(this_path)
+                    else:
+                        this_path = path.replace('.csv', f'_{pt_type}.csv')
+                        _pt._save(this_path)
+                    self.log(f'Saved to {this_path}')
+                return
             idx = self.fig2ptselection.get()
             pt = pt[idx]
         pt._save(path)        
@@ -1124,7 +1140,7 @@ class GUI(Logger):
         success = self.master.FeedbackController.hopping_mode(self.params['hopping'])
         settings = self.save_settings(ask_prompt = False)
         self.master.expt.save_settings(settings)
-        self.master.expr.save(fname)
+        self.master.expt.save(fname)
         return success
         
     
