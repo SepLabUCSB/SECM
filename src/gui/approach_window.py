@@ -47,17 +47,7 @@ def make_approach_window(gui, master_frame):
     Z_field.bind('<Return>', focus_next_widget)
 
     Label(frame, text='um').grid(column=4, row=3, sticky=(W))
-    
-    
-    Label(frame, text='Speed: ').grid(column=2, row=4, sticky=(E))
-    speed_field = Text(frame, height=1, width=1)
-    speed_field.grid(column=3, row=4, sticky=(E,W))
-    speed_field.insert('1.0', '2')
-    speed_field.bind('<Tab>', focus_next_widget)
-    speed_field.bind('<Return>', focus_next_widget)
-
-    Label(frame, text='um/s').grid(column=4, row=4, sticky=(W))
-    
+        
     Button(frame, text='Approach', 
            command=gui.run_approach_curve).grid(column=3, row=5)
    
@@ -73,7 +63,6 @@ def make_approach_window(gui, master_frame):
     approach_params = {'voltage': V_field,
                        'cutoff': I_field,
                        'z_height': Z_field,
-                       'approach_speed': speed_field,
                        'rel_current': rel_current_option,}
     
     return approach_params

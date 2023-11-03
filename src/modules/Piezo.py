@@ -194,7 +194,7 @@ class Piezo(Logger):
          self._halt = True
         
         
-    def approach(self, speed, forced_step_size=None):
+    def approach(self, forced_step_size=None):
         '''
         Starting from the current location, reduce Z in small steps at
         the given speed until Z = 0 (or external stop command is received)
@@ -204,11 +204,8 @@ class Piezo(Logger):
                           prioritized over speed
         '''
         
-        step_size  = 0.05            # step size um
-        step_delay = step_size/speed  # step time in s
-        while step_delay < 0.025:
-            step_size *= 2
-            step_delay = step_size/speed
+        step_size  = 0.01            # step size um
+        step_delay = 0.001           # step time in s
         
         if forced_step_size:
             step_size = forced_step_size

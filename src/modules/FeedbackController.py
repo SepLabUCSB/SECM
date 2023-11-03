@@ -256,7 +256,7 @@ class FeedbackController(Logger):
     
     
     def approach(self, height:float=None, voltage:float=400, 
-                 start_coords:tuple=None, forced_step_size=None):
+                 start_coords:tuple=None, forced_step_size=0.01):
         '''
         Run an approach curve. If no parameters are given, start from 
         the current position. Otherwise, start from the set height, or
@@ -272,12 +272,10 @@ class FeedbackController(Logger):
         # Get cutoff current from GUI
         voltage = self.master.GUI.params['approach']['voltage'].get('1.0', 'end')
         cutoff  = self.master.GUI.params['approach']['cutoff'].get('1.0', 'end')
-        speed   = self.master.GUI.params['approach']['approach_speed'].get('1.0', 'end')
         rel_opt = self.master.GUI.params['approach']['rel_current'].get()
         try:
             voltage = float(voltage)
             i_cutoff = float(cutoff) * 1e-12
-            speed = float(speed)
             use_rel_I = True if rel_opt == 'Relative' else False
         except Exception as e:
             print('Invalid approach curve entry!')
@@ -318,7 +316,7 @@ class FeedbackController(Logger):
 
         # Start it
         self._piezo_counter = self.Piezo.counter # Counter tracks when piezo stops
-        run(partial(self.Piezo.approach, speed, forced_step_size))
+        run(partial(self.Piezo.approach, forced_step_size=forced_step_size))
         
         on_surface = False
         time.sleep(0.1)
