@@ -5,7 +5,7 @@ from functools import partial
 
 from ..utils.utils import focus_next_widget, run
 
-methods = ['CV', 'CV then EIS', 'Custom']
+methods = ['CV', 'CV then EIS', 'CV then 5x EIS', 'Custom']
 
 
 def make_hopping_window(gui, master_frame):
