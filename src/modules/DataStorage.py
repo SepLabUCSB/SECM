@@ -410,9 +410,9 @@ class CVDataPoint(DataPoint):
     
     def _save(self, path):
         with open(path, 'a') as f:
-            f.write('t/s\tE/V\tI/A\n')
+            f.write('t/s,E/V,I/A\n')
             for t, V, I in zip(self.data[0], self.data[1], self.data[2]):
-                f.write(f'{t}\t{V}\t{I}\n')
+                f.write(f'{t},{V},{I}\n')
     
 
     

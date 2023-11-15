@@ -920,12 +920,10 @@ class GUI(Logger):
                 for i in range(n_pts):
                     _pt = pt[i]
                     pt_type = str(_pt)
+                    this_path = path.replace('.csv', f'_{pt_type}{i}.csv')
                     if pt_type == 'EISDataPoint':
-                        this_path = path.replace('.csv', '_EIS.txt')
-                        _pt._save(this_path)
-                    else:
-                        this_path = path.replace('.csv', f'_{pt_type}.csv')
-                        _pt._save(this_path)
+                        this_path = this_path.replace('.csv', '.txt')
+                    _pt._save(this_path)
                     self.log(f'Saved to {this_path}')
                 return
             idx = self.fig2ptselection.get()
