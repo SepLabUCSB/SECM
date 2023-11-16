@@ -87,6 +87,7 @@ def find_redox_peaks(t, V, I):
         # I.e. bpeak is more negative if fpeak is an oxidation, bpeak is
         #      more positive if fpeak is a reduction
         direction = np.diff(V)[fpeak]
+        res = False
         if direction > 0:   # oxidative scan for fpeak, look for reductive bpeak
             res = True if V[bpeak] < V[fpeak] else False
         elif direction < 0: # reductive scan for fpeak, look for more oxidative bpeak
