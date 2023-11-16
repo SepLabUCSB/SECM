@@ -65,6 +65,22 @@ class HekaReader(Logger):
         self.willStop = True
     
     
+    def wait_response(self, string, timeout=5):
+        '''
+        Waits until PATCHMASTER gives a response starting with given string.
+        '''
+        st = time.time()
+        while time.time() - st < timeout:
+            try:
+                response = self.last[1]
+                if response.startswith(string):
+                    return response
+            except:
+                pass
+        self.log(f'Error: Timed out waiting for response string:{string}')
+        return None
+    
+    
     def read_stream(self):
         '''
         Call in its own thread. Reads HEKA output file continuously
@@ -232,14 +248,9 @@ class HekaWriter(Logger):
         current DataFile path) and copy the file to the desired path
         '''
         self.send_command('GetParameters DataFile')
-        st = time.time()
-        while time.time() - st < 1:
-            try:
-                response = self.master.HekaReader.last[1]
-                if response[1].startswith('Reply_GetParameters'): 
-                    break
-            except:
-                pass
+        response = self.master.HekaReader.wait_response('Reply_GetParameters', 1)
+        if not response:
+            return 
         
         savepath = response.lstrip('Reply_GetParameters ').strip('"')
         savepath = savepath.replace('.dat', '')
@@ -249,12 +260,11 @@ class HekaWriter(Logger):
         
         # Select Series level for full export
         self.send_command('GetTarget')
-        while True:
-            if self.master.HekaReader.last[1].startswith('Reply_GetTarget'):
-                dat = self.master.HekaReader.last[1].split('  ')[1]
-                group, ser, sweep, trace, target = dat.split(',')
-                self.send_command(f'SetTarget {group},{ser},{sweep},{trace},2,TRUE,TRUE')
-                break
+        response = self.master.HekaReader.wait_response('Reply_GetTarget')
+        if not response: return
+        dat = response.split('  ')[1]
+        group, ser, sweep, trace, target = dat.split(',')
+        self.send_command(f'SetTarget {group},{ser},{sweep},{trace},2,TRUE,TRUE')
             
         # Set oscilloscope to show full time, 0-> 100%. Otherwise,
         # PATCHMASTER only exports the times displayed on the scope
@@ -274,29 +284,17 @@ class HekaWriter(Logger):
         
         
         self.send_command(f'Export overwrite, {savepath}')
-        
-        st = time.time()
-        while True: # Wait for file creation by PATCHMASTER
-            response = self.master.HekaReader.last
-            if time.time() - st > 30:
-                self.log('save_last_experiment timed out waiting for PATCHMASTER!')
-                return ''
-            try:
-                # if response[1].startswith('error'):
-                #     self.log('File export error!')
-                #     print('file export error!')
-                #     return ''
-                if response[1].startswith('Reply_Export'):
-                    break
-            except: pass # Response may be None or a single '+000xx'
+        if not self.master.HekaReader.wait_response('Reply_Export', 30):
+            return
         
         
         if (not path or path == 'None/.asc'): 
             # Data was not recorded as part of a scanning experiment
             # Save it with the timestamp
             self.send_command('GetParameters SeriesDate, SeriesTime')
-            time.sleep(0.01)
-            SeriesDate, SeriesTime = self.master.HekaReader.last[1].split(',')
+            response = self.master.HekaReader.wait_response('Reply_GetParameters')
+            if not response: return
+            SeriesDate, SeriesTime = response.split(',')
 
             SeriesDate = SeriesDate.lstrip('Reply_GetParameters ').replace('/', '')
             SeriesTime = SeriesTime[:-4].replace(':', '-')
@@ -656,6 +654,8 @@ class HekaWriter(Logger):
         self.master.ADC.STOP_POLLING()
         
         path = self.save_last_experiment(path=f'{save_path}/{name}.asc')
+        if not path: # try again?
+            path = self.save_last_experiment(path=f'{save_path}/{name}.asc')
         self.idle()
         return path
     
