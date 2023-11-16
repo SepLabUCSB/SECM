@@ -578,6 +578,17 @@ class HekaWriter(Logger):
         return
     
     
+    def run_OCP(self):
+        '''
+        Send command to run a 0.1s long OCP measurement. Used to add an initial
+        measurement to the file, otherwise trying to export the first measurement
+        sometimes gives problems.
+        '''
+        self.send_command('ExecuteSequence _OCP')
+        time.sleep(0.6)
+        return
+    
+    
     def run_measurement_loop(self, measurement_type, save_path=None, name=''):
         '''
         Runs measurement of the requested type. Starts ADC polling in another

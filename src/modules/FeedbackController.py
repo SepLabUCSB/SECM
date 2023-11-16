@@ -225,6 +225,7 @@ class FeedbackController(Logger):
         self.HekaWriter.macro('E Vhold 0')
         time.sleep(1)
         self.HekaWriter.macro('E AutoCFast')
+        self.HekaWriter.run_OCP()
         self.HekaWriter.macro(f'E Vhold {voltage}')
         
         while True:
