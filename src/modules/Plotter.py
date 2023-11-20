@@ -816,8 +816,8 @@ class Plotter(Logger):
         '''
         freqs, _,_,Z = EISDataPoint.data
         
-        valid_idxs = [i for i, z in enumerate(Z) if np.abs(z) <= 20e9]
-        Z = [z for i, z in enumerate(Z) if i in valid_idxs]
+        # valid_idxs = [i for i, z in enumerate(Z) if np.abs(z) <= 20e9]
+        # Z = [z for i, z in enumerate(Z) if i in valid_idxs]
         
         x = np.real(Z)
         y = -np.imag(Z)
@@ -851,10 +851,10 @@ class Plotter(Logger):
         '''
         freqs, _, _, Z = EISDataPoint.data
         x  = [float(f) for f in freqs]
-        valid_idxs = [i for i, z in enumerate(Z) if np.abs(z) <= 20e9]
+        # valid_idxs = [i for i, z in enumerate(Z) if np.abs(z) <= 20e9]
         
-        Z = [z for i, z in enumerate(Z) if i in valid_idxs]
-        x = [X for i, X in enumerate(x) if i in valid_idxs]
+        # Z = [z for i, z in enumerate(Z) if i in valid_idxs]
+        # x = [X for i, X in enumerate(x) if i in valid_idxs]
         
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
         
