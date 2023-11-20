@@ -708,19 +708,6 @@ class Plotter(Logger):
         self.fig2DataPoint = DATAPOINT
         
         # Get the data
-        if isinstance(DATAPOINT, ADCDataPoint):
-            if self.FIG2_FORCED:
-                # Don't update with new ADC data
-                return
-            t, V, I = DATAPOINT.get_data()
-            V = np.array(V)/10
-            I = np.array(I)/DATAPOINT.gain
-            if not self.rect.get_width() == 0:
-                # Unselect last point
-                self.rect.set_bounds(0,0,0,0)
-                self.ax1.draw_artist(self.rect)
-                self.fig1.canvas.draw_idle()
-                
         if isinstance(DATAPOINT, PointsList):
             # Determine which to plot
             selected_idx = self.master.GUI.fig2ptselection.get()
@@ -742,6 +729,20 @@ class Plotter(Logger):
                 return self.draw_Bode(DATAPOINT, 'Z')
             elif option == 'Phase Bode':
                 return self.draw_Bode(DATAPOINT, 'Phase')
+            
+        if isinstance(DATAPOINT, ADCDataPoint):
+            if self.FIG2_FORCED:
+                # Don't update with new ADC data
+                return
+            t, V, I = DATAPOINT.get_data()
+            V = np.array(V)/10
+            I = np.array(I)/DATAPOINT.gain
+            if not self.rect.get_width() == 0:
+                # Unselect last point
+                self.rect.set_bounds(0,0,0,0)
+                self.ax1.draw_artist(self.rect)
+                self.fig1.canvas.draw_idle()
+         
         
         try:
             d = {'t': t,
@@ -814,6 +815,10 @@ class Plotter(Logger):
         Make a Nyquist plot on Fig 2 for EIS-type data
         '''
         freqs, _,_,Z = EISDataPoint.data
+        
+        valid_idxs = [i for i, z in enumerate(Z) if np.abs(z) <= 20e9]
+        Z = [z for i, z in enumerate(Z) if i in valid_idxs]
+        
         x = np.real(Z)
         y = -np.imag(Z)
         
@@ -846,6 +851,11 @@ class Plotter(Logger):
         '''
         freqs, _, _, Z = EISDataPoint.data
         x  = [float(f) for f in freqs]
+        valid_idxs = [i for i, z in enumerate(Z) if np.abs(z) <= 20e9]
+        
+        Z = [z for i, z in enumerate(Z) if i in valid_idxs]
+        x = [X for i, X in enumerate(x) if i in valid_idxs]
+        
         colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
         
         if option == 'Z':
