@@ -14,7 +14,7 @@ def make_hopping_window(gui, master_frame):
     frame.grid(column=1, row=1)
     
     Label(frame, text='    ').grid(column=1, row=0)
-    Label(frame, text='Length: ').grid(column=2, row=1)
+    Label(frame, text='Length: ').grid(column=2, row=1, sticky=(E))
     Label(frame, text='Z height: ').grid(column=2, row=2, sticky=(E))
     Label(frame, text='Points per line: ').grid(column=2, row=3, sticky=(E))
     Label(frame, text='    ').grid(column=5, row=4)
@@ -38,8 +38,8 @@ def make_hopping_window(gui, master_frame):
     points_field.bind('<Tab>', focus_next_widget)
     points_field.bind('<Return>', focus_next_widget)
     
-    Label(frame, text='um').grid(column=4, row=1, sticky=(W))
-    Label(frame, text='um').grid(column=4, row=2, sticky=(W))
+    Label(frame, text='μm').grid(column=4, row=1, sticky=(W))
+    Label(frame, text='μm').grid(column=4, row=2, sticky=(W))
     Label(frame, text='(n x n grid)').grid(column=4, row=3, sticky=(W))
     
     method = StringVar()

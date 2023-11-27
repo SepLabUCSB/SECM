@@ -583,7 +583,7 @@ class HekaWriter(Logger):
         sometimes gives problems.
         '''
         self.send_command('ExecuteSequence _OCP')
-        time.sleep(0.6)
+        time.sleep(0.8)
         return
     
     

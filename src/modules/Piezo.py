@@ -237,7 +237,32 @@ class Piezo(Logger):
         return
     
     
-    def retract(self, height, relative=False):
+    def retract(self, height, relative=True):
+        '''
+        Starting from the current location, increase Z so Z = height
+        
+        If relative == True, instead increase Z until Z = height + starting height
+        
+        height: float, target z height
+        '''
+        self.stop_monitoring()
+        x,y,z = self.measure_loc()
+        z = self.z
+        if relative:
+            height += z
+        
+        if height > 80:
+            self.log(f'Error: target height out of range: {height}. Moving to 80.000')
+            height = 80
+        
+        self.goto_z(height)
+        time.sleep(0.5)
+        self.measure_loc()
+        self.log(f'Finished retracting, current height {self.z}')
+        self.start_monitoring()
+    
+    
+    def slow_retract(self, height, relative=False):
         '''
         Starting from the current location, increase Z in small steps at
         the given speed until Z = height

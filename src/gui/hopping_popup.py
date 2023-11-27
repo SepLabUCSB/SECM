@@ -23,7 +23,7 @@ class HoppingPopup():
         Entry(frame, textvariable=self.n_scans, width=6).grid(row=0, column=1, sticky=(W,E))
         Entry(frame, textvariable=self.move_dist, width=6).grid(row=1, column=1, sticky=(W,E))
         
-        Label(frame, text='um').grid(row=1, column=2, sticky=(W))
+        Label(frame, text='μm').grid(row=1, column=2, sticky=(W))
         
         Button(frame, text='OK', command=self.OK).grid(row=2, column=1, sticky=(W,E))
         

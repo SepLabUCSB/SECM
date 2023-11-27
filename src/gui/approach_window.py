@@ -46,7 +46,7 @@ def make_approach_window(gui, master_frame):
     Z_field.bind('<Tab>', focus_next_widget)
     Z_field.bind('<Return>', focus_next_widget)
 
-    Label(frame, text='um').grid(column=4, row=3, sticky=(W))
+    Label(frame, text='μm').grid(column=4, row=3, sticky=(W))
         
     Button(frame, text='Approach', 
            command=gui.run_approach_curve).grid(column=3, row=5)
