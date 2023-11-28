@@ -591,7 +591,7 @@ class Plotter(Logger):
         self.master.GUI.heatmap_min_val.set(f'{minval:0.3g}')
         self.master.GUI.heatmap_max_val.set(f'{maxval:0.3g}') 
     
-    def apply_minmax_fields(self):
+    def apply_minmax_fields(self, val=None):
         self.force_minmax = True
         self.update_fig1()
         

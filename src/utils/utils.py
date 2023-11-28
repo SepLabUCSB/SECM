@@ -19,7 +19,12 @@ def nearest(array, value):
     
 
 def focus_next_widget(event):
-    event.widget.tk_focusNext().focus()
+    widget = event.widget.tk_focusNext()
+    widget.focus()
+    try:
+        widget.select_range(0, 'end')
+    except:
+        pass
     return("break")
 
 

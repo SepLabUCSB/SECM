@@ -230,10 +230,11 @@ class Piezo(Logger):
             self.x, self.y, self.z = x,y,z
             time.sleep(step_delay)
         
-        self.x, self.y, self.z = self.measure_loc()
+        # self.x, self.y, self.z = self.measure_loc()
         self.counter += 1
         self._halt = False
         self._moving = False
+        # self.start_monitoring()
         return
     
     
