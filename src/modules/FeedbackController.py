@@ -437,7 +437,12 @@ class FeedbackController(Logger):
                 return False
                         
             # Run echem experiment on surface
-            data = self.run_echems(expt_type, expt, (x, y, z), i) # TODO: run variable echem experiment(s) at each pt
+            data = self.run_echems(expt_type, expt, (x, y, z), i)
+            if data == 'failed':
+                self.log('Echem experiment failed')
+                expt.save()
+                time.sleep(0.01)
+                continue
             if not data:
                 # Aborted during HEKA measurement
                 self.log('Hopping mode aborted')
@@ -518,13 +523,19 @@ class FeedbackController(Logger):
         Return         
         '''
         if expt_type == 'CV':
-            t, voltage, current = self.run_CV(expt.path, i)
+            try:
+                t, voltage, current = self.run_CV(expt.path, i)
+            except:
+                return 'failed'
             if type(t) == int:
                 return None
             data = CVDataPoint(loc = loc, data = [t, voltage, current])
         
         if expt_type == 'EIS':
-            t, voltage, current = self.run_EIS(expt.path, i)
+            try:
+                t, voltage, current = self.run_EIS(expt.path, i)
+            except:
+                return 'failed'
             if type(t) == int:
                 return None
             data = EISDataPoint(loc = loc, data = [t, voltage, current],
@@ -532,7 +543,10 @@ class FeedbackController(Logger):
                                 corrections = self.HekaWriter.EIS_corrections)
          
         if expt_type == 'Custom':
-            t, voltage, current = self.run_custom(expt.path, i)
+            try:
+                t, voltage, current = self.run_custom(expt.path, i)
+            except:
+                return 'failed'
             if type(t) == int:
                 return None
             data = CVDataPoint(loc = loc, data = [t, voltage, current])   
@@ -541,7 +555,10 @@ class FeedbackController(Logger):
             # Run CV
             if not self.potentiostat_setup('CV'): 
                 return None
-            t, voltage, current = self.run_CV(expt.path, i)
+            try:
+                t, voltage, current = self.run_CV(expt.path, i)
+            except:
+                return 'failed'
             if type(t) == int:
                 return None
             CVdata = CVDataPoint(loc=loc, data=[t,voltage,current])
@@ -563,7 +580,10 @@ class FeedbackController(Logger):
             
             
             # Run EIS expt
-            t, voltage, current = self.run_EIS(expt.path, i)
+            try:
+                t, voltage, current = self.run_EIS(expt.path, i)
+            except:
+                return CVdata
             if type(t) == int:
                 return None
             self.HekaWriter.reset_amplifier()
@@ -579,7 +599,10 @@ class FeedbackController(Logger):
             # Run CV
             if not self.potentiostat_setup('CV'): 
                 return None
-            t, voltage, current = self.run_CV(expt.path, i)
+            try:
+                t, voltage, current = self.run_CV(expt.path, i)
+            except:
+                return 'failed'
             if type(t) == int:
                 return None
             CVdata = CVDataPoint(loc=loc, data=[t,voltage,current])
@@ -605,7 +628,10 @@ class FeedbackController(Logger):
                 
                 
                 # Run EIS expt
-                t, voltage, current = self.run_EIS(expt.path, i)
+                try:
+                    t, voltage, current = self.run_EIS(expt.path, i)
+                except:
+                    break
                 if type(t) == int:
                     return None
                 EISdata = EISDataPoint(loc = loc, data = [t, voltage, current],
