@@ -19,7 +19,7 @@ from .modules.Plotter import Plotter, ExporterGenerator
 from .modules.DataStorage import Experiment, EISDataPoint, load_from_file
 from .modules.Picomotor import PicoMotor
 from .modules.ImageCorrelator import ImageCorrelator
-from .utils.utils import run, Logger
+from .utils.utils import run, Logger, focus_next_widget
 from .gui import *
 from .gui.hopping_popup import HoppingPopup
 
@@ -226,6 +226,7 @@ class PrintLogger():
         self.textbox.tag_config('black', foreground='black')
 
     def write(self, text):
+        self.textbox.configure(state='normal')
         color='black'
         for msg in ('Warning', 'warning', 'Error', 'error'):
             if msg in text:
@@ -236,6 +237,7 @@ class PrintLogger():
             color='green'
         self.textbox.insert(END, text, color) # write text to textbox
         self.textbox.see('end') # scroll to end
+        self.textbox.configure(state='disabled')
 
     def flush(self): # needed for file like object
         pass
@@ -475,10 +477,15 @@ class GUI(Logger):
         Button(heatmapscaleframe, text='+', width=1,
                command=self.master.Plotter.zoom_lower_add).grid(
                row=2, column=1, sticky=(W,E))         
-        Entry(heatmapscaleframe, textvariable=self.heatmap_min_val, width=5).grid(
-            row=2, column=2, sticky=(W,E))
-        Entry(heatmapscaleframe, textvariable=self.heatmap_max_val, width=5).grid(
-            row=2, column=3, sticky=(W,E))
+        _min_entry = Entry(heatmapscaleframe, textvariable=self.heatmap_min_val, width=5)
+        _min_entry.grid(row=2, column=2, sticky=(W,E))
+        _min_entry.bind('<Tab>', focus_next_widget)
+        _min_entry.bind('<Return>', self.master.Plotter.apply_minmax_fields)
+        
+        _max_entry = Entry(heatmapscaleframe, textvariable=self.heatmap_max_val, width=5)
+        _max_entry.grid(row=2, column=3, sticky=(W,E))
+        _max_entry.bind('<Tab>', focus_next_widget)
+        _max_entry.bind('<Return>', self.master.Plotter.apply_minmax_fields)
         Button(heatmapscaleframe, text='-', width=1,
                command=self.master.Plotter.zoom_upper_subt).grid(
                row=2, column=4)
@@ -512,11 +519,15 @@ class GUI(Logger):
         self.heatmap_cmap_minval = StringVar(value='0')
         self.heatmap_cmap_maxval = StringVar(value='1')
         Label(heatmapcolorframe, text='Min: ').grid(row=1, column=0, sticky=(W,E))
-        Entry(heatmapcolorframe, textvariable=self.heatmap_cmap_minval, width=3).grid(
-            row=1, column=1, sticky=(W,E))
+        _cm_lower = Entry(heatmapcolorframe, textvariable=self.heatmap_cmap_minval, width=3)
+        _cm_lower.grid(row=1, column=1, sticky=(W,E))
+        _cm_lower.bind('<Tab>', focus_next_widget)
+        _cm_lower.bind('<Return>', self.master.Plotter.update_cmap)
         Label(heatmapcolorframe, text='Max: ').grid(row=1, column=2, sticky=(W,E))
-        Entry(heatmapcolorframe, textvariable=self.heatmap_cmap_maxval, width=3).grid(
-            row=1, column=3, sticky=(W,E))
+        _cm_upper = Entry(heatmapcolorframe, textvariable=self.heatmap_cmap_maxval, width=3)
+        _cm_upper.grid(row=1, column=3, sticky=(W,E))
+        _cm_upper.bind('<Tab>', focus_next_widget)
+        _cm_upper.bind('<Return>', self.master.Plotter.update_cmap)
         Button(heatmapcolorframe, text='Apply', command=self.master.Plotter.update_cmap).grid(
             row=2, column=1, columnspan=2)
         
@@ -525,6 +536,22 @@ class GUI(Logger):
         HEATMAP_TABS.add(heatmapscaleframe, text='Heatmap Scale')
         HEATMAP_TABS.add(heatmapcolorframe, text='Colors')
         HEATMAP_TABS.pack(expand=1, fill='both')
+        
+        
+        bottom_cmd_frame = Frame(rightpanel)
+        bottom_cmd_frame.grid(row=3, column=0, sticky=(N,S,W,E))
+        cmd_tab = Notebook(bottom_cmd_frame)
+        cmd_frame = Frame(cmd_tab)
+        
+        self.heka_command = StringVar()
+        _cmd_entry = Entry(cmd_frame, width=25, textvariable=self.heka_command)
+        _cmd_entry.grid(row=0, column=0, sticky=(E,W))
+        _cmd_entry.bind('<Return>', self.send_heka_command)
+        Button(cmd_frame, text='Send', command=self.send_heka_command).grid(
+            row=0, column=1, sticky=(E,W))
+        
+        cmd_tab.add(cmd_frame, text='Send HEKA Command')
+        cmd_tab.pack(expand=1, fill='both')
         
         
         
@@ -619,7 +646,7 @@ class GUI(Logger):
         Entry(piezo_control, textvariable=self._z_set, width=6).grid(row=1, column=4, columnspan=2, sticky=(W,E))
         Button(piezo_control, text='Set', command=self.piezo_goto).grid(row=1, column=6, sticky=(W,E))
         
-        Button(piezo_control, text='Reset Position Monitoring', command=self.piezo_reading_reset).grid(
+        Button(piezo_control, text='Restart Position Monitoring', command=self.piezo_reading_reset).grid(
             row=2, column=0, columnspan=7, sticky=(W,E))
         
         self._z_piezosteps  = StringVar(value='0')
@@ -1247,6 +1274,10 @@ class GUI(Logger):
     def z_piezo_stop(self):
         self.master.PicoMotor.halt()
         return
+    
+    def send_heka_command(self, cmd=None):
+        cmd = self.heka_command.get()
+        self.master.HekaWriter.send_command(cmd)
         
             
 
