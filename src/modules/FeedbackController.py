@@ -395,6 +395,7 @@ class FeedbackController(Logger):
                                       ylim=(0,length)
                                       )
         x,y,z = self.Piezo.measure_loc()
+        self.Piezo.retract(80, relative=False)
         self.log(f'Starting hopping mode {expt_type} scan')
         self.log(f'Starting approach curves from {height.strip()}')
         
