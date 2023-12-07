@@ -12,6 +12,9 @@ Analysis functions should all:
     - DataPoint.analysis is a dictionary. Keys are (function, *args) tuples.
       Values are floats, which can be displayed on the heatmap.
     - Artists to draw on the right figure should be appended to DataPoint.artists
+        - Set artists.draw_on_type = str matching the plot type to display on
+                                    ('I vs V', 'I vs t', 'V vs t')
+                                    Do not assign attribute to show on all plot types
 '''
 
 def get_functions():
@@ -341,6 +344,7 @@ def threshold_current_analysis(CVDataPoint, thresh):
     
     ln = matplotlib.lines.Line2D( [v, v],
                                   [min(I), float_thresh], color='black')
+    ln.draw_on_type = 'I vs V'
     
     CVDataPoint.analysis[(threshold_current_analysis, thresh)] = v
     CVDataPoint.artists = [ln]
@@ -411,9 +415,11 @@ def threshold_current_decay_analysis(CVDataPoint, thresh_and_n):
     
     ln1 = matplotlib.lines.Line2D( [cycle_1_thresh, cycle_1_thresh],
                                    [min(I), float_thresh], color='black')
+    ln1.draw_on_type = 'I vs V'
     
     ln2 = matplotlib.lines.Line2D( [cycle_n_thresh, cycle_n_thresh],
                                    [min(I), float_thresh], color='red')
+    ln2.draw_on_type = 'I vs V'
     
     
     # return difference
@@ -449,9 +455,12 @@ def E0_finder_analysis(CVDataPoint, *args):
     pts = matplotlib.lines.Line2D( [V[fpeak], V[bpeak]],
                                    [I[fpeak], I[bpeak]],
                                    linestyle='', marker='o', color='red')
+    pts.draw_on_type = 'I vs V'
     ln  = matplotlib.lines.Line2D( [E0, E0],
                                    [I[fpeak], I[bpeak]], color='black')
+    ln.draw_on_type = 'I vs V'
     avgln = matplotlib.lines.Line2D( V, I, color='navy')
+    avgln.draw_on_type = 'I vs V'
     CVDataPoint.analysis[(E0_finder_analysis, *args)] = E0
     CVDataPoint.artists = [pts, ln, avgln]
     return CVDataPoint
@@ -535,15 +544,19 @@ def _peak_integration(CVDataPoint):
     reverse_integral = integrate(t, I, *rbounds)
     
     
-    fln  = matplotlib.lines.Line2D([t[fbounds[0]], t[fbounds[1]]],
+    fln  = matplotlib.lines.Line2D([V[fbounds[0]], V[fbounds[1]]],
                                    [I[fbounds[0]], I[fbounds[1]]], 
                                    linestyle='--', color='orange',
                                    marker='o')
-    bln  = matplotlib.lines.Line2D([t[rbounds[0]], t[rbounds[1]]],
+    bln  = matplotlib.lines.Line2D([V[rbounds[0]], V[rbounds[1]]],
                                    [I[rbounds[0]], I[rbounds[1]]], 
                                    linestyle='--', color='orange',
                                    marker='o')
-    smoothed_data = matplotlib.lines.Line2D(t, I, color='navy')
+    smoothed_data = matplotlib.lines.Line2D(V, I, color='navy')
+    
+    fln.draw_on_type = 'I vs V'
+    bln.draw_on_type = 'I vs V'
+    smoothed_data.draw_on_type = 'I vs V'
     
     CVDataPoint.analysis[(_peak_integration, 'forward')] = forward_integral
     CVDataPoint.analysis[(_peak_integration, 'reverse')] = reverse_integral
