@@ -51,8 +51,8 @@ class ImageCorrelator(Logger):
         self.fig.add_subplot(111)
         self.ax = self.fig.gca()
         
-        self.image1 = self.ax.imshow(self.img, cmap='gray', origin='upper',
-                                     alpha=0.5)
+        self.image1 = self.ax.imshow(self.img, cmap='gray', origin='upper',)
+                                     # alpha=0.5)
         
         self.ax.set_xticks([])
         self.ax.set_yticks([])
@@ -62,6 +62,7 @@ class ImageCorrelator(Logger):
         self.original_axlim = [self.ax.get_xlim(), self.ax.get_ylim()]
         self.rect = matplotlib.patches.Rectangle((0,0), 0, 0, fill=0,
                                                  edgecolor='red', lw=2)
+        self.rect.set_animated(True)
         FigureCanvasTkAgg(self.fig, master=self.botframe
                           ).get_tk_widget().grid(row=0, column=0)
         
@@ -124,7 +125,7 @@ class ImageCorrelator(Logger):
         self.loc1   = self.loc2   = (0,0)
         self.coord1 = self.coord2 = (0,0)
         self.clear_gridlines()
-        self.draw_rect()
+        self.reset_rect()
         plt.pause(0.001)
      
         
@@ -135,6 +136,7 @@ class ImageCorrelator(Logger):
         self.clicked = True
         self.loc1   = (event.x, event.y)
         self.coord1 = (event.xdata, event.ydata)
+        self.bg = self.fig.canvas.copy_from_bbox(self.ax.bbox)
     
     
     def on_release(self, event):
@@ -181,7 +183,22 @@ class ImageCorrelator(Logger):
         self.rect.set_height(height)
         
         # Redraw with blitting
-        self.rect.set_animated(True)
+        self.fig.canvas.restore_region(self.bg)
+        
+        self.ax.draw_artist(self.rect)
+        self.fig.canvas.blit(self.ax.bbox)
+     
+        
+    def reset_rect(self):
+        x1, y1 = self.loc1
+        x2, y2 = self.loc2
+        width  = x2 - x1
+        height = y2 - y1
+        self.rect.set_x(x1)
+        self.rect.set_y(y1)
+        self.rect.set_width(width)
+        self.rect.set_height(height)
+        
         self.fig.canvas.draw()
         self.bg = self.fig.canvas.copy_from_bbox(self.ax.bbox)
         
@@ -202,7 +219,7 @@ class ImageCorrelator(Logger):
         self.ax.set_ylim(ylim)
         self.loc1   = self.loc2   = (0,0)
         self.coord1 = self.coord2 = (0,0)
-        self.draw_rect()
+        self.reset_rect()
         plt.pause(0.001)
    
     def clear_gridlines(self):
