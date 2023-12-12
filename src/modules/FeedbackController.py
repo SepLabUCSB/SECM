@@ -496,7 +496,7 @@ class FeedbackController(Logger):
             self.master.HekaWriter.setup_EIS(*EIS_vals)
             return True
         
-        if expt_type in ('CV then EIS', 'CV then 5x EIS'):
+        if expt_type in ('CV then EIS', 'CV then 2x EIS', 'CV then 5x EIS'):
             # We setup potentiostat settings twice at each point:
             # first for CV then for EIS. Done in run_echems()
             
@@ -532,6 +532,7 @@ class FeedbackController(Logger):
                 return None
             data = CVDataPoint(loc = loc, data = [t, voltage, current])
         
+        
         if expt_type == 'EIS':
             try:
                 t, voltage, current = self.run_EIS(expt.path, i)
@@ -542,7 +543,8 @@ class FeedbackController(Logger):
             data = EISDataPoint(loc = loc, data = [t, voltage, current],
                                 applied_freqs = self.HekaWriter.EIS_applied_freqs,
                                 corrections = self.HekaWriter.EIS_corrections)
-         
+        
+            
         if expt_type == 'Custom':
             try:
                 t, voltage, current = self.run_custom(expt.path, i)
@@ -551,7 +553,8 @@ class FeedbackController(Logger):
             if type(t) == int:
                 return None
             data = CVDataPoint(loc = loc, data = [t, voltage, current])   
-         
+        
+            
         if expt_type == 'CV then EIS':
             # Run CV
             if not self.potentiostat_setup('CV'): 
@@ -577,8 +580,7 @@ class FeedbackController(Logger):
             self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E0*1000:0.1f}')
             if not self.potentiostat_setup('EIS'): 
                 return None
-            time.sleep(2)
-            
+            time.sleep(5)
             
             # Run EIS expt
             try:
@@ -595,6 +597,57 @@ class FeedbackController(Logger):
                                    applied_freqs = self.HekaWriter.EIS_applied_freqs,
                                    corrections = self.HekaWriter.EIS_corrections)
             data = PointsList(loc=loc, data = [CVdata, EISdata])
+        
+        
+        if expt_type == 'CV then 2x EIS':
+            if not self.potentiostat_setup('CV'): 
+                return None
+            try:
+                t, voltage, current = self.run_CV(expt.path, i)
+            except:
+                return 'failed'
+            if type(t) == int:
+                return None
+            CVdata = CVDataPoint(loc=loc, data=[t,voltage,current])
+            
+            # Check for peak detection
+            CVdata = E0_finder_analysis(CVdata, '')
+            start_V = voltage[0]
+            E0 = CVdata.analysis[(E0_finder_analysis, '')]
+            if E0 == 0:
+                return CVdata
+            
+            self.log(f'Detected E0 = {E0:0.3f} V')
+            EIS_POINTS = []
+            # Run 5 EIS spectra at E0 +- 100 mV, E0 +- 50 mV, E0
+            for _ in range(2):
+                # Run EIS: Set DC bias
+                self.log(f'Running EIS at {E0:0.3f} V')
+                self.master.GUI.params['EIS']['E0'].delete('1.0', 'end')
+                self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E0*1000:0.1f}')
+                if not self.potentiostat_setup('EIS'): 
+                    return None
+                time.sleep(5)
+                
+                # Run EIS expt
+                try:
+                    t, voltage, current = self.run_EIS(expt.path, i)
+                except:
+                    break
+                if type(t) == int:
+                    return None
+                EISdata = EISDataPoint(loc = loc, data = [t, voltage, current],
+                                   applied_freqs = self.HekaWriter.EIS_applied_freqs,
+                                   corrections = self.HekaWriter.EIS_corrections)
+                EIS_POINTS.append(EISdata)
+                
+            self.HekaWriter.reset_amplifier()
+            time.sleep(0.2)
+            self.HekaWriter.send_command(f'Set E Vhold {start_V}')
+            time.sleep(2)
+            
+            data = PointsList(loc=loc, data = [CVdata, *EIS_POINTS])
+    
         
         if expt_type == 'CV then 5x EIS':
             # Run CV
@@ -625,8 +678,7 @@ class FeedbackController(Logger):
                 self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E_DC*1000:0.1f}')
                 if not self.potentiostat_setup('EIS'): 
                     return None
-                time.sleep(2)
-                
+                time.sleep(5)
                 
                 # Run EIS expt
                 try:
