@@ -328,6 +328,7 @@ class Piezo(Logger):
                              n_points)
         
         if type(point_array) != np.ndarray:
+            # If point_array == None, approach at every point on the grid
             point_array = np.array([
                                     np.array([True for _ in range(n_points)])
                                     for _ in range(n_points)
@@ -367,8 +368,14 @@ class Piezo(Logger):
         return points, order
 
     def get_xy_coords_from_image(self, file):
+        '''
+        Converts an image file into an array of binary pixels: 
+            1 if there is color in that pixel, 0 if it's empty
+        Array is used to pattern the heatmap, points where array == 0 are
+        skipped during hopping mode.
+        '''
         img = Image.open(file)
-        fn = lambda x:255 if x > 30 else 0
+        fn = lambda x:255 if x > 0 else 0
         img = img.convert('L').point(fn, mode='1')
         img = np.array(img)
         img = np.rot90(img, 3)

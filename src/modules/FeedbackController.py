@@ -364,7 +364,7 @@ class FeedbackController(Logger):
         Runs in its own thread!
         
         '''
-        # TODO: extend this to handle constant voltage hopping mode
+        # Pull parameters from GUI
         length = params['size'].get('1.0', 'end')
         height = params['Z'].get('1.0', 'end')
         n_pts  = params['n_pts'].get('1.0', 'end')
@@ -417,20 +417,17 @@ class FeedbackController(Logger):
         point_times = []
         
         for i, (x, y) in enumerate(points[:pts_to_skip]):
-            pt_st_time = time.time()
-            # Retract from surface
-            
             if self.master.TEST_MODE:
+                # Fake data if in test mode
                 data = CVDataPoint(loc=(x,y,80), data=([0,1],[0,1],[0,1]))
-                grid_i, grid_j = order[i]
-                expt.set_datapoint( (grid_i, grid_j), data)
+                expt.set_datapoint( (order[i]), data)
                 self.master.Plotter.update_heatmap()
                 expt.save()
                 continue
             
-            if (i !=0) and (not self.master.TEST_MODE):
-                # z = self.Piezo.retract(height=retract_distance, 
-                #                         relative=True)
+            pt_st_time = time.time()
+            # Retract from surface
+            if i !=0:
                 tx, ty, tz = self.Piezo.measure_loc()
                 self.Piezo.goto_z(tz+retract_distance)
                 time.sleep(0.5)
@@ -477,7 +474,7 @@ class FeedbackController(Logger):
             
             # Recalculate remaining time
             point_times.append(time.time() - pt_st_time)
-            avg_time = np.mean(point_times)
+            avg_time = np.mean(point_times[-10:])
             self.est_time_remaining = (len(points[:-2]) - (i+1))*avg_time
         
         # z = self.Piezo.retract(height=80, relative=False)
