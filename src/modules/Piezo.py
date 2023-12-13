@@ -2,6 +2,7 @@ import numpy as np
 from ..utils.utils import run, Logger
 import serial
 import time
+from PIL import Image
 
 PIEZO_COMPORT = 'COM7'
 
@@ -51,6 +52,8 @@ class Piezo(Logger):
     
     
     def write(self, msg):
+        if self.master.TEST_MODE:
+            return
         if not self._piezo_on:
             return
         self.port.write(f'{msg}\r'.encode('utf-8'))
@@ -313,7 +316,7 @@ class Piezo(Logger):
     ######                         #########
     ########################################
     
-    def get_xy_coords(self, length, n_points):
+    def get_xy_coords(self, length, n_points, point_array=None):
         # Generate ordered list of xy coordinates for a scan
         # ----->
         # <-----
@@ -324,6 +327,13 @@ class Piezo(Logger):
                              self.starting_coords[0] + length, 
                              n_points)
         
+        if type(point_array) != np.ndarray:
+            point_array = np.array([
+                                    np.array([True for _ in range(n_points)])
+                                    for _ in range(n_points)
+                                    ])
+            
+        
         reverse = False
         cnt = 0
         for j, y in reversed(list(enumerate(coords))):
@@ -332,6 +342,8 @@ class Piezo(Logger):
             
             if reverse:
                 for i, x in reversed(list(enumerate(coords))):
+                    if not point_array[i][j]:
+                        continue
                     points.append((x,y))
                     order.append((i,j))
                     # s = f'({x:0.0f}, {y:0.0f}) ' + s
@@ -341,6 +353,8 @@ class Piezo(Logger):
                 reverse = False
             else:
                 for i, x in enumerate(coords):
+                    if not point_array[i][j]:
+                        continue
                     points.append((x,y))
                     order.append((i,j))
                     o += f'({i}, {j}) '
@@ -351,7 +365,18 @@ class Piezo(Logger):
             # print(s)
         
         return points, order
-    
+
+    def get_xy_coords_from_image(self, file):
+        img = Image.open(file)
+        fn = lambda x:255 if x > 30 else 0
+        img = img.convert('L').point(fn, mode='1')
+        img = np.array(img)
+        img = np.rot90(img, 3)
+        if img.shape[0] != img.shape[1]:
+            raise ValueError('Image must be square!')
+        return img
+        
+
     
     # When zooming in to a new region, set new starting coordinates
     # for the scan (otherwise always starts from 0,0)

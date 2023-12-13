@@ -1211,8 +1211,39 @@ class GUI(Logger):
             return
         time.sleep(0.5 + abs(n_steps)/1000)
         return
+    
+    def run_hopping_image(self)   : 
+        if self.master.Piezo.isMoving():
+            self.log('Error: cannot run hopping mode while piezo is moving')
+            return
         
+        img_file = filedialog.askopenfilename(title='Select an image')
+        try:
+            img = self.master.Piezo.get_xy_coords_from_image(img_file)
+        except Exception as e:
+            print(f'Error: {e}')
+            return
         
+        fname = filedialog.asksaveasfilename(
+                defaultextension='.secmdata', initialdir='D:\SECM\Data')
+        if not fname: 
+            return
+        
+        self.params['hopping']['n_pts'].delete('1.0', 'end')
+        self.params['hopping']['n_pts'].insert('1.0', f'{img.shape[0]}')
+        
+        self.set_amplifier()
+        func = partial(self._run_hopping_image, fname, img)
+        run(func)
+        
+    
+    def _run_hopping_image(self, fname, img):
+        success = self.master.FeedbackController.hopping_mode(self.params['hopping'],
+                                                              point_array = img)
+        settings = self.save_settings(ask_prompt = False)
+        self.master.expt.save_settings(settings)
+        self.master.expt.save(fname)
+        return success
     
             
                                                         

@@ -357,7 +357,7 @@ class FeedbackController(Logger):
         return self.Piezo.z, on_surface
     
     
-    def hopping_mode(self, params):
+    def hopping_mode(self, params, point_array = None):
         '''
         Run a hopping mode scan.
         
@@ -394,6 +394,13 @@ class FeedbackController(Logger):
                                       xlim=(0,length),
                                       ylim=(0,length)
                                       )
+        
+        # Overwrite points, order taking into account image point array
+        pts_to_skip = -2
+        if type(point_array) == np.ndarray:
+            pts_to_skip = None
+        points, order = self.Piezo.get_xy_coords(length, n_pts, point_array)
+        
         x,y,z = self.Piezo.measure_loc()
         self.Piezo.retract(80, relative=False)
         self.log(f'Starting hopping mode {expt_type} scan')
@@ -409,9 +416,18 @@ class FeedbackController(Logger):
         
         point_times = []
         
-        for i, (x, y) in enumerate(points[:-2]):
+        for i, (x, y) in enumerate(points[:pts_to_skip]):
             pt_st_time = time.time()
             # Retract from surface
+            
+            if self.master.TEST_MODE:
+                data = CVDataPoint(loc=(x,y,80), data=([0,1],[0,1],[0,1]))
+                grid_i, grid_j = order[i]
+                expt.set_datapoint( (grid_i, grid_j), data)
+                self.master.Plotter.update_heatmap()
+                expt.save()
+                continue
+            
             if (i !=0) and (not self.master.TEST_MODE):
                 # z = self.Piezo.retract(height=retract_distance, 
                 #                         relative=True)

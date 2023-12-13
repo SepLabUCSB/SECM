@@ -52,6 +52,9 @@ def make_hopping_window(gui, master_frame):
     
     Button(frame, text='Multi hopping scan', 
            command=gui.run_multi_hopping).grid(column=3, row=6)
+    
+    Button(frame, text='Image pattern mode',
+           command=gui.run_hopping_image).grid(column=3, row=7)
         
     hopping_params = {
         'size': size_field,
