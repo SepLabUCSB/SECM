@@ -96,8 +96,8 @@ def unit_label(d:float,dec=0):
     e.g. unit_label(1e-9) --> '1 n'
          unit_label(7.7e-10): --> '770 p'
     '''
-    inc_prefixes = ['k', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
-    dec_prefixes = ['m', 'µ', 'n', 'p', 'f', 'a', 'z', 'y']
+    inc_prefixes = ['k', 'M', 'G', 'T', 'P', 'E']
+    dec_prefixes = ['m', 'µ', 'n', 'p', 'f', 'a']
 
     if d == 0:
         return f'0.0'
@@ -901,7 +901,7 @@ class FigureExporter():
         self.fig = plt.Figure(figsize=(4,4), dpi=100, constrained_layout=True)
         self.fig.add_subplot(111)
         self.ax = self.fig.gca()
-        self.dpi = 600
+        self.dpi = 300
         self.make_popup()
         self.fill_leftframe()
         self.draw()
@@ -950,7 +950,7 @@ class HeatmapExporter(FigureExporter):
         length = self.GUI.master.expt.length
         if not hasattr(self, 'dpi_field'):
             # Will already have these attributes if it's being reinitialized
-            self.dpi_field       = StringVar(value='600')
+            self.dpi_field       = StringVar(value=f'{self.dpi}')
             self.scale           = StringVar(value=str(length))
             self.scalebar_length = StringVar(value=f'{length/4:.0f}')
             self.n_cbar_ticks    = StringVar(value='5')
@@ -992,7 +992,7 @@ class HeatmapExporter(FigureExporter):
         image1 = self.ax.imshow(self.data, cmap='viridis', 
                                      origin='upper', extent=[0,1,0,1])
         cb = self.fig.colorbar(image1, ax=self.ax, shrink=0.5,
-                                pad=0.02, format="%0.1e")
+                                pad=0.02, format=lambda val,idx:unit_label(val))
         cb.ax.tick_params(labelsize=14)
         self.artists.append(cb)
         
@@ -1069,7 +1069,7 @@ class EchemFigExporter(FigureExporter):
         
         if not hasattr(self, 'dpi_field'):
             # Will already have these attributes if it's being reinitialized
-            self.dpi_field = StringVar(value='600')
+            self.dpi_field = StringVar(value=f'{self.dpi}')
             self.xlabel = StringVar(value='')
             self.ylabel = StringVar(value='')
             self.xticks = StringVar(value='')
