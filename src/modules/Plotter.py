@@ -768,12 +768,11 @@ class Plotter(Logger):
         if hasattr(DATAPOINT, 'artists'):
             fig_type = self.master.GUI.fig2selection.get()
             for artist in DATAPOINT.artists:
-                if (hasattr(artist, 'draw_on_type') and
-                    artist.draw_on_type != fig_type):
-                    continue                    
-                self.ax2.add_artist(artist)
-                self.ax2.draw_artist(artist)
-                self.fig2_extra_artists.append(artist)
+                if ( (hasattr(artist, 'draw_on_type')) and
+                      artist.draw_on_type == fig_type ):
+                    self.ax2.add_artist(artist)
+                    self.ax2.draw_artist(artist)
+                    self.fig2_extra_artists.append(artist)
                 
         self.ax2.set_xlabel(xval)
         self.ax2.set_ylabel(yval)
