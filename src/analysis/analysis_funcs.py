@@ -3,6 +3,7 @@ from tkinter.ttk import *
 import matplotlib
 import numpy as np
 from scipy.signal import find_peaks, savgol_filter
+from sklearn.decomposition import PCA
 
 
 '''
@@ -36,6 +37,8 @@ def get_functions():
                                     'Integral of the reverse redox peak.\nInput: none'),
         'Peak integral (ratio)': (peak_integration_ratio,
                                   'Ratio of the forward to reverse charges.\nInput: none'),
+        'PCA': (principal_component_analysis,
+                'Principal component analysis.\nInput: "n" = nth principal component to plot (0,)')
         }
 
 
@@ -563,6 +566,38 @@ def _peak_integration(CVDataPoint):
     CVDataPoint.analysis[(_peak_integration, 'ratio')]   = abs(forward_integral/reverse_integral)
     CVDataPoint.artists = [fln, bln, smoothed_data]
     return CVDataPoint
+
+
+def principal_component_analysis(CVDataPoint, n):
+    int_n = int(n)
+    
+    if not hasattr(CVDataPoint, 'analysis'):
+        CVDataPoint.analysis = {}
+    
+    if (principal_component_analysis, n) in CVDataPoint.analysis.keys():
+        # Already did this function at this condition
+        return CVDataPoint
+        
+    if 'CVDataPoint' not in CVDataPoint.__repr__():
+        val = 0.0
+        CVDataPoint.analysis[(principal_component_analysis, n)] = val
+        return CVDataPoint
+    
+    val = CVDataPoint.PCA['vector'][int_n]
+    component = CVDataPoint.PCA['components'][int_n]
+    rel_val = val / np.norm(CVDataPoint.PCA['vector'])
+    
+    component_line = matplotlib.lines.Line2D(CVDataPoint.data[1],
+                                             val*component,
+                                             color='blue')
+    component_line.draw_on_type = 'I vs V'
+    
+    CVDataPoint.analysis[(principal_component_analysis, n)] = rel_val
+    CVDataPoint.artists = [component_line]
+    
+    
+    return CVDataPoint
+
 
 
 

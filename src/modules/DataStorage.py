@@ -3,6 +3,7 @@ from io import StringIO
 import os
 import pickle
 import numpy as np
+from sklearn.decomposition import PCA
 
 
 def nearest(arr, val):
@@ -202,6 +203,9 @@ class Experiment:
         analysis_func: function to apply to each point
         args: arguments to pass to analysis_func
         '''
+        if 'principal_component_analysis' in str(analysis_func):
+            self.do_PCA()
+        
         for i, row in enumerate(self.data):
             for j, pt in enumerate(row):
                 if isinstance(pt, PointsList):
@@ -222,6 +226,55 @@ class Experiment:
             )
         
         return gridpts
+    
+    
+    def do_PCA(self):
+        '''
+        Do principal component analysis on all CVs in this Experiment.
+        Results are saved to CVDataPoint.PCA
+        '''
+        
+        # Gather array of CV data
+        data = []
+        pt_order = []
+        for i, row in enumerate(self.data):
+            for j, pt in enumerate(row):
+                if isinstance(pt, PointsList):
+                    for subpt in pt.data:
+                        if isinstance(subpt, CVDataPoint):
+                            pt_order.append( (i,j) )
+                            data.append(subpt.data[2])
+                    continue
+                if not isinstance(pt, CVDataPoint):
+                    continue
+                pt_order.append( (i,j) )
+                data.append(pt.data[2])
+        
+        data = np.array(data)
+        
+        # principal_components = array of (10-)vectors representing the deconvolution of each CV
+        # components = base deconvoluted components
+        pca = PCA(n_components=10)
+        principal_components = pca.fit_transform(data)
+        components = pca.components_
+        
+        # Append PCA data to each point
+        for i, row in enumerate(self.data):
+            for j, pt in enumerate(row):
+                if isinstance(pt, PointsList):
+                    pt = [_pt for _pt in pt.data if isinstance(_pt, CVDataPoint)][0]
+                if (i,j) in pt_order:
+                    k = [idx for idx, tup in enumerate(pt_order) if tup == (i,j)][0]
+                    pt.PCA = {'components': components,
+                              'vector': principal_components[k]}
+                else:
+                    pt.PCA = {'components': components,
+                              'vector': 0*principal_components[0]}
+                    
+        
+                
+        
+        
     
     
     def max_points_per_loc(self):
@@ -248,10 +301,10 @@ class Experiment:
                 if isinstance(pt, SinglePoint): 
                     continue
                 if isinstance(pt, PointsList):
-                    for point in pt.points:
+                    for point in pt.data:
                         fname = os.path.join(path, 
-                                             f'{i:02}_{j:02}_{str(pt)}.asc')
-                        pt.save(path=fname)
+                                             f'{i:02}_{j:02}_{str(point)}.asc')
+                        point.save(path=fname)
                     continue
                 fname = os.path.join(path, f'{i:02}_{j:02}_{str(pt)}.asc')
                 pt.save(path=fname)
@@ -507,7 +560,7 @@ class PointsList():
         try:
             return self.data[i]
         except IndexError:
-            print(f'Invalid index: no {i}-th point. This spot has {len(self.points)} data points')
+            print(f'Invalid index: no {i}-th point. This spot has {len(self.data)} data points')
         except:
             print(f'Invalid index: {i}')
         return self.data[0]
