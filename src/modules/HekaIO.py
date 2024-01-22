@@ -338,16 +338,8 @@ class HekaWriter(Logger):
     def update_Values(self, values):
         # Update Values which are used to define CV, CA, etc voltages, timings, ...
         # PATCHMASTER maps Value i to p{i+1}... but calls it Value-{i+1} in GUI
-
-        old_params = self.pgf_params
-        vals_to_update = {}
-        for key, val in values.items():
-            old_val = old_params.get(key, None)
-            if val != old_val:
-                vals_to_update[key] = val
-        
         cmds = []
-        for i, val in vals_to_update.items():
+        for i, val in values.items():
             cmds.append(f'SetValue {int(i)} {val}')
         cmds.append('ExecuteProtocol _update_pgf_params_') # Set PgfParams = Values
         self.send_multiple_cmds(cmds)
