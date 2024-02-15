@@ -744,6 +744,18 @@ class GUI(Logger):
         #         pass
         #     else:
         #         menu =
+        
+    
+    def select_next_data(self, *args):
+        'Callback from pressing ` (tilde). Plot next echem data in the PointsList'
+        menu_length = self.fig2ptoptmenu['menu'].index("end") + 1
+        if menu_length == 1:
+            return
+        current_selection = self.fig2ptselection.get()
+        # Find the next index in the list. Loop back to 0 if we're at the end of the list
+        next_selection = 0 if current_selection//(menu_length-1) else current_selection + 1
+        self.fig2ptselection.set(next_selection)  # Set the new variable
+        self.fig_opt_changed(None)                # Send command to update plot
                 
             
             
@@ -1332,6 +1344,7 @@ def run_main():
         
         gui._update_piezo_display()
         root.after(1000, master.Plotter.update_figs)
+        root.bind('`', gui.select_next_data)
         # root.after(1000, master.malloc_snapshot)
         root.mainloop()
         root.quit()
