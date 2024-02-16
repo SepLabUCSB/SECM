@@ -413,7 +413,9 @@ class HekaWriter(Logger):
         cmds.append('Set E TestDacToStim1 2')   # Turn on external input for Stim-1
         cmds.append('Set E ExtScale 1')         # Set external scale to 1
         cmds.append('Set E Mode 3')
+        cmds.append('Set E Gain 14')            # Switch to 50mV/pA gain
         self.send_multiple_cmds(cmds)
+        time.sleep(0.1)
         
         self.send_command(f'Set E Vhold {E0}')  # Set DC bias
         time.sleep(1)
