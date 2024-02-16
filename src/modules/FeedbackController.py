@@ -509,7 +509,7 @@ class FeedbackController(Logger):
             self.master.HekaWriter.setup_EIS(*EIS_vals)
             return True
         
-        if expt_type in ('CV then EIS', 'CV then 2x EIS', 'CV then 5x EIS'):
+        if ('CV' in expt_type) and ('EIS' in expt_type):
             # We setup potentiostat settings twice at each point:
             # first for CV then for EIS. Done in run_echems()
             
@@ -524,13 +524,14 @@ class FeedbackController(Logger):
         # if expt_type == 'Custom':
         #     self.master.GUI.set_amplifier()
         #     return True
-        
+        self.log(f'Error: {expt_type=} not recognized in potentiostat_setup()')
         return False
     
     
     def run_echems(self, expt_type, expt, loc, i):
         '''
         ** Experiment types defined in src/gui/hopping_window.py **
+        ** Experiments also need to be defined in potentiostat_setup()**
         
         Run echem experiments defined by expt_type at loc (x,y,z).
         
@@ -637,6 +638,8 @@ class FeedbackController(Logger):
             
             
             self.log(f'Detected E0 = {E0:0.3f} V')
+            self.master.GUI.params['EIS']['E0'].delete('1.0', 'end')
+            self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E0*1000:0.1f}')
             EIS_POINTS = []
             # Run 5 EIS spectra with varying Vpp
             for mVpp in [10, 20, 50, 100, 200]:
@@ -660,6 +663,8 @@ class FeedbackController(Logger):
                 EIS_POINTS.append(EISdata)
                 
             self.HekaWriter.reset_amplifier()
+            time.sleep(0.2)
+            self.potentiostat_setup('CV')
             time.sleep(0.2)
             self.HekaWriter.send_command(f'Set E Vhold {start_V}')
             time.sleep(2)
@@ -688,9 +693,8 @@ class FeedbackController(Logger):
             
             
             self.log(f'Detected E0 = {E0:0.3f} V')
-            self.log(f'Running EIS with amplitude = {mVpp} mV')
-            self.master.GUI.params['EIS']['amp'].delete('1.0', 'end')
-            self.master.GUI.params['EIS']['amp'].insert('1.0', f'{mVpp}')
+            self.master.GUI.params['EIS']['E0'].delete('1.0', 'end')
+            self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E0*1000:0.1f}')
             if not self.potentiostat_setup('EIS'):
                 return None
             time.sleep(5)
@@ -700,7 +704,7 @@ class FeedbackController(Logger):
             st = time.time()
             for pt_idx in range(5):
                 this_pt_time = time.time()-st
-                print(f'Running EIS #{pt_idx}, start time = {this_pt_time:0.2f} s')
+                self.log(f'Running EIS #{pt_idx}, start time = {this_pt_time:0.2f} s')
                 # Run EIS expt
                 try:
                     t, voltage, current = self.run_EIS(expt.path, i)
@@ -715,6 +719,8 @@ class FeedbackController(Logger):
                 time.sleep(10)
                 
             self.HekaWriter.reset_amplifier()
+            time.sleep(0.2)
+            self.potentiostat_setup('CV')
             time.sleep(0.2)
             self.HekaWriter.send_command(f'Set E Vhold {start_V}')
             time.sleep(2)
