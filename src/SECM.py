@@ -974,7 +974,8 @@ class GUI(Logger):
     # Selected new view for fig2
     def fig_opt_changed(self, _):
         self.master.Plotter.set_echemdata(
-            DATAPOINT = self.master.Plotter.fig2DataPoint
+            DATAPOINT = self.master.Plotter.fig2DataPoint,
+            forced=True
             )
         return
     
@@ -1344,7 +1345,7 @@ def run_main():
         
         gui._update_piezo_display()
         root.after(1000, master.Plotter.update_figs)
-        root.bind('`', gui.select_next_data)
+        root.bind('<F1>', gui.select_next_data)
         # root.after(1000, master.malloc_snapshot)
         root.mainloop()
         root.quit()

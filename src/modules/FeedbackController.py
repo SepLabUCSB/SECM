@@ -716,6 +716,7 @@ class FeedbackController(Logger):
                                    applied_freqs = self.HekaWriter.EIS_applied_freqs,
                                    corrections = self.HekaWriter.EIS_corrections)
                 EIS_POINTS.append(EISdata)
+                self.potentiostat_setup('EIS')
                 time.sleep(10)
                 
             self.HekaWriter.reset_amplifier()

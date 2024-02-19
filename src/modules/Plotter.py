@@ -721,13 +721,17 @@ class Plotter(Logger):
         self.set_echemdata(DATAPOINT)
 
     
-    def set_echemdata(self, DATAPOINT, sample_freq=1000):
+    def set_echemdata(self, DATAPOINT, sample_freq=1000, forced=False):
         # Determine what to plot
         _, _, xval, yval = get_axval_axlabels(
                                 self.master.GUI.fig2selection.get()
                                 )
         
         self.fig2DataPoint = DATAPOINT
+        
+        if forced:
+            # Force display this data despite current status of FIG2_FORCED
+            self.FIG2_FORCED = False
         
         # Get the data
         if isinstance(DATAPOINT, PointsList):
