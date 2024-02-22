@@ -465,40 +465,40 @@ class GUI(Logger):
         self.heatmap_min_val = StringVar(value='0')
         self.heatmap_max_val = StringVar(value='0')
         Button(heatmapscaleframe, text='Zoom out', 
-               command=self.master.Plotter.zoom_out).grid(
+               command=self.master.Plotter.Heatmap.zoom_out).grid(
                row=1, column=2, sticky=(W,E))
         Button(heatmapscaleframe, text='Zoom in', 
-               command=self.master.Plotter.zoom_in).grid(
+               command=self.master.Plotter.Heatmap.zoom_in).grid(
                row=1, column=3, sticky=(W,E))
         
         Button(heatmapscaleframe, text='-', width=1,
-               command=self.master.Plotter.zoom_lower_subt).grid(
+               command=self.master.Plotter.Heatmap.zoom_lower_subt).grid(
                row=2, column=0, sticky=(W,E))  
         Button(heatmapscaleframe, text='+', width=1,
-               command=self.master.Plotter.zoom_lower_add).grid(
+               command=self.master.Plotter.Heatmap.zoom_lower_add).grid(
                row=2, column=1, sticky=(W,E))         
         _min_entry = Entry(heatmapscaleframe, textvariable=self.heatmap_min_val, width=5)
         _min_entry.grid(row=2, column=2, sticky=(W,E))
         _min_entry.bind('<Tab>', focus_next_widget)
-        _min_entry.bind('<Return>', self.master.Plotter.apply_minmax_fields)
+        _min_entry.bind('<Return>', self.master.Plotter.Heatmap.apply_minmax_fields)
         
         _max_entry = Entry(heatmapscaleframe, textvariable=self.heatmap_max_val, width=5)
         _max_entry.grid(row=2, column=3, sticky=(W,E))
         _max_entry.bind('<Tab>', focus_next_widget)
-        _max_entry.bind('<Return>', self.master.Plotter.apply_minmax_fields)
+        _max_entry.bind('<Return>', self.master.Plotter.Heatmap.apply_minmax_fields)
         Button(heatmapscaleframe, text='-', width=1,
-               command=self.master.Plotter.zoom_upper_subt).grid(
+               command=self.master.Plotter.Heatmap.zoom_upper_subt).grid(
                row=2, column=4)
         Button(heatmapscaleframe, text='+', width=1,
-               command=self.master.Plotter.zoom_upper_add).grid(
+               command=self.master.Plotter.Heatmap.zoom_upper_add).grid(
                row=2, column=5)
         
         
         Button(heatmapscaleframe, text='Apply', 
-               command=self.master.Plotter.apply_minmax_fields).grid(
+               command=self.master.Plotter.Heatmap.apply_minmax_fields).grid(
                row=3, column=2, sticky=(W,E))
         Button(heatmapscaleframe, text='Reset', 
-               command=self.master.Plotter.cancel_popup).grid(
+               command=self.master.Plotter.Heatmap.cancel_popup).grid(
                row=3, column=3, sticky=(W,E))
                    
                    
@@ -513,7 +513,7 @@ class GUI(Logger):
         
         self.heatmap_cmap = StringVar()
         OptionMenu(heatmapcolorframe, self.heatmap_cmap, cmaps[0], *cmaps, 
-                   command=self.master.Plotter.update_cmap).grid(
+                   command=self.master.Plotter.Heatmap.update_colormap).grid(
                        row=0, column=1, columnspan=2)
         
         self.heatmap_cmap_minval = StringVar(value='0')
@@ -522,13 +522,13 @@ class GUI(Logger):
         _cm_lower = Entry(heatmapcolorframe, textvariable=self.heatmap_cmap_minval, width=3)
         _cm_lower.grid(row=1, column=1, sticky=(W,E))
         _cm_lower.bind('<Tab>', focus_next_widget)
-        _cm_lower.bind('<Return>', self.master.Plotter.update_cmap)
+        _cm_lower.bind('<Return>', self.master.Plotter.Heatmap.update_colormap)
         Label(heatmapcolorframe, text='Max: ').grid(row=1, column=2, sticky=(W,E))
         _cm_upper = Entry(heatmapcolorframe, textvariable=self.heatmap_cmap_maxval, width=3)
         _cm_upper.grid(row=1, column=3, sticky=(W,E))
         _cm_upper.bind('<Tab>', focus_next_widget)
-        _cm_upper.bind('<Return>', self.master.Plotter.update_cmap)
-        Button(heatmapcolorframe, text='Apply', command=self.master.Plotter.update_cmap).grid(
+        _cm_upper.bind('<Return>', self.master.Plotter.Heatmap.update_colormap)
+        Button(heatmapcolorframe, text='Apply', command=self.master.Plotter.Heatmap.update_colormap).grid(
             row=2, column=1, columnspan=2)
         
   
@@ -923,7 +923,7 @@ class GUI(Logger):
     def export_heatmap(self):
         if not hasattr(self, 'ExporterGenerator'):
             self.ExporterGenerator = ExporterGenerator()
-        exporter = self.ExporterGenerator.get('Heatmap', self, self.master.Plotter.data1.copy())
+        exporter = self.ExporterGenerator.get('Heatmap', self, self.master.Plotter.Heatmap.data.copy())
         
         
     def export_echem_fig(self):
@@ -982,10 +982,10 @@ class GUI(Logger):
     
     def heatmap_opt_changed(self, *args):
         # selected a new view for heatmap
-        option = self.heatmapselection.get()
-        value  = self.HeatMapDisplayParam.get()
+        # option = self.heatmapselection.get()
+        # value  = self.HeatMapDisplayParam.get()
         
-        self.master.Plotter.update_heatmap(option, value)        
+        self.master.Plotter.update_heatmap()        
         return 'break'
     
     
@@ -1008,12 +1008,12 @@ class GUI(Logger):
         '''
         Set the new bounds after heatmap_rect_zoom()
         '''
-        corners = self.master.Plotter.RectangleSelector.get_coords()
-        if all([c == (0,0) for c in corners]):
-            return
-        scale = self.master.Piezo.set_new_scan_bounds(corners)
-        gui.params['hopping']['size'].delete('1.0', 'end')
-        gui.params['hopping']['size'].insert('1.0', f"{scale:0.3f}")
+        # corners = self.master.Plotter.RectangleSelector.get_coords()
+        # if all([c == (0,0) for c in corners]):
+        #     return
+        # scale = self.master.Piezo.set_new_scan_bounds(corners)
+        # gui.params['hopping']['size'].delete('1.0', 'end')
+        # gui.params['hopping']['size'].insert('1.0', f"{scale:0.3f}")
         return
     
     

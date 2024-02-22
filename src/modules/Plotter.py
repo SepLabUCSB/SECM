@@ -179,123 +179,289 @@ def get_axval_axlabels(expt_type):
     return xval, yval, xaxlabel, yaxlabel
 
 
-class RectangleSelector:
-    '''
-    Class which draws a rectangle on the heatmap based on the user
-    clicking and dragging. Rectangle is used to zoom in to the 
-    selected region.
-    '''
-    
-    def __init__(self, Plotter, fig, ax):
-        self.Plotter = Plotter
+
+class Heatmap():
+    def __init__(self, fig, GUI):
+        self.GUI = GUI
+        
         self.fig = fig
-        self.ax  = ax
+        self.ax  = fig.gca()
         
-        self.bg      = None
-        self.clicked = False
+        # Data array to display and its checksum
+        self.data = np.array([0,])
+        self.last_checksum = checksum(self.data)
         
+        # Rectangle drawn around selected point
         self.rect = matplotlib.patches.Rectangle((0,0), 0, 0, fill=0,
                                                  edgecolor='red', lw=2)
         self.ax.add_artist(self.rect)
         
+        self.force_minmax = False
+        self.analysis_function = analysis_funcs.CV_decay_analysis
         
-    def connect(self):
-        self.clickedcid = self.fig.canvas.mpl_connect('button_press_event',
-                                                      self.on_press)
-        self.releasecid = self.fig.canvas.mpl_connect('button_release_event',
-                                                      self.on_release)
-        self.dragcid    = self.fig.canvas.mpl_connect('motion_notify_event',
-                                                      self.on_drag)
-    
-    def disconnect(self):
-        for cid in (self.clickedcid, self.releasecid, self.dragcid):
-            self.fig.canvas.mpl_disconnect(cid)
-        # Give control back to Plotter
-        self.Plotter.connect_cids()
-    
-    def clear(self):
-        self.rect.set_width(0)
-        self.rect.set_height(0)
+        self.initialize()
+      
+        
+    def initialize(self):
+        '''
+        Draw the initial figure
+        '''
+        self.data = np.array([
+            np.array([0 for _ in range(10)]) for _ in range(10)
+            ], dtype=np.float32)
+        self.image = self.ax.imshow(self.data, cmap='viridis', origin='upper')
+        cb = self.fig.colorbar(self.image, ax=self.ax, shrink=0.5,
+                                pad=0.02, format="%0.1e")
+        cb.ax.tick_params(labelsize=14)
+        
+        self.ax.set_xlabel(r'$\mu$m')
+        self.ax.set_ylabel(r'$\mu$m')
+        self.ax.spines['right'].set_visible(True)
+        self.ax.spines['top'].set_visible(True)
         self.fig.canvas.draw()
+        self.fig.tight_layout()
+        # self.ax1bg = self.fig1.canvas.copy_from_bbox(self.ax1.bbox)
+        self.rect.set_bounds(0,0,0,0)
+        self.ax.draw_artist(self.image)
+        self.ax.draw_artist(self.rect)
         plt.pause(0.001)
     
-    def make_rectangle(self, loc1, loc2):
-        x1, y1 = loc1
-        x2, y2 = loc2
-        width  = x2 - x1
-        height = y2 - y1
-        self.rect.set_x(x1)
-        self.rect.set_y(y1)
-        self.rect.set_width(width)
-        self.rect.set_height(height)
-        
-        # Redraw with blitting
-        self.rect.set_animated(True)
-        self.fig.canvas.draw()
-        self.bg = self.fig.canvas.copy_from_bbox(self.ax.bbox)
-        
-        self.ax.draw_artist(self.rect)
-        self.fig.canvas.blit(self.ax.bbox)
-    
-    def get_coords(self):
-        x = self.rect.get_x()
-        y = self.rect.get_y()
-        h = self.rect.get_height()
-        w = self.rect.get_width()
-        corners = [
-            (x  , y),
-            (x+w, y),
-            (x  , y+h),
-            (x+w, y+h)
-            ]
-        return corners
-    
-    
-    def snap_to_grid(self):
-        '''
-        snap to nearest coordinates on the grid and 
-        make it square
-        '''
-        gridpts = self.Plotter.master.expt.get_loc_data()
-        delta = abs(gridpts[0][0][0] - gridpts[0][1][0])
-        corners = self.get_coords()
-        corners.sort()
-        nearest_points = []
-        for corner in corners:
-            _, nearest = self.Plotter.master.expt.get_nearest_datapoint(corner[0], 
-                                                                     corner[1])
-            x0, y0, _ = nearest.loc
-            nearest_points.append( (x0, y0) )
-        
-        nearest_points.sort() # in order [(0,0), (0,1), (1,0), (1,1)]
 
-        x, y = nearest_points[0]
-        w    = nearest_points[3][0] - x
-        h    = nearest_points[3][1] - y
-        w = h = max(w, h) # make it a square            
-        self.make_rectangle( (x, y), (x+w, y+h) )
+    def load_experiment(self, expt):
+        '''
+        Load data from given experiment and display on heatmap
+        
+        expt : DataStorage.Experiment
+        '''
+        self.data = expt.get_heatmap_data()
+        self.ax.set_xlim(0, expt.length)
+        self.ax.set_ylim(0, expt.length)
+        
+    
+    def get_datapoint_on_click(self, event, pt_idx):
+        '''
+        Called by Plotter.onclick when user clicks on heatmap.
+        Draws a box around that point on the heatmap.
+        Return the closest DataPoint and its value.
+
+        Parameters
+        ----------
+        event : matplotlib button_press_event
+        pt_idx: int, defines which DataPoint in a PointsList to return
+
+        Returns
+        -------
+        DataPoint : closest Datapoint to the click
+        '''
+        x, y = event.xdata, event.ydata
+        datapts = self.expt.get_loc_data()
+        
+        left, right = self.ax.get_xlim()
+        pts_in_row = len(datapts[0]) + 1
+        x_bounds = [n for n in np.linspace(left, right, pts_in_row)]
+        y_bounds = [n for n in np.linspace(left, right, pts_in_row)]
+        delta = x_bounds[1] - x_bounds[0]
+        
+        for xline in x_bounds:
+            if event_x >= xline:
+                continue
+            break
+        
+        for yline in y_bounds:
+            if event_y >= yline:
+                continue
+            break
+        
+        # xline is top and yline is left side of pixel
+        # Draw rectangle around the selected point
+        self.rect.set_x(xline - delta)
+        self.rect.set_y(yline - delta)
+        self.rect.set_width(delta)
+        self.rect.set_height(delta)
+        self.ax.draw_artist(self.rect)
+        self.fig.canvas.draw_idle()
+        
+        def pt_in_rect(x, y, xline, yline, delta):
+            if (x <= xline) and (x >= xline-delta):
+                if (y <= yline) and (y >= yline-delta):
+                    return True
+            return False
+        
+        for row in datapts:
+            for (x, y) in row:
+                if pt_in_rect(x, y, xline, yline, delta):
+                    i, DataPoint = self.expt.get_nearest_datapoint(x, y, pt_idx=idx)
+                    x0, y0, z0 = DataPoint.loc
+                    if type(z0) == tuple:
+                        z0 = z0[0] # Handle early bug in some saved data
+                    val = self.data.flatten()[i]
+                    print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {unit_label(val, dec=3)}')
+                    return DataPoint
+       
+                
+    def update(self, force=False):
+        '''
+        Called periodically by Tk root (via Plotter.update_figs).
+        Check if new points are appended to the experiment and plot them if so
+        '''
+                
+        if ((checksum(self.data) == self.last_checksum) and not force):
+            return
+
+        self.update_data()
+        
+        self.image.set_data(self.data[::-1])
+        
+        if self.force_minmax:
+            minval = inv_unit_label(self.GUI.heatmap_min_val.get())
+            maxval = inv_unit_label(self.GUI.heatmap_max_val.get())
+        else:
+            minval, maxval = get_clim(arr)
+            self.update_minmaxval_fields()
+            
+        self.image.set(clim=( minval, maxval) )
+        set_cbar_ticklabels(self.image.colorbar, [minval, maxval])
+        
+        left, right = self.ax.get_xlim()
+        bottom, top = self.ax.get_ylim()
+        self.image.set_extent((left, right, bottom, top))
+        self.ax.draw_artist(self.image)
+        self.fig.canvas.draw_idle()
+        self.last_checksum = checksum(self.data)
+        plt.pause(0.001)
+    
+        
+    def update_data(self):
+        '''
+        Grabs display options from the GUI and pulls array of data from
+        the current Experiment. Puts it in self.data
+        
+        Plot will be updated next time self.update() is called
+        '''
+        option = self.GUI.heatmapselection.get()
+        value  = self.GUI.HeatMapDisplayParam.get()
+        
+        if option == 'Analysis func.':
+            value = value.replace('\n', '')
+            if not self.analysis_function:
+                print('Error: no analysis function selected.')
+                return
+            pts = self.expt.do_analysis(self.analysis_function, value)
+        
+        else:
+            # Keys to pass to Experiment
+            d = {'Max. current': 'max',
+                 'Current @ ... (V)': 'val_at',
+                 'Current @ ... (t)': 'val_at_t',
+                 'Z height': 'z',
+                 'Avg. current': 'avg'}
+            
+            value = float(value.replace('\n', ''))
+            pts = self.expt.get_heatmap_data(d[option], value)
+        
+        if len(pts) > 0:
+            self.data = pts
         return
     
+    
+    def update_colormap(self):
+        cmap = self.GUI.heatmap_cmap.get()
+        base_cmap = matplotlib.cm.get_cmap(cmap, 1024)
         
-    def on_press(self, event):
-        # click
-        if event.inaxes != self.ax:
+        vmin = float(self.GUI.heatmap_cmap_minval.get())
+        vmax = float(self.GUI.heatmap_cmap_maxval.get())
+        
+        if (vmin < 0) or (vmin > 1) or (vmax < 0) or (vmax > 1):
+            print('\nInvalid input! Min and max must be between 0 and 1.\n')
             return
-        self.clicked = True
-        self.loc1 = (event.xdata, event.ydata)
+        
+        new_cmap = matplotlib.colors.ListedColormap(
+            base_cmap(
+                np.linspace(vmin, vmax, 512)
+                )
+            )
+            
+        self.image.set(cmap = new_cmap)
+        self.update_fig(force = True)
+        
+    ### Colormap updating functions
+    def update_minmaxval_fields(self):
+        minval, maxval = get_clim(self.data[::-1])
+        self.GUI.heatmap_min_val.set(f'{minval:0.3g}')
+        self.GUI.heatmap_max_val.set(f'{maxval:0.3g}') 
     
-    def on_release(self, event):
-        # release
-        self.snap_to_grid()
-        self.clicked = False
-        self.disconnect()
+    def apply_minmax_fields(self, val=None):
+        self.force_minmax = True
+        self.update(force=True)
+        
+    def zoom_in(self):
+        'Make the heatmap color scale smaller by 10%'
+        self._zoom_bound('upper', 'subtract')
+        self._zoom_bound('lower', 'add')
+        self.update(force=True)
     
-    def on_drag(self, event):
-        # drag rectangle
-        if (not self.clicked or event.inaxes != self.ax):
-            return
-        self.loc2 = (event.xdata, event.ydata)
-        self.make_rectangle(self.loc1, self.loc2) 
+    def zoom_out(self):
+        'Make the heatmap color scale larger by 10%'
+        self._zoom_bound('upper', 'add')
+        self._zoom_bound('lower', 'subtract')
+        self.update(force=True)
+    
+    def zoom_lower_add(self):
+        'Add 10% to lower heatmap color scale bound'
+        self._zoom_bound('lower', 'add')
+        self.update(force=True)
+    
+    def zoom_lower_subt(self):
+        'Subtract 10% to lower heatmap color scale bound'
+        self._zoom_bound('lower', 'subtract')
+        self.update(force=True)
+    
+    def zoom_upper_add(self):
+        'Add 10% to upper heatmap color scale bound'
+        self._zoom_bound('upper', 'add')
+        self.update(force=True)
+    
+    def zoom_upper_subt(self):
+        'Subtract 10% to upper heatmap color scale bound'
+        self._zoom_bound('upper', 'subtract')
+        self.update(force=True)
+    
+    def _zoom_bound(self, bound, direction):
+        minval = self.GUI.heatmap_min_val
+        maxval = self.GUI.heatmap_max_val
+                
+        val = minval if bound == 'lower' else maxval
+        
+        floatval = inv_unit_label(val.get())
+        delta = inv_unit_label(maxval.get()) - inv_unit_label(minval.get())
+        if direction == 'add':
+            floatval += abs(0.1*delta)
+        elif direction == 'subtract':
+            floatval -= abs(0.1*delta)
+        
+        val.set(f'{floatval:0.3g}')
+        self.force_minmax = True
+    
+        
+    def cancel_popup(self):
+        # Reset minval and maxval to None
+        self.force_minmax = False
+        self.update_fig1()
+        self.update_minmaxval_fields()
+        
+        
+        
+
+    
+        
+    
+    
+
+class EchemFig():
+    def __init__(self, fig, GUI):
+        self.fig = fig
+        self.ax  = fig.gca()
+
 
 
 
@@ -306,38 +472,29 @@ class Plotter(Logger):
         self.master.register(self)
         self.willStop = False
         
+        self.Heatmap  = Heatmap(fig1, master.GUI)
+        self.EchemFig = EchemFig(fig2, master.GUI)
+        
+        self.connect_cids()
+        
+        # Remove below
         self.adc_polling = True
         self.adc_polling_count = 0
         self.FIG2_FORCED = False
         self.analysis_function = analysis_funcs.CV_decay_analysis
         
-        self.fig1 = fig1
-        self.fig2 = fig2
-        self.ax1  = fig1.gca()
-        self.ax2  = fig2.gca()
         
-        self.data1 = np.array([0,])
         self.data2 = [ [-1], [], [], [] ] #keep track of all fig2 data for later replotting
         self.fig2DataPoint = None  # Keep track of DataPoint object fig 2 is plotting from. 
                                    # Can be a PointsList. Not necessarily the same as self.fig2data,
                                    # which is what is actually plotted to the axes
         
-        self.last_data1checksum = checksum(self.data1)
         self.last_data2checksum = checksum(self.data2)
         
-        self.force_minmax = False
-
-        self.rect = matplotlib.patches.Rectangle((0,0), 0, 0, fill=0,
-                                                 edgecolor='red', lw=2)
-        self.ax1.add_artist(self.rect)
-        
         self.fig2_extra_artists = [] # Store any extra artists given by DataPoint's analysis
-
-        self.init_heatmap()
-        self.init_echem_fig()
-
-        self.connect_cids()
-        self.RectangleSelector = RectangleSelector(self, self.fig1, self.ax1)
+        
+        
+        
         
         
      
@@ -348,9 +505,9 @@ class Plotter(Logger):
     ###########################
     
     def connect_cids(self):
-        self.cid1 = self.fig1.canvas.mpl_connect('button_press_event',
+        self.cid1 = self.Heatmap.fig.canvas.mpl_connect('button_press_event',
                                                  self.onclick)
-        self.cid2 = self.fig2.canvas.mpl_connect('button_press_event',
+        self.cid2 = self.EchemFig.fig.canvas.mpl_connect('button_press_event',
                                                  self.onclick)
     
     def disconnect_cids(self):
@@ -359,26 +516,20 @@ class Plotter(Logger):
     
     
     def load_from_expt(self, expt):
-        self.data1 = expt.get_heatmap_data()
-        xlim = (0, expt.length)
-        ylim = (0, expt.length)
-        self.set_axlim('fig1', xlim, ylim)
+        self.Heatmap.load_experiment(expt)
     
     
     def onclick(self, event):
         # Clicking on pixel in SECM histogram displays that CV ( or
         # CA, or EIS, ...) in the lower figure
-        if event.inaxes == self.ax1:
-            x, y = event.xdata, event.ydata
-            idx, closest_datapoint = self.select_datapoint(x, y)
-            self.set_echemdata(closest_datapoint, sample_freq=10000)
-            x0, y0, z0 = closest_datapoint.loc
-            if type(z0) == tuple:
-                z0 = z0[0] # Handle early bug in some saved data
-            val = self.data1.flatten()[idx]
-            self.master.ImageCorrelator.draw_on_pt(x0, y0)
-            print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {unit_label(val, dec=3)}')
-        if event.inaxes == self.ax2:
+        if event.inaxes == self.Heatmap.ax:
+            pt_idx = int(self.master.GUI.fig2ptselection.get())
+            idx, DataPoint = self.Heatmap.get_datapoint_on_click(event, idx)
+            self.EchemFig.set_datapoint(DataPoint)
+            self.master.ImageCorrelator.draw_on_pt(DataPoint.loc[0],
+                                                   DataPoint.loc[1])
+            
+        if event.inaxes == self.EchemFig.ax:
             x, y = event.xdata, event.ydata
             print(f'({unit_label(x, dec=3)}, {unit_label(y, dec=3)})')
         
@@ -391,12 +542,7 @@ class Plotter(Logger):
     def update_figs(self, **kwargs):
         
         pollingData = self.master.ADC.pollingdata
-        try:
-            if checksum(self.data1) != self.last_data1checksum:
-                self.update_fig1()
-        except Exception as e:
-            self.log(f'Error updating heatmap!')
-            self.log(e)
+        self.Heatmap.update()
         
         try:
             if checksum(pollingData) != self.last_data2checksum:
@@ -430,149 +576,13 @@ class Plotter(Logger):
     
     
     ###########################
-    #### HEATMAP FUNCTIONS ####
-    ###########################
-    
-    # Initialize heatmap
-    def init_heatmap(self):
-        self.data1 = np.array([
-            np.array([0 for _ in range(10)]) for _ in range(10)
-            ], dtype=np.float32)
-        self.image1 = self.ax1.imshow(self.data1, cmap='viridis', origin='upper')
-        cb = self.fig1.colorbar(self.image1, ax=self.ax1, shrink=0.5,
-                                pad=0.02, format="%0.1e")
-        cb.ax.tick_params(labelsize=14)
-        
-        self.ax1.set_xlabel(r'$\mu$m')
-        self.ax1.set_ylabel(r'$\mu$m')
-        self.ax1.spines['right'].set_visible(True)
-        self.ax1.spines['top'].set_visible(True)
-        self.fig1.canvas.draw()
-        self.fig1.tight_layout()
-        # self.ax1bg = self.fig1.canvas.copy_from_bbox(self.ax1.bbox)
-        self.rect.set_bounds(0,0,0,0)
-        self.ax1.draw_artist(self.image1)
-        self.ax1.draw_artist(self.rect)
-        plt.pause(0.001)
-        return
-    
+    #### HEATMAP CALLBACKS ####
+    ###########################   
     
     # Called from GUI by changing view selector
     # Update what is shown on the heatmap
     def update_heatmap(self, option=None, value=None):
-        expt = self.master.expt
-        pts = []
-        
-        if option == value == None:
-            option = self.master.GUI.heatmapselection.get()
-            value = self.master.GUI.HeatMapDisplayParam.get()
-        
-        if option == 'Max. current':
-            pts = expt.get_heatmap_data('max')
-        if option == 'Current @ ... (V)':
-            try:
-                value = float(value.replace('\n', ''))
-                pts = expt.get_heatmap_data('val_at', value)
-            except:
-                return
-        if option == 'Current @ ... (t)':
-            try:
-                value = float(value.replace('\n', ''))
-                pts = expt.get_heatmap_data('val_at_t', value)
-            except:
-                return
-        if option == 'Z height':
-            pts = expt.get_heatmap_data('z')
-        if option == 'Avg. current':
-            pts = expt.get_heatmap_data('avg')
-        if option == 'Analysis func.':
-            if not self.analysis_function:
-                print('No analysis function selected!')
-                return
-            value = value.replace('\n', '')
-            
-            pts = expt.do_analysis(self.analysis_function, value)            
-                    
-                      
-        if len(pts) > 0:
-            self.data1 = pts #will update plot automatically
-        return
-    
-    
-    # Set new data on heatmap
-    def update_fig1(self, **kwargs):
-        arr = self.data1[::-1]
-        self.image1.set_data(arr)
-        
-        if self.force_minmax:
-            minval = inv_unit_label(self.master.GUI.heatmap_min_val.get())
-            maxval = inv_unit_label(self.master.GUI.heatmap_max_val.get())
-        else:
-            minval, maxval = get_clim(arr)
-            self.update_minmaxval_fields()
-            
-        self.image1.set(clim=( minval, maxval) )
-        set_cbar_ticklabels(self.image1.colorbar, [minval, maxval])
-        
-        left, right = self.ax1lim[0][0], self.ax1lim[0][1]
-        bottom, top = self.ax1lim[1][0], self.ax1lim[1][1]
-        self.image1.set_extent((left, right, bottom, top))
-        self.ax1.draw_artist(self.image1)
-        self.fig1.canvas.draw_idle()
-        self.last_data1checksum = checksum(self.data1)
-        plt.pause(0.001)
-    
-    
-    def select_datapoint(self, event_x, event_y):
-        '''
-        Data point locations are offset from pixel locations and
-        get stretched to fit the image grid
-        
-        Returns selected Datapoint object and draws a box on the heatmap
-        '''
-        
-        pt_idx_selection = int(self.master.GUI.fig2ptselection.get())
-        datapts = self.master.expt.get_loc_data()
-        
-        left, right = self.ax1lim[0][0], self.ax1lim[0][1]
-        pts_in_row = len(datapts[0]) + 1
-        x_bounds = [n for n in np.linspace(left, right, pts_in_row)]
-        y_bounds = [n for n in np.linspace(left, right, pts_in_row)]
-        delta = x_bounds[1] - x_bounds[0]
-        
-        for xline in x_bounds:
-            if event_x >= xline:
-                continue
-            break
-        
-        for yline in y_bounds:
-            if event_y >= yline:
-                continue
-            break
-        
-        # xline is top and yline is left side of pixel
-        # Draw rectangle around the selected point
-        self.rect.set_x(xline - delta)
-        self.rect.set_y(yline - delta)
-        self.rect.set_width(delta)
-        self.rect.set_height(delta)
-        self.ax1.draw_artist(self.rect)
-        self.fig1.canvas.draw_idle()
-        
-        
-        def pt_in_rect(x, y, xline, yline, delta):
-            if (x <= xline) and (x >= xline-delta):
-                if (y <= yline) and (y >= yline-delta):
-                    return True
-            return False
-        
-        for row in datapts:
-            for (x, y) in row:
-                if pt_in_rect(x, y, xline, yline, delta):
-                    return self.master.expt.get_nearest_datapoint(x, y, 
-                                                                  pt_idx=pt_idx_selection)
-
-    
+        self.Heatmap.update(force=True)   
     
     # Enter heatmap zoom mode
     def heatmap_zoom(self):
@@ -588,90 +598,8 @@ class Plotter(Logger):
            
     
     def update_cmap(self, _=None):
-        cmap = self.master.GUI.heatmap_cmap.get()
-        base_cmap = matplotlib.cm.get_cmap(cmap, 1024)
-        
-        vmin = float(self.master.GUI.heatmap_cmap_minval.get())
-        vmax = float(self.master.GUI.heatmap_cmap_maxval.get())
-        
-        if (vmin < 0) or (vmin > 1) or (vmax < 0) or (vmax > 1):
-            print('\nInvalid input! Min and max must be between 0 and 1.\n')
-            return
-        
-        new_cmap = matplotlib.colors.ListedColormap(
-            base_cmap(
-                np.linspace(vmin, vmax, 512)
-                )
-            )
-            
-        self.image1.set(cmap = new_cmap)
-        self.update_fig1()
-            
-    
-    def update_minmaxval_fields(self):
-        minval, maxval = get_clim(self.data1[::-1])
-        self.master.GUI.heatmap_min_val.set(f'{minval:0.3g}')
-        self.master.GUI.heatmap_max_val.set(f'{maxval:0.3g}') 
-    
-    def apply_minmax_fields(self, val=None):
-        self.force_minmax = True
-        self.update_fig1()
-        
-    def zoom_in(self):
-        'Make the heatmap color scale smaller by 10%'
-        self._zoom_bound('upper', 'subtract')
-        self._zoom_bound('lower', 'add')
-        self.update_fig1()
-    
-    def zoom_out(self):
-        'Make the heatmap color scale larger by 10%'
-        self._zoom_bound('upper', 'add')
-        self._zoom_bound('lower', 'subtract')
-        self.update_fig1()
-    
-    def zoom_lower_add(self):
-        'Add 10% to lower heatmap color scale bound'
-        self._zoom_bound('lower', 'add')
-        self.update_fig1()
-    
-    def zoom_lower_subt(self):
-        'Subtract 10% to lower heatmap color scale bound'
-        self._zoom_bound('lower', 'subtract')
-        self.update_fig1()
-    
-    def zoom_upper_add(self):
-        'Add 10% to upper heatmap color scale bound'
-        self._zoom_bound('upper', 'add')
-        self.update_fig1()
-    
-    def zoom_upper_subt(self):
-        'Subtract 10% to upper heatmap color scale bound'
-        self._zoom_bound('upper', 'subtract')
-        self.update_fig1()
-    
-    def _zoom_bound(self, bound, direction):
-        minval = self.master.GUI.heatmap_min_val
-        maxval = self.master.GUI.heatmap_max_val
-                
-        val = minval if bound == 'lower' else maxval
-        
-        floatval = inv_unit_label(val.get())
-        delta = inv_unit_label(maxval.get()) - inv_unit_label(minval.get())
-        if direction == 'add':
-            floatval += abs(0.1*delta)
-        elif direction == 'subtract':
-            floatval -= abs(0.1*delta)
-        
-        val.set(f'{floatval:0.3g}')
-        self.force_minmax = True
-    
-        
-    def cancel_popup(self):
-        # Reset minval and maxval to None
-        self.force_minmax = False
-        self.update_fig1()
-        self.update_minmaxval_fields()
-     
+        self.Heatmap.update_colormap()
+                 
     
     def set_analysis_popup(self):
         # Opens a window where user can choose what function to apply
@@ -680,6 +608,7 @@ class Plotter(Logger):
             self.AnalysisFuncSelector = AnalysisFunctionSelector(self.master.GUI.root)
         func = self.AnalysisFuncSelector.get_selection()
         self.analysis_function = func
+        self.Heatmap.analysis_function = func
 
     
 
