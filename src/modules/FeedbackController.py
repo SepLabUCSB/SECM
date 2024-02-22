@@ -324,7 +324,7 @@ class FeedbackController(Logger):
         
         on_surface = False
         time.sleep(0.1)
-        self.master.Plotter.FIG2_FORCED = True # Don't draw ADC data
+        # self.master.Plotter.FIG2_FORCED = True # Don't draw ADC data
         while True:
             '''
             Loop checks if approach curve is finished due to

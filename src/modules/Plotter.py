@@ -763,6 +763,7 @@ class Plotter(Logger):
             t, V, I = DATAPOINT.get_data()
             V = np.array(V)/10
             I = np.array(I)/DATAPOINT.gain
+            sample_freq = 10
             if not self.rect.get_width() == 0:
                 # Unselect last point
                 self.rect.set_bounds(0,0,0,0)
