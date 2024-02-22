@@ -26,7 +26,10 @@ def checksum(data):
         return sum(data.data[0])
     
     if isinstance(data, CVDataPoint):
-        return sum(data.data[0])
+        try:
+            return sum(data.data[0])
+        except:
+            return data.data[0]
     
     if isinstance(data, EISDataPoint):
         return sum(data.data[1])
