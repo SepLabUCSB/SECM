@@ -47,6 +47,16 @@ def make_approach_window(gui, master_frame):
     Z_field.bind('<Return>', focus_next_widget)
 
     Label(frame, text='μm').grid(column=4, row=3, sticky=(W))
+    
+    
+    Label(frame, text='Step: ').grid(column=2, row=4, sticky=(E))
+    step_field = Text(frame, height=1, width=1)
+    step_field.grid(column=3, row=4, sticky=(E,W))
+    step_field.insert('1.0', '10')
+    step_field.bind('<Tab>', focus_next_widget)
+    step_field.bind('<Return>', focus_next_widget)
+
+    Label(frame, text='nm').grid(column=4, row=4, sticky=(W))
         
     Button(frame, text='Approach', 
            command=gui.run_approach_curve).grid(column=3, row=5)
@@ -63,6 +73,7 @@ def make_approach_window(gui, master_frame):
     approach_params = {'voltage': V_field,
                        'cutoff': I_field,
                        'z_height': Z_field,
+                       'step_size': step_field,
                        'rel_current': rel_current_option,}
     
     return approach_params

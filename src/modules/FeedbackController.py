@@ -221,6 +221,9 @@ class FeedbackController(Logger):
         # Wait for potential to equilibrate
         voltage = self.master.GUI.params['approach']['voltage'].get('1.0', 'end')
         voltage = float(voltage) 
+        step_size = self.master.GUI.params['approach']['step_size'].get('1.0', 'end')
+        step_size = float(step_size)/1000 # Convert nm -> um
+
         self.Piezo.goto(80,80,height)
         self.HekaWriter.macro('E Vhold 0')
         time.sleep(1)
@@ -234,7 +237,7 @@ class FeedbackController(Logger):
             
             time.sleep(3)
             _, on_surface = self.approach(height=height, 
-                                          forced_step_size = 0.01)
+                                          forced_step_size = step_size)
             
             if self.master.ABORT:
                 break
@@ -370,6 +373,10 @@ class FeedbackController(Logger):
         n_pts  = params['n_pts'].get('1.0', 'end')
         expt_type = params['method'].get()
         
+        step_size = self.master.GUI.params['approach']['step_size'].get('1.0', 'end')
+        forced_step_size = float(step_size)/1000 # Convert nm -> um
+
+        
         length = float(length) 
         z_max  = float(height)
         n_pts  = int(n_pts)
@@ -409,10 +416,8 @@ class FeedbackController(Logger):
         # height < 0 means retract that amount at each point
         if z_max < 0:
             retract_distance = -z_max
-            forced_step_size = 0.005
         else:
             retract_distance = 6
-            forced_step_size = None
         
         point_times = []
         

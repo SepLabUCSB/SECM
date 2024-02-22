@@ -1135,9 +1135,12 @@ class GUI(Logger):
         
         height = self.params['approach']['z_height'].get('1.0', 'end')
         height  = float(height)
+        
+        step_size = self.params['approach']['step_size'].get('1.0', 'end')
+        step_size = float(step_size)/1000 # Convert nm -> um
 
         func = partial(self.master.FeedbackController.approach,
-                       height)
+                       height, forced_step_size=step_size)
         run(func)
     
     
