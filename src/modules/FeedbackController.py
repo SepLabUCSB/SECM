@@ -324,7 +324,6 @@ class FeedbackController(Logger):
         
         on_surface = False
         time.sleep(0.1)
-        # self.master.Plotter.FIG2_FORCED = True # Don't draw ADC data
         while True:
             '''
             Loop checks if approach curve is finished due to
@@ -355,7 +354,6 @@ class FeedbackController(Logger):
         
         self.ADC.STOP_POLLING()  
         self.Piezo.start_monitoring()
-        self.master.Plotter.FIG2_FORCED = False
         self._piezo_counter = self.Piezo.counter
         return self.Piezo.z, on_surface
     
@@ -397,10 +395,10 @@ class FeedbackController(Logger):
             
         
         self.master.set_expt(expt)
-        self.master.Plotter.set_axlim('fig1',
-                                      xlim=(0,length),
-                                      ylim=(0,length)
-                                      )
+        # self.master.Plotter.set_axlim('fig1',
+        #                               xlim=(0,length),
+        #                               ylim=(0,length)
+        #                               )
         
         # Overwrite points, order taking into account image point array
         pts_to_skip = -2

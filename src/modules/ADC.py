@@ -186,7 +186,6 @@ class ADC(Logger):
         
         gain = 1e9 * self.master.GUI.amp_params.get('float_gain', 1e-9)
         self.pollingdata.set_HEKA_gain(gain)
-        self.master.Plotter.FIG2_FORCED = False
         
         # Start reading ADC
         self.pollingcount += 1
@@ -254,13 +253,13 @@ class ADC(Logger):
                 idx += 1
         
         # TODO: aborting in between scans (sometimes?) causes an error here
-        try:
-            times = self.pollingdata.data[0]
-            freq = times[-1]/len(times)
-            freq = 1/freq
-            # print(f'Sampling frequency: {freq:0.2f} Hz')
-        except Exception as e:
-            print(f'Error calculating frequency: {e}')
+        # try:
+        #     times = self.pollingdata.data[0]
+        #     freq = times[-1]/len(times)
+        #     freq = 1/freq
+        #     # print(f'Sampling frequency: {freq:0.2f} Hz')
+        # except Exception as e:
+        #     print(f'Error calculating frequency: {e}')
         
         self.port.write(b"stop\r")
         time.sleep(0.1)

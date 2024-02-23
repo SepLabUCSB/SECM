@@ -155,30 +155,11 @@ def inv_unit_label(s:str):
     return val
     
 
-def get_axval_axlabels(expt_type):
-    #TODO: fix this or make sure it never happens
-    if expt_type == '':
-        expt_type = 'CA'
-        
-    if (expt_type == 'CV' or expt_type == 'I vs V'):
-        xval = 'ch1'
-        yval = 'ch2'
-        yaxlabel='I'
-        xaxlabel='V'
-            
-    elif (expt_type == 'CA' or expt_type == 'I vs t'):
-        xval = 't'
-        yval = 'ch2'
-        yaxlabel='I'
-        xaxlabel='t'
-    
-    elif (expt_type == 'V vs t'):
-        xval = 't'
-        yval = 'ch1'
-        yaxlabel='V'
-        xaxlabel='t'
-    
-    return xval, yval, xaxlabel, yaxlabel
+def square_axes(ax):
+    mini = min(0, *ax.get_xlim(), *ax.get_ylim())
+    maxi = max(*ax.get_xlim(), *ax.get_ylim())
+    ax.set_xlim(mini, maxi)
+    ax.set_ylim(mini, maxi)
 
 
 
@@ -367,7 +348,7 @@ class Heatmap():
         return
     
     
-    def update_colormap(self):
+    def update_colormap(self, *args, **kwargs):
         cmap = self.GUI.heatmap_cmap.get()
         base_cmap = matplotlib.cm.get_cmap(cmap, 1024)
         
@@ -385,7 +366,7 @@ class Heatmap():
             )
             
         self.image.set(cmap = new_cmap)
-        self.update_fig(force = True)
+        self.update(force = True)
         
     ### Colormap updating functions
     def update_minmaxval_fields(self):
@@ -449,8 +430,8 @@ class Heatmap():
     def cancel_popup(self):
         # Reset minval and maxval to None
         self.force_minmax = False
-        self.update_fig1()
         self.update_minmaxval_fields()
+        self.update(force=True)
         
         
         
@@ -462,21 +443,27 @@ class Heatmap():
 
 class EchemFig():
     def __init__(self, fig, GUI):
+        # Set up this figure, axes, and line to plot to
         self.fig = fig
         self.ax  = fig.gca()
         self.ln, = self.ax.plot([0,1],[0,1])
         
+        # Local reference to GUI object
         self.GUI = GUI
         
+        # Keep track of what is currently being plotted
         self.DataPoint = None
         self.last_checksum = checksum(self.DataPoint)
-        self.artists = [self.ln]
+        self.artists = []
         self._forced = False
         
         self.initialize()
         
         
     def initialize(self):
+        '''
+        Clear the figure
+        '''
         self._forced = False
         self.ax.cla()
         self.ln, = self.ax.plot([],[])
@@ -487,10 +474,30 @@ class EchemFig():
     
     
     def reset(self):
+        '''
+        Allow new ADC points to be displayed in real time
+
+        Returns
+        -------
+        None.
+        '''
         self._forced = False
     
     
     def update(self, ADCDataPoint):
+        '''
+        Called by Plotter.update_figs every 100 ms. Check if new data exists
+        in the ADCDataPoint to be plotted. Reset the figure if a new ADCDataPoint
+        is passed.
+
+        Parameters
+        ----------
+        ADCDataPoint : DataStorage.ADCDataPoint currently in the buffer
+        
+        Returns
+        -------
+        None.
+        '''
         if (id(ADCDataPoint) != id(self.DataPoint) and
             not self._forced):
             self.initialize()
@@ -501,6 +508,19 @@ class EchemFig():
             
     
     def set_datapoint(self, DataPoint, forced=False):
+        '''
+        Display a given DataPoint. Called by i.e. clicking on Heatmap point
+        or changing the selected viewing option (from I vs V to I vs t, for example)
+
+        Parameters
+        ----------
+        DataPoint : DataStorage.DataPoint type.
+        forced : bool, optional. Whether to force display over the current ADC buffer.
+        
+        Returns
+        -------
+        None.
+        '''
         self._forced = forced
         if DataPoint:
             self.DataPoint = DataPoint  
@@ -508,47 +528,159 @@ class EchemFig():
     
     
     def update_plot(self):
-        # fig2Options = ['V vs t','I vs t','I vs V',]
-        # EIS_options = ['Nyquist', '|Z| Bode', 'Phase Bode']
+        '''
+        Grab display options from the GUI and initiate redrawing the plot.
+
+        Returns
+        -------
+        None.
+        '''
+        # IV_selection in ['V vs t','I vs t','I vs V',]
+        # EIS_selection in ['Nyquist', '|Z| Bode', 'Phase Bode']
         IV_selection = self.GUI.fig2selection.get()
         EIS_selection = self.GUI.EIS_view_selection.get()
         pt_selection = self.GUI.fig2ptselection.get()
         
         DataPoint = self.DataPoint[pt_selection]
-        self.DataPoint = DataPoint
-        self.last_checksum = checksum(DataPoint)
+        self.last_checksum = checksum(self.DataPoint)
         if isinstance(DataPoint, EISDataPoint):
             self.plot_EIS(DataPoint, EIS_selection)
         else:
             self.plot_IV(DataPoint, IV_selection)
         
-            
-    
-    
+             
     def plot_IV(self, DataPoint, IV_selection):
-        t, V, I = DataPoint.get_data()
+        '''
+        Function for drawing voltammetric (I-V, I-t, or V-t) data
+
+        Parameters
+        ----------
+        DataPoint : DataStorage.ADCDataPoint, CVDataPoint, or SinglePoint
+        IV_selection : string, display setting pulled from GUI
+
+        Returns
+        -------
+        None.
+        '''
+        t, V, I = DataPoint.get_data(downsample=True) #Only passes downsampled arg to ADCDataPoint type
         
         d = {'t':t, 'V':V, 'I':I}
         
         ylabel, xlabel = IV_selection.split(' vs ')
         yvals, xvals = d[ylabel], d[xlabel]
         self.ln.set_data(xvals, yvals)
+        self.ln.set_marker('')
         xlim, ylim = get_plotlim(xvals, yvals)
+        self.ax.set_xscale('linear')
         self.ax.set_xlim(xlim)
         self.ax.set_ylim(ylim)
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
         
         self.append_extra_artists(DataPoint, IV_selection)
-        
         self.draw_artists()
         
         
     def plot_EIS(self, DataPoint, EIS_selection):
-        pass
+        if EIS_selection == 'Nyquist':
+            self.plot_Nyquist(DataPoint)
+        if EIS_selection == '|Z| Bode':
+            self.plot_Bode(DataPoint, 'Z')
+        if EIS_selection == 'Phase Bode':
+            self.plot_Bode(DataPoint, 'Phase')
+    
+    
+    def plot_Nyquist(self, DataPoint):
+        '''
+        Display a Nyquist plot.
+
+        Parameters
+        ----------
+        DataPoint : DataStorage.EISDataPoint
+
+        Returns
+        -------
+        None.
+        '''
+        freqs, _,_,Z = DataPoint.data
+        
+        valid_idxs = [i for i, z in enumerate(Z) if np.abs(z) <= 20e9]
+        Z = [z for i, z in enumerate(Z) if i in valid_idxs]
+    
+        x = np.real(Z)
+        y = -np.imag(Z)
+        self.ln.set_data(x, y)
+        self.ln.set_marker('o')
+        self.ax.set_xscale('linear')
+        self.ax.set_xlabel(r"Z'/ $\Omega$")
+        self.ax.set_ylabel(r"Z''/ $\Omega$")
+        xlim, ylim = get_plotlim(x, y)
+        self.ax.set_xlim(xlim)
+        self.ax.set_ylim(ylim)
+        square_axes(self.ax)
+        self.ax.xaxis.set_major_locator(matplotlib.ticker.AutoLocator())
+        self.ax.yaxis.set_major_locator(matplotlib.ticker.AutoLocator())
+        
+        self.append_extra_artists(DataPoint, 'Nyquist')
+        self.draw_artists()
+        
+    
+    
+    def plot_Bode(self, DataPoint, option):
+        '''
+        Make a Bode plot on Fig 2 for EIS-type data
+
+        Parameters
+        ----------
+        DataPoint : DataStorage.EISDataPoint
+        option : string, 'Z' or 'Phase'
+
+        Returns
+        -------
+        None.
+        '''
+        freqs, _, _, Z = DataPoint.data
+        x  = [float(f) for f in freqs]
+        valid_idxs = [i for i, z in enumerate(Z) if np.abs(z) <= 20e9]
+        
+        Z = [z for i, z in enumerate(Z) if i in valid_idxs]
+        x = [X for i, X in enumerate(x) if i in valid_idxs]
+        
+        if option == 'Z':
+            y = np.abs(Z)
+            ylabel = r'|Z|/ $\Omega$'
+            self.ax.set_ylim(
+                          min(y) - 0.05*abs(min(y)),
+                          max(y) + 0.05*abs(max(y))
+                          )
+            
+        elif option == 'Phase':
+            y = np.angle(Z, deg=True)
+            ylabel = r'Phase/ $\degree$'
+            self.ax.set_ylim(min(y)-15, max(y)+15)
+        
+        self.ln.set_data(x,y)
+        self.ln.set_marker('o')
+        
+        self.ax.set_xscale('log')
+        self.ax.set_xticks([1e-2,1e-1,1e0,1e1,1e2,1e3,1e4,1e5,1e6])
+        self.ax.set_xlim(min(x) - 0.05*min(x), max(x) + 0.05*max(x))
+        self.ax.set_xlabel('Frequency/ Hz')
+        self.ax.set_ylabel(ylabel)
+        
+        self.append_extra_artists(DataPoint, option)
+        self.draw_artists()
+        
     
             
     def clear_artists(self):
+        '''
+        Removes all artists (except for self.ln) from the figure.
+
+        Returns
+        -------
+        None.
+        '''
         if len(self.artists) != 0:
             for artist in self.artists:
                 try:
@@ -560,6 +692,19 @@ class EchemFig():
         
     
     def append_extra_artists(self, DataPoint, selection):
+        '''
+        Adds any artists generated by an Analysis function to self.artists.
+
+        Parameters
+        ----------
+        DataPoint : DataStorage.DataPoint
+        selection : string, display option. Must match DataPoint.artist.draw_on_type
+                    set by the analysis function.
+
+        Returns
+        -------
+        None.
+        '''
         self.clear_artists()
         if not hasattr(DataPoint, 'artists'):
             return
@@ -571,6 +716,13 @@ class EchemFig():
         
         
     def draw_artists(self):
+        '''
+        Draw all artists in the figure and draw the canvas.
+
+        Returns
+        -------
+        None.
+        '''
         self.ax.draw_artist(self.ln)
         for artist in self.artists:
             try:
@@ -578,17 +730,16 @@ class EchemFig():
                 self.ax.draw_artist(artist)
                 self.fig.canvas.draw_idle()
             except Exception as e:
-                # If reloading an old data file, it fails to draw
-                # previously-generated artists. Catch that and remove the
-                # artist. (Can be regenerated by running the same analysis
-                # function)
-                print(f'Error drawing artist: {artist=}')
-                print(e)
+                '''If reloading an old data file, it fails to draw
+                previously-generated artists. Catch that and remove the
+                artist. (Can be regenerated by running the same analysis
+                function)'''
+                # print(f'Error drawing artist: {artist=}')
+                # print(e)
                 artist.remove()
                 self.artists.remove(artist)     
         self.fig.tight_layout()
         self.fig.canvas.draw_idle()
-        # plt.pause(0.1)
         
         
 
@@ -692,255 +843,8 @@ class Plotter(Logger):
         self.analysis_function = func
         self.Heatmap.analysis_function = func
 
-    
-
-    #############################
-    #### ECHEM FIG FUNCTIONS ####
-    #############################
-    
-    def reset_ADC_monitor(self):
-        self.EchemFig.reset()
-        
-        
-    # # Draw blank echem figure
-    # def init_echem_fig(self):
-    #     self.FIG2_FORCED = False
-    #     self.data2 = [ [-1], [], [], [] ]
-    #     self.ax2.cla()
-    #     self.ln, = self.ax2.plot([], [])
-    #     self.ln2, = self.ax2.plot([], [])
-    #     self.ax2.set_xlabel('V')
-    #     self.ax2.set_ylabel('I')
-    #     self.ax2.set_xscale('linear')
-    #     self.fig2.canvas.draw()
-    #     self.fig2.tight_layout()
-    #     self.clear_fig2_artists()
-    #     self.ax2bg = self.fig2.canvas.copy_from_bbox(self.ax2.bbox)
-    #     self.ax2.draw_artist(self.ln)
-    #     # self.fig2.canvas.blit(self.ax2.bbox)
-    #     plt.pause(0.001)
         
     
-    # def clear_fig2_artists(self):
-    #     if len(self.fig2_extra_artists) != 0:
-    #         for artist in self.fig2_extra_artists:
-    #             artist.remove()
-    #         self.fig2_extra_artists = []
-
-    
-    
-    # def update_fig2(self):
-    #     DATAPOINT = self.master.ADC.pollingdata
-    #     self.last_data2checksum = checksum(DATAPOINT)
-    #     self.fig2_datapoint = DATAPOINT
-    #     self.set_echemdata(DATAPOINT)
-
-    
-    def set_echemdata(self, DataPoint, forced=False):
-        self.EchemFig.set_datapoint(DataPoint, forced=forced)
-    #     # Determine what to plot
-    #     _, _, xval, yval = get_axval_axlabels(
-    #                             self.master.GUI.fig2selection.get()
-    #                             )
-        
-    #     self.fig2DataPoint = DATAPOINT
-        
-    #     if forced:
-    #         # Force display this data despite current status of FIG2_FORCED
-    #         self.FIG2_FORCED = False
-        
-    #     # Get the data
-    #     if isinstance(DATAPOINT, PointsList):
-    #         # Determine which to plot
-    #         selected_idx = self.master.GUI.fig2ptselection.get()
-    #         DATAPOINT = DATAPOINT[selected_idx]
-            
-    #     if isinstance(DATAPOINT, CVDataPoint):
-    #         t, V, I = DATAPOINT.get_data()
-    #         self.FIG2_FORCED = True
-        
-    #     if isinstance(DATAPOINT, SinglePoint):
-    #         t, V, I = [0], [0], [0]
-            
-    #     if isinstance(DATAPOINT, EISDataPoint):
-    #         self.FIG2_FORCED = True
-    #         option = self.master.GUI.EIS_view_selection.get()
-    #         if option == 'Nyquist':
-    #             return self.draw_nyquist(DATAPOINT)
-    #         elif option == '|Z| Bode':
-    #             return self.draw_Bode(DATAPOINT, 'Z')
-    #         elif option == 'Phase Bode':
-    #             return self.draw_Bode(DATAPOINT, 'Phase')
-            
-    #     if isinstance(DATAPOINT, ADCDataPoint):
-    #         if self.FIG2_FORCED:
-    #             # Don't update with new ADC data
-    #             return
-    #         t, V, I = DATAPOINT.get_data()
-    #         V = np.array(V)/10
-    #         I = np.array(I)/DATAPOINT.gain
-    #         sample_freq = 10
-    #         if not self.rect.get_width() == 0:
-    #             # Unselect last point
-    #             self.rect.set_bounds(0,0,0,0)
-    #             self.ax1.draw_artist(self.rect)
-    #             self.fig1.canvas.draw_idle()
-         
-        
-    #     try:
-    #         d = {'t': t,
-    #              'V': V,
-    #              'I': I}
-    #     except:
-    #         self.log(f'Plotting error plotting {type(DATAPOINT)}')
-        
-    #     t = d['t']
-    #     x = d[xval]
-    #     y = d[yval]
-        
-        
-    #     # Plot the data
-    #     # t always used to determine sampling frequency
-    #     self.ax2.set_xscale('linear')
-    #     self.draw_echemfig(t, x, y, sample_freq)
-        
-    #     # Clear old artists
-    #     self.clear_fig2_artists()
-        
-    #     # Draw any extra artists generated by analysis function(s)
-    #     if hasattr(DATAPOINT, 'artists'):
-    #         fig_type = self.master.GUI.fig2selection.get()
-    #         for artist in DATAPOINT.artists:
-    #             if ( (hasattr(artist, 'draw_on_type')) and
-    #                   artist.draw_on_type != fig_type ):
-    #                 continue
-    #             try:
-    #                 self.ax2.add_artist(artist)
-    #                 self.ax2.draw_artist(artist)
-    #                 self.fig2_extra_artists.append(artist)
-    #                 self.fig2.canvas.draw_idle()
-    #             except:
-    #                 # If reloading an old data file, it fails to draw
-    #                 # previously-generated artists. Catch that and remove the
-    #                 # artist. (Can be regenerated by running the same analysis
-    #                 # function)
-    #                 artist.remove()
-                
-    #     self.ax2.set_xlabel(xval)
-    #     self.ax2.set_ylabel(yval)
-    #     self.fig2.tight_layout()
-    #     self.fig2.canvas.draw_idle()
-    #     plt.pause(0.001)
-        
-    #     self.fig2data = DATAPOINT
-    #     return
-    
-
-    # def draw_echemfig(self, t, x, y, undersample_freq=10):
-    #     # Undersample data if desiredd
-    #     # (i.e. HEKA records CV at 10 Hz, but ADC samples at 234 Hz -
-    #     #  we see every step in the digital CV and pick up excess noise
-    #     #  as well as current spikes.)
-                
-    #     def average(arr, n):
-    #         if n < 2:
-    #             return arr
-    #         # Undersample arr by averaging over n pts
-    #         end =  n * int(len(arr)/n)
-    #         return np.mean(arr[:end].reshape(-1, n), 1)
-        
-    #     if len(x) > undersample_freq:
-    #         data_freq = 1/np.mean(np.diff(t))
-    #         undersample_factor = int(data_freq//undersample_freq)
-            
-    #         plotx = average(np.array(x), undersample_factor)
-    #         ploty = average(np.array(y), undersample_factor)
-    #     else:
-    #         plotx = x
-    #         ploty = y
-        
-    #     self.ln.set_data(plotx, ploty)
-    #     self.ln.set_marker('')
-    #     self.set_axlim('fig2', *get_plotlim(plotx, ploty) )
-    #     return True
-    
-    
-    # def draw_nyquist(self, EISDataPoint):
-    #     '''
-    #     Make a Nyquist plot on Fig 2 for EIS-type data
-    #     '''
-    #     freqs, _,_,Z = EISDataPoint.data
-        
-    #     valid_idxs = [i for i, z in enumerate(Z) if np.abs(z) <= 20e9]
-    #     Z = [z for i, z in enumerate(Z) if i in valid_idxs]
-        
-    #     x = np.real(Z)
-    #     y = -np.imag(Z)
-        
-    #     minimum = min(0, min(min(x), min(y)))
-    #     maximum = max(max(x), max(y))
-    #     maximum += 0.1*maximum
-        
-    #     # Clear old artists
-    #     self.clear_fig2_artists()
-        
-    #     self.ln.set_data(x, y)
-    #     self.ln.set_marker('o')
-    #     self.ax2.set_xscale('linear')
-    #     self.set_axlim('fig2', (minimum, maximum), (minimum, maximum))
-    #     self.ax2.set_xlabel(r"Z'/ $\Omega$")
-    #     self.ax2.set_ylabel(r"-Z''/ $\Omega$")
-    #     self.ax2.xaxis.set_major_locator(matplotlib.ticker.AutoLocator())
-    #     self.ax2.yaxis.set_major_locator(matplotlib.ticker.AutoLocator())
-    #     self.fig2.tight_layout()
-    #     self.fig2.canvas.draw_idle()
-    #     plt.pause(0.001)
-    #     self.fig2data = EISDataPoint
-    #     return
-    
-    
-    # def draw_Bode(self, EISDataPoint, option):
-    #     '''
-    #     Make a Bode plot on Fig 2 for EIS-type data
-    #     option = 'Z' or 'Phase'
-    #     '''
-    #     freqs, _, _, Z = EISDataPoint.data
-    #     x  = [float(f) for f in freqs]
-    #     # valid_idxs = [i for i, z in enumerate(Z) if np.abs(z) <= 20e9]
-        
-    #     # Z = [z for i, z in enumerate(Z) if i in valid_idxs]
-    #     # x = [X for i, X in enumerate(x) if i in valid_idxs]
-        
-    #     colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-        
-    #     if option == 'Z':
-    #         y = np.abs(Z)
-    #         ylabel = r'|Z|/ $\Omega$'
-    #         self.ax2.set_ylim(
-    #                       min(y) - 0.05*abs(min(y)),
-    #                       max(y) + 0.05*abs(max(y))
-    #                       )
-            
-    #     elif option == 'Phase':
-    #         y = np.angle(Z, deg=True)
-    #         ylabel = r'Phase/ $\degree$'
-    #         self.ax2.set_ylim(min(y)-15, max(y)+15)
-        
-    #     self.ln.set_data(x,y)
-    #     self.ln.set_marker('o')
-        
-    #     self.ax2.set_xscale('log')
-    #     self.ax2.set_xticks([1e-2,1e-1,1e0,1e1,1e2,1e3,1e4,1e5,1e6])
-    #     self.ax2.set_xlim(min(x) - 0.05*min(x), max(x) + 0.05*max(x))
-    #     self.ax2.set_xlabel('Frequency/ Hz')
-    #     self.ax2.set_ylabel(ylabel)
-        
-    #     self.clear_fig2_artists()
-        
-    #     self.fig2.tight_layout()
-    #     self.fig2.canvas.draw_idle()
-    #     plt.pause(0.001)
-    #     self.fig2data = EISDataPoint
         
         
 

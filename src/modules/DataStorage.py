@@ -286,7 +286,7 @@ class DataPoint:
             return self.loc[2]
         return self.data
     
-    def get_data(self):
+    def get_data(self, *args, **kwargs):
         # Return all data
         return self.data  
     
@@ -320,12 +320,14 @@ class ADCDataPoint(DataPoint):
             self.data[2].append(I)
         return     
 
-    def get_data(self, n=None):
+    def get_data(self, n=None, downsample=False, downsample_freq = 10):
         '''
         n: int, optional. Return last n data points
         '''
         if n:
             return [l[-n:] for l in self.data]
+        if downsample:
+            return self.downsample(downsample_freq)
         return self.data
 
     def set_HEKA_gain(self, gain):
@@ -342,6 +344,25 @@ class ADCDataPoint(DataPoint):
                                         len(self.data[1])
                                         )
                             )
+    
+    def downsample(self, downsample_freq):
+        t, V, I = self.data.copy()
+        
+        def average(arr, n):
+            if n < 2:
+                return arr
+            # Undersample arr by averaging over n pts
+            end =  n * int(len(arr)/n)
+            return np.mean(arr[:end].reshape(-1, n), 1)
+        
+        if len(t) > downsample_freq:
+            data_freq = 1/np.mean(np.diff(t))
+            undersample_factor = int(data_freq//downsample_freq)
+            
+            t = average(np.array(t), undersample_factor)
+            V = average(np.array(V), undersample_factor)
+            I = average(np.array(I), undersample_factor)
+        return [t, V, I]
         
 
         
@@ -411,7 +432,7 @@ class CVDataPoint(DataPoint):
             idx, _ = nearest(self.data[0], arg)
             return self.data[2][idx]
     
-    def get_data(self):
+    def get_data(self, *args, **kwargs):
         return self.data
     
     def _save(self, path):
@@ -529,8 +550,8 @@ class PointsList():
     def get_val(self, datatype='max', arg=None, idx=0):
         return self[idx].get_val(datatype, arg)
     
-    def get_data(self, idx=0, **kwargs):
-        return self[idx].get_data(**kwargs)
+    def get_data(self, idx=0,  *args, **kwargs):
+        return self[idx].get_data(*args, **kwargs)
     
     def save(self, path, idx=0):
         return self[idx].save(path)

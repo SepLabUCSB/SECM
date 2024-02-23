@@ -439,6 +439,11 @@ class GUI(Logger):
                    *EIS_options, command=self.fig_opt_changed).grid(
                        column=2, row=1, sticky=(W,E))
                        
+        # Reset ADC view button
+        Button(botfigframe, text='View ADC', 
+               command=self.reset_ADC_monitor).grid(
+                   column=3, row=1, sticky=(E))
+                       
         FigureCanvasTkAgg(self.botfig, master=botfigframe
                           ).get_tk_widget().grid(
                                               row=2, column=0,
@@ -787,7 +792,7 @@ class GUI(Logger):
         if not f: return
         point = load_echem_from_file(f)
         if point:
-            self.master.Plotter.set_echemdata(DATAPOINT = point)
+            self.master.Plotter.EchemFig.set_datapoint(point, forced=True)
         else:
             self.log(f'Could not load echem data from file: {f}')
     
@@ -929,7 +934,7 @@ class GUI(Logger):
     def export_echem_fig(self):
         if not hasattr(self, 'ExporterGenerator'):
             self.ExporterGenerator = ExporterGenerator()
-        self.ExporterGenerator.get('Echem', self, self.master.Plotter.ln.get_xydata())
+        self.ExporterGenerator.get('Echem', self, self.master.Plotter.EchemFig.ln.get_xydata())
         
         
     def export_heatmap_data(self):
@@ -942,7 +947,7 @@ class GUI(Logger):
         # Clear file
         with open(path, 'w') as f:
             f.close()
-        pt = self.master.Plotter.fig2DataPoint
+        pt = self.master.Plotter.EchemFig.DataPoint
         if str(pt) == 'PointsList':
             n_pts = len(pt.data)
             export_both = messagebox.askyesno(title='Export multiple',
@@ -973,11 +978,15 @@ class GUI(Logger):
     
     # Selected new view for fig2
     def fig_opt_changed(self, _):
-        self.master.Plotter.set_echemdata(
-            DATAPOINT = self.master.Plotter.fig2DataPoint,
+        self.master.Plotter.EchemFig.set_datapoint(
+            DataPoint = self.master.Plotter.EchemFig.DataPoint,
             forced=True
             )
         return
+    
+    
+    def reset_ADC_monitor(self):
+        self.master.Plotter.EchemFig.reset()
     
     
     def heatmap_opt_changed(self, *args):
