@@ -268,7 +268,13 @@ class DataPoint:
         #  * list: CV: [ [t], [V], [I] ]
         self.data = data
         self.gain = 1 # Used for ADCDataPoint
+    
         
+    def __getitem__(self, i):
+        # Overwritten by PointsList. 
+        return self
+    
+    
     def __str__(self):
         return 'DataPoint'
     
