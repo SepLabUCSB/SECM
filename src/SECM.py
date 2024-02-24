@@ -1067,6 +1067,7 @@ class GUI(Logger):
         if self.master.Piezo.isMoving():
             self.log('Error: cannot run CV while piezo is moving')
             return
+        self.reset_ADC_monitor()
         self.set_amplifier()
         E0, E1, E2, E3, v, t0 = self.get_CV_params()
         self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
@@ -1100,6 +1101,7 @@ class GUI(Logger):
         if self.master.Piezo.isMoving():
             self.log('Error: cannot run EIS while piezo is moving')
             return
+        self.reset_ADC_monitor()
         eis_params = self.get_EIS_params()
         self.master.HekaWriter.setup_EIS(*eis_params)
         path = self.master.HekaWriter.run_measurement_loop('EIS')
@@ -1125,6 +1127,7 @@ class GUI(Logger):
         if self.master.Piezo.isMoving():
             self.log('Error: cannot run custom waveform while piezo is moving')
             return
+        self.reset_ADC_monitor()
         self.set_amplifier()
         E0, E1, E2, E3, v, t0 = self.get_CV_params()
         self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
@@ -1140,6 +1143,7 @@ class GUI(Logger):
     ########## SECM SCAN CALLBACKS ###########
     
     def run_approach_curve(self):
+        self.reset_ADC_monitor()
         self.set_amplifier()
         
         height = self.params['approach']['z_height'].get('1.0', 'end')
@@ -1160,6 +1164,7 @@ class GUI(Logger):
         
     def run_automatic_approach(self):
         self.set_amplifier()
+        self.reset_ADC_monitor()
         run(self.master.FeedbackController.automatic_approach)
         
     

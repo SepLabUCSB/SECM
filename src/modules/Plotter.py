@@ -43,6 +43,8 @@ def checksum(data):
         data = [l for l in data if 
                 len(np.array(l)) != 0]
         return np.array(data).flatten().sum()
+    if type(data) in (float, int):
+        return data
     
     return 0
 
