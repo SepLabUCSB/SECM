@@ -168,6 +168,7 @@ def square_axes(ax):
 class Heatmap():
     def __init__(self, fig, GUI):
         self.GUI = GUI
+        self.expt = None
         
         self.fig = fig
         self.ax  = fig.gca()
@@ -293,7 +294,7 @@ class Heatmap():
                 
         if ((checksum(self.data) == self.last_checksum) and not force):
             return
-
+        
         self.update_data()
         
         self.image.set_data(self.data[::-1])
@@ -570,7 +571,7 @@ class EchemFig():
         
         ylabel, xlabel = IV_selection.split(' vs ')
         yvals, xvals = d[ylabel], d[xlabel]
-        self.ln.set_data(xvals, yvals)
+        self.ln.set_data(xvals, yvals[:len(xvals)])
         self.ln.set_marker('')
         xlim, ylim = get_plotlim(xvals, yvals)
         self.ax.set_xscale('linear')
@@ -803,6 +804,8 @@ class Plotter(Logger):
     # the appropriate figure.
     def update_figs(self, **kwargs):
         
+        if self.master.expt != self.Heatmap.expt:
+            self.Heatmap.load_experiment(self.master.expt)
         self.Heatmap.update()
         self.EchemFig.update(self.master.ADC.pollingdata)
                 

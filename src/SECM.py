@@ -986,7 +986,7 @@ class GUI(Logger):
     
     
     def reset_ADC_monitor(self):
-        self.master.Plotter.EchemFig.reset()
+        run(self.master.Plotter.EchemFig.reset)
     
     
     def heatmap_opt_changed(self, *args):

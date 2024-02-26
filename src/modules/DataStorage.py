@@ -320,7 +320,7 @@ class ADCDataPoint(DataPoint):
             self.data[2].append(I)
         return     
 
-    def get_data(self, n=None, downsample=False, downsample_freq = 10):
+    def get_data(self, n=None, downsample=False, downsample_freq = 100):
         '''
         n: int, optional. Return last n data points
         '''
@@ -377,6 +377,9 @@ class SinglePoint(DataPoint):
             return self.loc[2]
         return self.data
     
+    def get_data(self, *args, **kwargs):
+        return [],[],[]
+    
     def _save(self, path):
         # Don't save data of this type 
         # (used as placeholder in scanning grid)
@@ -415,6 +418,8 @@ class CVDataPoint(DataPoint):
             delta  = 1e6
             deltas = []
             # TODO: make this faster?
+            if not arg:
+                arg = 0
             for i, v in enumerate(self.data[1]):
                 deltas.append(abs(v - arg))
                 if abs(v - arg) < delta:
