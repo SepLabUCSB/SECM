@@ -439,6 +439,11 @@ class GUI(Logger):
                    *EIS_options, command=self.fig_opt_changed).grid(
                        column=2, row=1, sticky=(W,E))
                        
+        # Reset ADC view button
+        Button(botfigframe, text='View ADC', 
+               command=self.reset_ADC_monitor).grid(
+                   column=3, row=1, sticky=(E))
+                       
         FigureCanvasTkAgg(self.botfig, master=botfigframe
                           ).get_tk_widget().grid(
                                               row=2, column=0,
@@ -465,40 +470,40 @@ class GUI(Logger):
         self.heatmap_min_val = StringVar(value='0')
         self.heatmap_max_val = StringVar(value='0')
         Button(heatmapscaleframe, text='Zoom out', 
-               command=self.master.Plotter.zoom_out).grid(
+               command=self.master.Plotter.Heatmap.zoom_out).grid(
                row=1, column=2, sticky=(W,E))
         Button(heatmapscaleframe, text='Zoom in', 
-               command=self.master.Plotter.zoom_in).grid(
+               command=self.master.Plotter.Heatmap.zoom_in).grid(
                row=1, column=3, sticky=(W,E))
         
         Button(heatmapscaleframe, text='-', width=1,
-               command=self.master.Plotter.zoom_lower_subt).grid(
+               command=self.master.Plotter.Heatmap.zoom_lower_subt).grid(
                row=2, column=0, sticky=(W,E))  
         Button(heatmapscaleframe, text='+', width=1,
-               command=self.master.Plotter.zoom_lower_add).grid(
+               command=self.master.Plotter.Heatmap.zoom_lower_add).grid(
                row=2, column=1, sticky=(W,E))         
         _min_entry = Entry(heatmapscaleframe, textvariable=self.heatmap_min_val, width=5)
         _min_entry.grid(row=2, column=2, sticky=(W,E))
         _min_entry.bind('<Tab>', focus_next_widget)
-        _min_entry.bind('<Return>', self.master.Plotter.apply_minmax_fields)
+        _min_entry.bind('<Return>', self.master.Plotter.Heatmap.apply_minmax_fields)
         
         _max_entry = Entry(heatmapscaleframe, textvariable=self.heatmap_max_val, width=5)
         _max_entry.grid(row=2, column=3, sticky=(W,E))
         _max_entry.bind('<Tab>', focus_next_widget)
-        _max_entry.bind('<Return>', self.master.Plotter.apply_minmax_fields)
+        _max_entry.bind('<Return>', self.master.Plotter.Heatmap.apply_minmax_fields)
         Button(heatmapscaleframe, text='-', width=1,
-               command=self.master.Plotter.zoom_upper_subt).grid(
+               command=self.master.Plotter.Heatmap.zoom_upper_subt).grid(
                row=2, column=4)
         Button(heatmapscaleframe, text='+', width=1,
-               command=self.master.Plotter.zoom_upper_add).grid(
+               command=self.master.Plotter.Heatmap.zoom_upper_add).grid(
                row=2, column=5)
         
         
         Button(heatmapscaleframe, text='Apply', 
-               command=self.master.Plotter.apply_minmax_fields).grid(
+               command=self.master.Plotter.Heatmap.apply_minmax_fields).grid(
                row=3, column=2, sticky=(W,E))
         Button(heatmapscaleframe, text='Reset', 
-               command=self.master.Plotter.cancel_popup).grid(
+               command=self.master.Plotter.Heatmap.cancel_popup).grid(
                row=3, column=3, sticky=(W,E))
                    
                    
@@ -513,7 +518,7 @@ class GUI(Logger):
         
         self.heatmap_cmap = StringVar()
         OptionMenu(heatmapcolorframe, self.heatmap_cmap, cmaps[0], *cmaps, 
-                   command=self.master.Plotter.update_cmap).grid(
+                   command=self.master.Plotter.Heatmap.update_colormap).grid(
                        row=0, column=1, columnspan=2)
         
         self.heatmap_cmap_minval = StringVar(value='0')
@@ -522,13 +527,13 @@ class GUI(Logger):
         _cm_lower = Entry(heatmapcolorframe, textvariable=self.heatmap_cmap_minval, width=3)
         _cm_lower.grid(row=1, column=1, sticky=(W,E))
         _cm_lower.bind('<Tab>', focus_next_widget)
-        _cm_lower.bind('<Return>', self.master.Plotter.update_cmap)
+        _cm_lower.bind('<Return>', self.master.Plotter.Heatmap.update_colormap)
         Label(heatmapcolorframe, text='Max: ').grid(row=1, column=2, sticky=(W,E))
         _cm_upper = Entry(heatmapcolorframe, textvariable=self.heatmap_cmap_maxval, width=3)
         _cm_upper.grid(row=1, column=3, sticky=(W,E))
         _cm_upper.bind('<Tab>', focus_next_widget)
-        _cm_upper.bind('<Return>', self.master.Plotter.update_cmap)
-        Button(heatmapcolorframe, text='Apply', command=self.master.Plotter.update_cmap).grid(
+        _cm_upper.bind('<Return>', self.master.Plotter.Heatmap.update_colormap)
+        Button(heatmapcolorframe, text='Apply', command=self.master.Plotter.Heatmap.update_colormap).grid(
             row=2, column=1, columnspan=2)
         
   
@@ -787,7 +792,7 @@ class GUI(Logger):
         if not f: return
         point = load_echem_from_file(f)
         if point:
-            self.master.Plotter.set_echemdata(DATAPOINT = point)
+            self.master.Plotter.EchemFig.set_datapoint(point, forced=True)
         else:
             self.log(f'Could not load echem data from file: {f}')
     
@@ -923,13 +928,13 @@ class GUI(Logger):
     def export_heatmap(self):
         if not hasattr(self, 'ExporterGenerator'):
             self.ExporterGenerator = ExporterGenerator()
-        exporter = self.ExporterGenerator.get('Heatmap', self, self.master.Plotter.data1.copy())
+        exporter = self.ExporterGenerator.get('Heatmap', self, self.master.Plotter.Heatmap.data.copy())
         
         
     def export_echem_fig(self):
         if not hasattr(self, 'ExporterGenerator'):
             self.ExporterGenerator = ExporterGenerator()
-        self.ExporterGenerator.get('Echem', self, self.master.Plotter.ln.get_xydata())
+        self.ExporterGenerator.get('Echem', self, self.master.Plotter.EchemFig.ln.get_xydata())
         
         
     def export_heatmap_data(self):
@@ -942,7 +947,7 @@ class GUI(Logger):
         # Clear file
         with open(path, 'w') as f:
             f.close()
-        pt = self.master.Plotter.fig2DataPoint
+        pt = self.master.Plotter.EchemFig.DataPoint
         if str(pt) == 'PointsList':
             n_pts = len(pt.data)
             export_both = messagebox.askyesno(title='Export multiple',
@@ -973,19 +978,23 @@ class GUI(Logger):
     
     # Selected new view for fig2
     def fig_opt_changed(self, _):
-        self.master.Plotter.set_echemdata(
-            DATAPOINT = self.master.Plotter.fig2DataPoint,
+        self.master.Plotter.EchemFig.set_datapoint(
+            DataPoint = self.master.Plotter.EchemFig.DataPoint,
             forced=True
             )
         return
     
     
+    def reset_ADC_monitor(self):
+        run(self.master.Plotter.EchemFig.reset)
+    
+    
     def heatmap_opt_changed(self, *args):
         # selected a new view for heatmap
-        option = self.heatmapselection.get()
-        value  = self.HeatMapDisplayParam.get()
+        # option = self.heatmapselection.get()
+        # value  = self.HeatMapDisplayParam.get()
         
-        self.master.Plotter.update_heatmap(option, value)        
+        self.master.Plotter.update_heatmap()        
         return 'break'
     
     
@@ -1008,12 +1017,12 @@ class GUI(Logger):
         '''
         Set the new bounds after heatmap_rect_zoom()
         '''
-        corners = self.master.Plotter.RectangleSelector.get_coords()
-        if all([c == (0,0) for c in corners]):
-            return
-        scale = self.master.Piezo.set_new_scan_bounds(corners)
-        gui.params['hopping']['size'].delete('1.0', 'end')
-        gui.params['hopping']['size'].insert('1.0', f"{scale:0.3f}")
+        # corners = self.master.Plotter.RectangleSelector.get_coords()
+        # if all([c == (0,0) for c in corners]):
+        #     return
+        # scale = self.master.Piezo.set_new_scan_bounds(corners)
+        # gui.params['hopping']['size'].delete('1.0', 'end')
+        # gui.params['hopping']['size'].insert('1.0', f"{scale:0.3f}")
         return
     
     
@@ -1058,6 +1067,7 @@ class GUI(Logger):
         if self.master.Piezo.isMoving():
             self.log('Error: cannot run CV while piezo is moving')
             return
+        self.reset_ADC_monitor()
         self.set_amplifier()
         E0, E1, E2, E3, v, t0 = self.get_CV_params()
         self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
@@ -1091,6 +1101,7 @@ class GUI(Logger):
         if self.master.Piezo.isMoving():
             self.log('Error: cannot run EIS while piezo is moving')
             return
+        self.reset_ADC_monitor()
         eis_params = self.get_EIS_params()
         self.master.HekaWriter.setup_EIS(*eis_params)
         path = self.master.HekaWriter.run_measurement_loop('EIS')
@@ -1116,6 +1127,7 @@ class GUI(Logger):
         if self.master.Piezo.isMoving():
             self.log('Error: cannot run custom waveform while piezo is moving')
             return
+        self.reset_ADC_monitor()
         self.set_amplifier()
         E0, E1, E2, E3, v, t0 = self.get_CV_params()
         self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
@@ -1131,6 +1143,7 @@ class GUI(Logger):
     ########## SECM SCAN CALLBACKS ###########
     
     def run_approach_curve(self):
+        self.reset_ADC_monitor()
         self.set_amplifier()
         
         height = self.params['approach']['z_height'].get('1.0', 'end')
@@ -1151,6 +1164,7 @@ class GUI(Logger):
         
     def run_automatic_approach(self):
         self.set_amplifier()
+        self.reset_ADC_monitor()
         run(self.master.FeedbackController.automatic_approach)
         
     
