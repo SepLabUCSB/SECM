@@ -230,6 +230,9 @@ class ADC(Logger):
                     data[ch].append(Channel[j]*10/2**15)
                 
                 
+                # For testing plotting vs z height
+                # data[1] = [self.master.Piezo.z for _ in data[0]]
+                
                 
                 # calculate what time each point was measured
                 # Assumes all channels measured simultaneously (they're not)

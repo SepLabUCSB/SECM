@@ -319,6 +319,11 @@ class ADCDataPoint(DataPoint):
             self.data[1].append(V)
             self.data[2].append(I)
         return     
+    
+    def _save(self, path):
+        with open(path, 'w') as f:
+            for t, V, I in zip(self.data[0], self.data[1], self.data[2]):
+                f.write(f'{t},{V},{I}\n')
 
     def get_data(self, n=None, downsample=False, downsample_freq = 100):
         '''
@@ -347,6 +352,9 @@ class ADCDataPoint(DataPoint):
     
     def downsample(self, downsample_freq):
         t, V, I = self.data.copy()
+        
+        # if (t and t[-1] * downsample_freq > 1000):
+        #     downsample_freq /= 10
         
         def average(arr, n):
             if n < 2:

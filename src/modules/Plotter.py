@@ -501,13 +501,20 @@ class EchemFig():
         -------
         None.
         '''
-        if (id(ADCDataPoint) != id(self.DataPoint) and
-            not self._forced):
+        
+        # Trying to display the same ADC data point. Update with new points.
+        if id(ADCDataPoint) == id(self.DataPoint):
+            if checksum(self.DataPoint) != self.last_checksum:
+                return self.update_plot()
+        
+        # Trying to display a new data point. Refresh plot            
+        if id(ADCDataPoint) != id(self.DataPoint):
+            if self._forced:
+                # Don't update if force displaying previous data.
+                return
             self.initialize()
             self.set_datapoint(ADCDataPoint)
-            return
-        if checksum(self.DataPoint) != self.last_checksum:
-            self.update_plot()
+            
             
     
     def set_datapoint(self, DataPoint, forced=False):
@@ -566,6 +573,12 @@ class EchemFig():
         None.
         '''
         t, V, I = DataPoint.get_data(downsample=True) #Only passes downsampled arg to ADCDataPoint type
+        
+        if hasattr(DataPoint, 'gain'):
+            # ADCDataPoints take 'gain' argument from GUI (set in HEKA), need to
+            # convert output voltage -> current
+            V = np.array(V)/10
+            I = np.array(I)/DataPoint.gain
         
         d = {'t':t, 'V':V, 'I':I}
         
