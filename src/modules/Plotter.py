@@ -26,7 +26,10 @@ def checksum(data):
         return sum(data.data[0])
     
     if isinstance(data, CVDataPoint):
-        return sum(data.data[0])
+        try:
+            return sum(data.data[0])
+        except:
+            return data.data[0]
     
     if isinstance(data, EISDataPoint):
         return sum(data.data[1])
@@ -43,6 +46,10 @@ def checksum(data):
         data = [l for l in data if 
                 len(np.array(l)) != 0]
         return np.array(data).flatten().sum()
+    if type(data) in (float, int):
+        return data
+    
+    return 0
 
 
 def get_plotlim(xdata, ydata):
@@ -153,400 +160,105 @@ def inv_unit_label(s:str):
     return val
     
 
-def get_axval_axlabels(expt_type):
-    #TODO: fix this or make sure it never happens
-    if expt_type == '':
-        expt_type = 'CA'
+def square_axes(ax):
+    mini = min(0, *ax.get_xlim(), *ax.get_ylim())
+    maxi = max(*ax.get_xlim(), *ax.get_ylim())
+    ax.set_xlim(mini, maxi)
+    ax.set_ylim(mini, maxi)
+
+
+
+class Heatmap():
+    def __init__(self, fig, GUI):
+        self.GUI = GUI
+        self.expt = None
         
-    if (expt_type == 'CV' or expt_type == 'I vs V'):
-        xval = 'ch1'
-        yval = 'ch2'
-        yaxlabel='I'
-        xaxlabel='V'
-            
-    elif (expt_type == 'CA' or expt_type == 'I vs t'):
-        xval = 't'
-        yval = 'ch2'
-        yaxlabel='I'
-        xaxlabel='t'
-    
-    elif (expt_type == 'V vs t'):
-        xval = 't'
-        yval = 'ch1'
-        yaxlabel='V'
-        xaxlabel='t'
-    
-    return xval, yval, xaxlabel, yaxlabel
-
-
-class RectangleSelector:
-    '''
-    Class which draws a rectangle on the heatmap based on the user
-    clicking and dragging. Rectangle is used to zoom in to the 
-    selected region.
-    '''
-    
-    def __init__(self, Plotter, fig, ax):
-        self.Plotter = Plotter
         self.fig = fig
-        self.ax  = ax
+        self.ax  = fig.gca()
         
-        self.bg      = None
-        self.clicked = False
+        # Data array to display and its checksum
+        self.data = np.array([0,])
+        self.last_checksum = checksum(self.data)
         
+        # Rectangle drawn around selected point
         self.rect = matplotlib.patches.Rectangle((0,0), 0, 0, fill=0,
                                                  edgecolor='red', lw=2)
         self.ax.add_artist(self.rect)
         
-        
-    def connect(self):
-        self.clickedcid = self.fig.canvas.mpl_connect('button_press_event',
-                                                      self.on_press)
-        self.releasecid = self.fig.canvas.mpl_connect('button_release_event',
-                                                      self.on_release)
-        self.dragcid    = self.fig.canvas.mpl_connect('motion_notify_event',
-                                                      self.on_drag)
-    
-    def disconnect(self):
-        for cid in (self.clickedcid, self.releasecid, self.dragcid):
-            self.fig.canvas.mpl_disconnect(cid)
-        # Give control back to Plotter
-        self.Plotter.connect_cids()
-    
-    def clear(self):
-        self.rect.set_width(0)
-        self.rect.set_height(0)
-        self.fig.canvas.draw()
-        plt.pause(0.001)
-    
-    def make_rectangle(self, loc1, loc2):
-        x1, y1 = loc1
-        x2, y2 = loc2
-        width  = x2 - x1
-        height = y2 - y1
-        self.rect.set_x(x1)
-        self.rect.set_y(y1)
-        self.rect.set_width(width)
-        self.rect.set_height(height)
-        
-        # Redraw with blitting
-        self.rect.set_animated(True)
-        self.fig.canvas.draw()
-        self.bg = self.fig.canvas.copy_from_bbox(self.ax.bbox)
-        
-        self.ax.draw_artist(self.rect)
-        self.fig.canvas.blit(self.ax.bbox)
-    
-    def get_coords(self):
-        x = self.rect.get_x()
-        y = self.rect.get_y()
-        h = self.rect.get_height()
-        w = self.rect.get_width()
-        corners = [
-            (x  , y),
-            (x+w, y),
-            (x  , y+h),
-            (x+w, y+h)
-            ]
-        return corners
-    
-    
-    def snap_to_grid(self):
-        '''
-        snap to nearest coordinates on the grid and 
-        make it square
-        '''
-        gridpts = self.Plotter.master.expt.get_loc_data()
-        delta = abs(gridpts[0][0][0] - gridpts[0][1][0])
-        corners = self.get_coords()
-        corners.sort()
-        nearest_points = []
-        for corner in corners:
-            _, nearest = self.Plotter.master.expt.get_nearest_datapoint(corner[0], 
-                                                                     corner[1])
-            x0, y0, _ = nearest.loc
-            nearest_points.append( (x0, y0) )
-        
-        nearest_points.sort() # in order [(0,0), (0,1), (1,0), (1,1)]
-
-        x, y = nearest_points[0]
-        w    = nearest_points[3][0] - x
-        h    = nearest_points[3][1] - y
-        w = h = max(w, h) # make it a square            
-        self.make_rectangle( (x, y), (x+w, y+h) )
-        return
-    
-        
-    def on_press(self, event):
-        # click
-        if event.inaxes != self.ax:
-            return
-        self.clicked = True
-        self.loc1 = (event.xdata, event.ydata)
-    
-    def on_release(self, event):
-        # release
-        self.snap_to_grid()
-        self.clicked = False
-        self.disconnect()
-    
-    def on_drag(self, event):
-        # drag rectangle
-        if (not self.clicked or event.inaxes != self.ax):
-            return
-        self.loc2 = (event.xdata, event.ydata)
-        self.make_rectangle(self.loc1, self.loc2) 
-
-
-
-class Plotter(Logger):
-    
-    def __init__(self, master, fig1, fig2):
-        self.master = master
-        self.master.register(self)
-        self.willStop = False
-        
-        self.adc_polling = True
-        self.adc_polling_count = 0
-        self.FIG2_FORCED = False
+        self.force_minmax = False
         self.analysis_function = analysis_funcs.CV_decay_analysis
         
-        self.fig1 = fig1
-        self.fig2 = fig2
-        self.ax1  = fig1.gca()
-        self.ax2  = fig2.gca()
+        self.initialize()
+      
         
-        self.data1 = np.array([0,])
-        self.data2 = [ [-1], [], [], [] ] #keep track of all fig2 data for later replotting
-        self.fig2DataPoint = None  # Keep track of DataPoint object fig 2 is plotting from. 
-                                   # Can be a PointsList. Not necessarily the same as self.fig2data,
-                                   # which is what is actually plotted to the axes
-        
-        self.last_data1checksum = checksum(self.data1)
-        self.last_data2checksum = checksum(self.data2)
-        
-        self.force_minmax = False
-
-        self.rect = matplotlib.patches.Rectangle((0,0), 0, 0, fill=0,
-                                                 edgecolor='red', lw=2)
-        self.ax1.add_artist(self.rect)
-        
-        self.fig2_extra_artists = [] # Store any extra artists given by DataPoint's analysis
-
-        self.init_heatmap()
-        self.init_echem_fig()
-
-        self.connect_cids()
-        self.RectangleSelector = RectangleSelector(self, self.fig1, self.ax1)
-        
-        
-     
-       
-     
-    ###########################
-    #### GENERAL FUNCTIONS ####
-    ###########################
-    
-    def connect_cids(self):
-        self.cid1 = self.fig1.canvas.mpl_connect('button_press_event',
-                                                 self.onclick)
-        self.cid2 = self.fig2.canvas.mpl_connect('button_press_event',
-                                                 self.onclick)
-    
-    def disconnect_cids(self):
-        for cid in (self.cid1, self.cid2):
-            self.fig2.canvas.mpl_disconnect(cid)
-    
-    
-    def load_from_expt(self, expt):
-        self.data1 = expt.get_heatmap_data()
-        xlim = (0, expt.length)
-        ylim = (0, expt.length)
-        self.set_axlim('fig1', xlim, ylim)
-    
-    
-    def onclick(self, event):
-        # Clicking on pixel in SECM histogram displays that CV ( or
-        # CA, or EIS, ...) in the lower figure
-        if event.inaxes == self.ax1:
-            x, y = event.xdata, event.ydata
-            idx, closest_datapoint = self.select_datapoint(x, y)
-            self.set_echemdata(closest_datapoint, sample_freq=10000)
-            x0, y0, z0 = closest_datapoint.loc
-            if type(z0) == tuple:
-                z0 = z0[0] # Handle early bug in some saved data
-            val = self.data1.flatten()[idx]
-            self.master.ImageCorrelator.draw_on_pt(x0, y0)
-            print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {unit_label(val, dec=3)}')
-        if event.inaxes == self.ax2:
-            x, y = event.xdata, event.ydata
-            print(f'({unit_label(x, dec=3)}, {unit_label(y, dec=3)})')
-        
-        return 
-    
-    
-    # Called every 100 ms by TK mainloop.
-    # Check if data has updated. If so, plot it to
-    # the appropriate figure.
-    def update_figs(self, **kwargs):
-        
-        pollingData = self.master.ADC.pollingdata
-        try:
-            if checksum(self.data1) != self.last_data1checksum:
-                self.update_fig1()
-        except Exception as e:
-            self.log(f'Error updating heatmap!')
-            self.log(e)
-        
-        try:
-            if checksum(pollingData) != self.last_data2checksum:
-                if (hasattr(self, 'fig2data') and 
-                    id(pollingData) != id(self.fig2data) and
-                    not self.FIG2_FORCED):
-                    self.init_echem_fig()
-                self.update_fig2()       
-        except Exception as e:
-            self.log(f'Error updating echem figure!')
-            self.log(e)
-        
-        self.master.GUI.root.after(100, self.update_figs)
-        return
-    
-    
-    def set_axlim(self, fig, xlim, ylim):
-        if ((xlim[1] == xlim[0]) or (ylim[1] == ylim[0])):
-            return
-        
-        if fig == 'fig1':
-            self.ax1lim = (xlim, ylim)
-            self.ax1.set_xlim(xlim)
-            self.ax1.set_ylim(ylim)
-        if fig == 'fig2':
-            self.ax2lim = (xlim, ylim)
-            self.ax2.set_xlim(xlim)
-            self.ax2.set_ylim(ylim) 
-    
-    
-    
-    
-    ###########################
-    #### HEATMAP FUNCTIONS ####
-    ###########################
-    
-    # Initialize heatmap
-    def init_heatmap(self):
-        self.data1 = np.array([
+    def initialize(self):
+        '''
+        Draw the initial figure
+        '''
+        self.data = np.array([
             np.array([0 for _ in range(10)]) for _ in range(10)
             ], dtype=np.float32)
-        self.image1 = self.ax1.imshow(self.data1, cmap='viridis', origin='upper')
-        cb = self.fig1.colorbar(self.image1, ax=self.ax1, shrink=0.5,
+        self.image = self.ax.imshow(self.data, cmap='viridis', origin='upper')
+        cb = self.fig.colorbar(self.image, ax=self.ax, shrink=0.5,
                                 pad=0.02, format="%0.1e")
         cb.ax.tick_params(labelsize=14)
         
-        self.ax1.set_xlabel(r'$\mu$m')
-        self.ax1.set_ylabel(r'$\mu$m')
-        self.ax1.spines['right'].set_visible(True)
-        self.ax1.spines['top'].set_visible(True)
-        self.fig1.canvas.draw()
-        self.fig1.tight_layout()
+        self.ax.set_xlabel(r'$\mu$m')
+        self.ax.set_ylabel(r'$\mu$m')
+        self.ax.spines['right'].set_visible(True)
+        self.ax.spines['top'].set_visible(True)
+        self.fig.canvas.draw()
+        self.fig.tight_layout()
         # self.ax1bg = self.fig1.canvas.copy_from_bbox(self.ax1.bbox)
         self.rect.set_bounds(0,0,0,0)
-        self.ax1.draw_artist(self.image1)
-        self.ax1.draw_artist(self.rect)
-        plt.pause(0.001)
-        return
-    
-    
-    # Called from GUI by changing view selector
-    # Update what is shown on the heatmap
-    def update_heatmap(self, option=None, value=None):
-        expt = self.master.expt
-        pts = []
-        
-        if option == value == None:
-            option = self.master.GUI.heatmapselection.get()
-            value = self.master.GUI.HeatMapDisplayParam.get()
-        
-        if option == 'Max. current':
-            pts = expt.get_heatmap_data('max')
-        if option == 'Current @ ... (V)':
-            try:
-                value = float(value.replace('\n', ''))
-                pts = expt.get_heatmap_data('val_at', value)
-            except:
-                return
-        if option == 'Current @ ... (t)':
-            try:
-                value = float(value.replace('\n', ''))
-                pts = expt.get_heatmap_data('val_at_t', value)
-            except:
-                return
-        if option == 'Z height':
-            pts = expt.get_heatmap_data('z')
-        if option == 'Avg. current':
-            pts = expt.get_heatmap_data('avg')
-        if option == 'Analysis func.':
-            if not self.analysis_function:
-                print('No analysis function selected!')
-                return
-            value = value.replace('\n', '')
-            
-            pts = expt.do_analysis(self.analysis_function, value)            
-                    
-                      
-        if len(pts) > 0:
-            self.data1 = pts #will update plot automatically
-        return
-    
-    
-    # Set new data on heatmap
-    def update_fig1(self, **kwargs):
-        arr = self.data1[::-1]
-        self.image1.set_data(arr)
-        
-        if self.force_minmax:
-            minval = inv_unit_label(self.master.GUI.heatmap_min_val.get())
-            maxval = inv_unit_label(self.master.GUI.heatmap_max_val.get())
-        else:
-            minval, maxval = get_clim(arr)
-            self.update_minmaxval_fields()
-            
-        self.image1.set(clim=( minval, maxval) )
-        set_cbar_ticklabels(self.image1.colorbar, [minval, maxval])
-        
-        left, right = self.ax1lim[0][0], self.ax1lim[0][1]
-        bottom, top = self.ax1lim[1][0], self.ax1lim[1][1]
-        self.image1.set_extent((left, right, bottom, top))
-        self.ax1.draw_artist(self.image1)
-        self.fig1.canvas.draw_idle()
-        self.last_data1checksum = checksum(self.data1)
+        self.ax.draw_artist(self.image)
+        self.ax.draw_artist(self.rect)
         plt.pause(0.001)
     
+
+    def load_experiment(self, expt):
+        '''
+        Load data from given experiment and display on heatmap
+        
+        expt : DataStorage.Experiment
+        '''
+        self.expt = expt
+        self.data = expt.get_heatmap_data()
+        self.ax.set_xlim(0, expt.length)
+        self.ax.set_ylim(0, expt.length)
+        
     
-    def select_datapoint(self, event_x, event_y):
+    def get_datapoint_on_click(self, event, pt_idx):
         '''
-        Data point locations are offset from pixel locations and
-        get stretched to fit the image grid
-        
-        Returns selected Datapoint object and draws a box on the heatmap
+        Called by Plotter.onclick when user clicks on heatmap.
+        Draws a box around that point on the heatmap.
+        Return the closest DataPoint and its value.
+
+        Parameters
+        ----------
+        event : matplotlib button_press_event
+        pt_idx: int, defines which DataPoint in a PointsList to return
+
+        Returns
+        -------
+        DataPoint : closest Datapoint to the click
         '''
+        # event_x, y = event.xdata, event.ydata
+        datapts = self.expt.get_loc_data()
         
-        pt_idx_selection = int(self.master.GUI.fig2ptselection.get())
-        datapts = self.master.expt.get_loc_data()
-        
-        left, right = self.ax1lim[0][0], self.ax1lim[0][1]
+        left, right = self.ax.get_xlim()
         pts_in_row = len(datapts[0]) + 1
         x_bounds = [n for n in np.linspace(left, right, pts_in_row)]
         y_bounds = [n for n in np.linspace(left, right, pts_in_row)]
         delta = x_bounds[1] - x_bounds[0]
         
         for xline in x_bounds:
-            if event_x >= xline:
+            if event.xdata >= xline:
                 continue
             break
         
         for yline in y_bounds:
-            if event_y >= yline:
+            if event.ydata >= yline:
                 continue
             break
         
@@ -556,9 +268,8 @@ class Plotter(Logger):
         self.rect.set_y(yline - delta)
         self.rect.set_width(delta)
         self.rect.set_height(delta)
-        self.ax1.draw_artist(self.rect)
-        self.fig1.canvas.draw_idle()
-        
+        self.ax.draw_artist(self.rect)
+        self.fig.canvas.draw_idle()
         
         def pt_in_rect(x, y, xline, yline, delta):
             if (x <= xline) and (x >= xline-delta):
@@ -569,30 +280,86 @@ class Plotter(Logger):
         for row in datapts:
             for (x, y) in row:
                 if pt_in_rect(x, y, xline, yline, delta):
-                    return self.master.expt.get_nearest_datapoint(x, y, 
-                                                                  pt_idx=pt_idx_selection)
-
+                    i, DataPoint = self.expt.get_nearest_datapoint(x, y, pt_idx=pt_idx)
+                    x0, y0, z0 = DataPoint.loc
+                    if type(z0) == tuple:
+                        z0 = z0[0] # Handle early bug in some saved data
+                    val = self.data.flatten()[i]
+                    print(f'Point: ({x0:0.2f}, {y0:0.2f}, {z0:0.2f}), Value: {unit_label(val, dec=3)}')
+                    return DataPoint
+       
+                
+    def update(self, force=False):
+        '''
+        Called periodically by Tk root (via Plotter.update_figs).
+        Check if new points are appended to the experiment and plot them if so
+        '''
+                
+        if ((checksum(self.data) == self.last_checksum) and not force):
+            return
+        
+        self.update_data()
+        
+        self.image.set_data(self.data[::-1])
+        
+        if self.force_minmax:
+            minval = inv_unit_label(self.GUI.heatmap_min_val.get())
+            maxval = inv_unit_label(self.GUI.heatmap_max_val.get())
+        else:
+            minval, maxval = get_clim(self.data)
+            self.update_minmaxval_fields()
+            
+        self.image.set(clim=( minval, maxval) )
+        set_cbar_ticklabels(self.image.colorbar, [minval, maxval])
+        
+        left, right = self.ax.get_xlim()
+        bottom, top = self.ax.get_ylim()
+        self.image.set_extent((left, right, bottom, top))
+        self.ax.draw_artist(self.image)
+        self.fig.canvas.draw_idle()
+        self.last_checksum = checksum(self.data)
+        plt.pause(0.001)
     
-    
-    # Enter heatmap zoom mode
-    def heatmap_zoom(self):
-        self.disconnect_cids()
-        self.RectangleSelector.connect() 
-        # Plotter regains control of mouse inputs 
-        # on RectangleSelector.disconnect()
+        
+    def update_data(self):
+        '''
+        Grabs display options from the GUI and pulls array of data from
+        the current Experiment. Puts it in self.data
+        
+        Plot will be updated next time self.update() is called
+        '''
+        option = self.GUI.heatmapselection.get()
+        value  = self.GUI.HeatMapDisplayParam.get()
+        
+        if option == 'Analysis func.':
+            value = value.replace('\n', '')
+            if not self.analysis_function:
+                print('Error: no analysis function selected.')
+                return
+            pts = self.expt.do_analysis(self.analysis_function, value)
+        
+        else:
+            # Keys to pass to Experiment
+            d = {'Max. current': 'max',
+                 'Current @ ... (V)': 'val_at',
+                 'Current @ ... (t)': 'val_at_t',
+                 'Z height': 'z',
+                 'Avg. current': 'avg'}
+            
+            value = float(value.replace('\n', '')) if value else None
+            pts = self.expt.get_heatmap_data(d[option], value)
+        
+        if len(pts) > 0:
+            self.data = pts
         return
     
-    # Heatmap line scan mode
-    def heatmap_line_scan(self):
-        pass
-           
     
-    def update_cmap(self, _=None):
-        cmap = self.master.GUI.heatmap_cmap.get()
+    def update_colormap(self, *args, **kwargs):
+        cmap = self.GUI.heatmap_cmap.get()
         base_cmap = matplotlib.cm.get_cmap(cmap, 1024)
         
-        vmin = float(self.master.GUI.heatmap_cmap_minval.get())
-        vmax = float(self.master.GUI.heatmap_cmap_maxval.get())
+        vmin = float(self.GUI.heatmap_cmap_minval.get())
+        vmax = float(self.GUI.heatmap_cmap_maxval.get())
         
         if (vmin < 0) or (vmin > 1) or (vmax < 0) or (vmax > 1):
             print('\nInvalid input! Min and max must be between 0 and 1.\n')
@@ -604,54 +371,54 @@ class Plotter(Logger):
                 )
             )
             
-        self.image1.set(cmap = new_cmap)
-        self.update_fig1()
-            
-    
+        self.image.set(cmap = new_cmap)
+        self.update(force = True)
+        
+    ### Colormap updating functions
     def update_minmaxval_fields(self):
-        minval, maxval = get_clim(self.data1[::-1])
-        self.master.GUI.heatmap_min_val.set(f'{minval:0.3g}')
-        self.master.GUI.heatmap_max_val.set(f'{maxval:0.3g}') 
+        minval, maxval = get_clim(self.data[::-1])
+        self.GUI.heatmap_min_val.set(f'{minval:0.3g}')
+        self.GUI.heatmap_max_val.set(f'{maxval:0.3g}') 
     
     def apply_minmax_fields(self, val=None):
         self.force_minmax = True
-        self.update_fig1()
+        self.update(force=True)
         
     def zoom_in(self):
         'Make the heatmap color scale smaller by 10%'
         self._zoom_bound('upper', 'subtract')
         self._zoom_bound('lower', 'add')
-        self.update_fig1()
+        self.update(force=True)
     
     def zoom_out(self):
         'Make the heatmap color scale larger by 10%'
         self._zoom_bound('upper', 'add')
         self._zoom_bound('lower', 'subtract')
-        self.update_fig1()
+        self.update(force=True)
     
     def zoom_lower_add(self):
         'Add 10% to lower heatmap color scale bound'
         self._zoom_bound('lower', 'add')
-        self.update_fig1()
+        self.update(force=True)
     
     def zoom_lower_subt(self):
         'Subtract 10% to lower heatmap color scale bound'
         self._zoom_bound('lower', 'subtract')
-        self.update_fig1()
+        self.update(force=True)
     
     def zoom_upper_add(self):
         'Add 10% to upper heatmap color scale bound'
         self._zoom_bound('upper', 'add')
-        self.update_fig1()
+        self.update(force=True)
     
     def zoom_upper_subt(self):
         'Subtract 10% to upper heatmap color scale bound'
         self._zoom_bound('upper', 'subtract')
-        self.update_fig1()
+        self.update(force=True)
     
     def _zoom_bound(self, bound, direction):
-        minval = self.master.GUI.heatmap_min_val
-        maxval = self.master.GUI.heatmap_max_val
+        minval = self.GUI.heatmap_min_val
+        maxval = self.GUI.heatmap_max_val
                 
         val = minval if bound == 'lower' else maxval
         
@@ -669,9 +436,424 @@ class Plotter(Logger):
     def cancel_popup(self):
         # Reset minval and maxval to None
         self.force_minmax = False
-        self.update_fig1()
         self.update_minmaxval_fields()
-     
+        self.update(force=True)
+        
+        
+        
+
+    
+        
+    
+    
+
+class EchemFig():
+    def __init__(self, fig, GUI):
+        # Set up this figure, axes, and line to plot to
+        self.fig = fig
+        self.ax  = fig.gca()
+        self.ln, = self.ax.plot([0,1],[0,1])
+        
+        # Local reference to GUI object
+        self.GUI = GUI
+        
+        # Keep track of what is currently being plotted
+        self.DataPoint = None
+        self.last_checksum = checksum(self.DataPoint)
+        self.artists = []
+        self._forced = False
+        
+        self.initialize()
+        
+        
+    def initialize(self):
+        '''
+        Clear the figure
+        '''
+        self._forced = False
+        self.ax.cla()
+        self.ln, = self.ax.plot([],[])
+        self.clear_artists()
+        self.fig.tight_layout()
+        self.fig.canvas.draw()
+        self.draw_artists()
+    
+    
+    def reset(self):
+        '''
+        Allow new ADC points to be displayed in real time
+
+        Returns
+        -------
+        None.
+        '''
+        self._forced = False
+    
+    
+    def update(self, ADCDataPoint):
+        '''
+        Called by Plotter.update_figs every 100 ms. Check if new data exists
+        in the ADCDataPoint to be plotted. Reset the figure if a new ADCDataPoint
+        is passed.
+
+        Parameters
+        ----------
+        ADCDataPoint : DataStorage.ADCDataPoint currently in the buffer
+        
+        Returns
+        -------
+        None.
+        '''
+        
+        # Trying to display the same ADC data point. Update with new points.
+        if id(ADCDataPoint) == id(self.DataPoint):
+            if checksum(self.DataPoint) != self.last_checksum:
+                return self.update_plot()
+        
+        # Trying to display a new data point. Refresh plot            
+        if id(ADCDataPoint) != id(self.DataPoint):
+            if self._forced:
+                # Don't update if force displaying previous data.
+                return
+            self.initialize()
+            self.set_datapoint(ADCDataPoint)
+            
+            
+    
+    def set_datapoint(self, DataPoint, forced=False):
+        '''
+        Display a given DataPoint. Called by i.e. clicking on Heatmap point
+        or changing the selected viewing option (from I vs V to I vs t, for example)
+
+        Parameters
+        ----------
+        DataPoint : DataStorage.DataPoint type.
+        forced : bool, optional. Whether to force display over the current ADC buffer.
+        
+        Returns
+        -------
+        None.
+        '''
+        self._forced = forced
+        if DataPoint:
+            self.DataPoint = DataPoint  
+        self.update_plot()
+    
+    
+    def update_plot(self):
+        '''
+        Grab display options from the GUI and initiate redrawing the plot.
+
+        Returns
+        -------
+        None.
+        '''
+        # IV_selection in ['V vs t','I vs t','I vs V',]
+        # EIS_selection in ['Nyquist', '|Z| Bode', 'Phase Bode']
+        IV_selection = self.GUI.fig2selection.get()
+        EIS_selection = self.GUI.EIS_view_selection.get()
+        pt_selection = self.GUI.fig2ptselection.get()
+        
+        DataPoint = self.DataPoint[pt_selection]
+        self.last_checksum = checksum(self.DataPoint)
+        if isinstance(DataPoint, EISDataPoint):
+            self.plot_EIS(DataPoint, EIS_selection)
+        else:
+            self.plot_IV(DataPoint, IV_selection)
+        
+             
+    def plot_IV(self, DataPoint, IV_selection):
+        '''
+        Function for drawing voltammetric (I-V, I-t, or V-t) data
+
+        Parameters
+        ----------
+        DataPoint : DataStorage.ADCDataPoint, CVDataPoint, or SinglePoint
+        IV_selection : string, display setting pulled from GUI
+
+        Returns
+        -------
+        None.
+        '''
+        t, V, I = DataPoint.get_data(downsample=True) #Only passes downsampled arg to ADCDataPoint type
+        
+        if hasattr(DataPoint, 'gain'):
+            # ADCDataPoints take 'gain' argument from GUI (set in HEKA), need to
+            # convert output voltage -> current
+            V = np.array(V)/10
+            I = np.array(I)/DataPoint.gain
+        
+        d = {'t':t, 'V':V, 'I':I}
+        
+        ylabel, xlabel = IV_selection.split(' vs ')
+        yvals, xvals = d[ylabel], d[xlabel]
+        self.ln.set_data(xvals, yvals[:len(xvals)])
+        self.ln.set_marker('')
+        xlim, ylim = get_plotlim(xvals, yvals)
+        self.ax.set_xscale('linear')
+        self.ax.set_xlim(xlim)
+        self.ax.set_ylim(ylim)
+        self.ax.set_xlabel(xlabel)
+        self.ax.set_ylabel(ylabel)
+        
+        self.append_extra_artists(DataPoint, IV_selection)
+        self.draw_artists()
+        
+        
+    def plot_EIS(self, DataPoint, EIS_selection):
+        if EIS_selection == 'Nyquist':
+            self.plot_Nyquist(DataPoint)
+        if EIS_selection == '|Z| Bode':
+            self.plot_Bode(DataPoint, 'Z')
+        if EIS_selection == 'Phase Bode':
+            self.plot_Bode(DataPoint, 'Phase')
+    
+    
+    def plot_Nyquist(self, DataPoint):
+        '''
+        Display a Nyquist plot.
+
+        Parameters
+        ----------
+        DataPoint : DataStorage.EISDataPoint
+
+        Returns
+        -------
+        None.
+        '''
+        freqs, _,_,Z = DataPoint.data
+        
+        valid_idxs = [i for i, z in enumerate(Z) if np.abs(z) <= 20e9]
+        Z = [z for i, z in enumerate(Z) if i in valid_idxs]
+    
+        x = np.real(Z)
+        y = -np.imag(Z)
+        self.ln.set_data(x, y)
+        self.ln.set_marker('o')
+        self.ax.set_xscale('linear')
+        self.ax.set_xlabel(r"Z'/ $\Omega$")
+        self.ax.set_ylabel(r"Z''/ $\Omega$")
+        xlim, ylim = get_plotlim(x, y)
+        self.ax.set_xlim(xlim)
+        self.ax.set_ylim(ylim)
+        square_axes(self.ax)
+        self.ax.xaxis.set_major_locator(matplotlib.ticker.AutoLocator())
+        self.ax.yaxis.set_major_locator(matplotlib.ticker.AutoLocator())
+        
+        self.append_extra_artists(DataPoint, 'Nyquist')
+        self.draw_artists()
+        
+    
+    
+    def plot_Bode(self, DataPoint, option):
+        '''
+        Make a Bode plot on Fig 2 for EIS-type data
+
+        Parameters
+        ----------
+        DataPoint : DataStorage.EISDataPoint
+        option : string, 'Z' or 'Phase'
+
+        Returns
+        -------
+        None.
+        '''
+        freqs, _, _, Z = DataPoint.data
+        x  = [float(f) for f in freqs]
+        valid_idxs = [i for i, z in enumerate(Z) if np.abs(z) <= 20e9]
+        
+        Z = [z for i, z in enumerate(Z) if i in valid_idxs]
+        x = [X for i, X in enumerate(x) if i in valid_idxs]
+        
+        if option == 'Z':
+            y = np.abs(Z)
+            ylabel = r'|Z|/ $\Omega$'
+            self.ax.set_ylim(
+                          min(y) - 0.05*abs(min(y)),
+                          max(y) + 0.05*abs(max(y))
+                          )
+            
+        elif option == 'Phase':
+            y = np.angle(Z, deg=True)
+            ylabel = r'Phase/ $\degree$'
+            self.ax.set_ylim(min(y)-15, max(y)+15)
+        
+        self.ln.set_data(x,y)
+        self.ln.set_marker('o')
+        
+        self.ax.set_xscale('log')
+        self.ax.set_xticks([1e-2,1e-1,1e0,1e1,1e2,1e3,1e4,1e5,1e6])
+        self.ax.set_xlim(min(x) - 0.05*min(x), max(x) + 0.05*max(x))
+        self.ax.set_xlabel('Frequency/ Hz')
+        self.ax.set_ylabel(ylabel)
+        
+        self.append_extra_artists(DataPoint, option)
+        self.draw_artists()
+        
+    
+            
+    def clear_artists(self):
+        '''
+        Removes all artists (except for self.ln) from the figure.
+
+        Returns
+        -------
+        None.
+        '''
+        if len(self.artists) != 0:
+            for artist in self.artists:
+                try:
+                    artist.remove()
+                except:
+                    # Artist may have never been drawn
+                    pass
+        self.artists = []
+        
+    
+    def append_extra_artists(self, DataPoint, selection):
+        '''
+        Adds any artists generated by an Analysis function to self.artists.
+
+        Parameters
+        ----------
+        DataPoint : DataStorage.DataPoint
+        selection : string, display option. Must match DataPoint.artist.draw_on_type
+                    set by the analysis function.
+
+        Returns
+        -------
+        None.
+        '''
+        self.clear_artists()
+        if not hasattr(DataPoint, 'artists'):
+            return
+        for artist in DataPoint.artists:
+            if ( (hasattr(artist, 'draw_on_type')) and
+                artist.draw_on_type != selection):
+                continue
+            self.artists.append(artist)
+        
+        
+    def draw_artists(self):
+        '''
+        Draw all artists in the figure and draw the canvas.
+
+        Returns
+        -------
+        None.
+        '''
+        self.ax.draw_artist(self.ln)
+        for artist in self.artists:
+            try:
+                self.ax.add_artist(artist)
+                self.ax.draw_artist(artist)
+                self.fig.canvas.draw_idle()
+            except Exception as e:
+                '''If reloading an old data file, it fails to draw
+                previously-generated artists. Catch that and remove the
+                artist. (Can be regenerated by running the same analysis
+                function)'''
+                # print(f'Error drawing artist: {artist=}')
+                # print(e)
+                artist.remove()
+                self.artists.remove(artist)     
+        self.fig.tight_layout()
+        self.fig.canvas.draw_idle()
+        
+        
+
+
+
+
+class Plotter(Logger):
+    
+    def __init__(self, master, fig1, fig2):
+        self.master = master
+        self.master.register(self)
+        self.willStop = False
+        
+        self.Heatmap  = Heatmap(fig1, master.GUI)
+        self.EchemFig = EchemFig(fig2, master.GUI)
+        
+        self.connect_cids()        
+        
+
+        
+    ###########################
+    #### GENERAL FUNCTIONS ####
+    ###########################
+    
+    def connect_cids(self):
+        self.cid1 = self.Heatmap.fig.canvas.mpl_connect('button_press_event',
+                                                 self.onclick)
+        self.cid2 = self.EchemFig.fig.canvas.mpl_connect('button_press_event',
+                                                 self.onclick)
+    
+    def disconnect_cids(self):
+        for cid in (self.cid1, self.cid2):
+            self.fig2.canvas.mpl_disconnect(cid)
+    
+    
+    def load_from_expt(self, expt):
+        self.Heatmap.load_experiment(expt)
+    
+    
+    def onclick(self, event):
+        # Clicking on pixel in SECM histogram displays that CV ( or
+        # CA, or EIS, ...) in the lower figure
+        if event.inaxes == self.Heatmap.ax:
+            pt_idx = int(self.master.GUI.fig2ptselection.get())
+            DataPoint = self.Heatmap.get_datapoint_on_click(event, pt_idx)
+            self.EchemFig.set_datapoint(DataPoint, forced=True)
+            self.master.ImageCorrelator.draw_on_pt(DataPoint.loc[0],
+                                                   DataPoint.loc[1])
+            
+        if event.inaxes == self.EchemFig.ax:
+            x, y = event.xdata, event.ydata
+            print(f'({unit_label(x, dec=3)}, {unit_label(y, dec=3)})')
+        
+        return 
+    
+    
+    # Called every 100 ms by TK mainloop.
+    # Check if data has updated. If so, plot it to
+    # the appropriate figure.
+    def update_figs(self, **kwargs):
+        
+        if self.master.expt != self.Heatmap.expt:
+            self.Heatmap.load_experiment(self.master.expt)
+        self.Heatmap.update()
+        self.EchemFig.update(self.master.ADC.pollingdata)
+                
+        self.master.GUI.root.after(100, self.update_figs)
+        return
+    
+
+    ###########################
+    #### HEATMAP CALLBACKS ####
+    ###########################   
+    
+    # Called from GUI by changing view selector
+    # Update what is shown on the heatmap
+    def update_heatmap(self, option=None, value=None):
+        self.Heatmap.update(force=True)   
+    
+    # Enter heatmap zoom mode
+    def heatmap_zoom(self):
+        self.disconnect_cids()
+        self.RectangleSelector.connect() 
+        # Plotter regains control of mouse inputs 
+        # on RectangleSelector.disconnect()
+        return
+    
+    # Heatmap line scan mode
+    def heatmap_line_scan(self):
+        pass
+           
+    
+    def update_cmap(self, _=None):
+        self.Heatmap.update_colormap()
+                 
     
     def set_analysis_popup(self):
         # Opens a window where user can choose what function to apply
@@ -680,246 +862,10 @@ class Plotter(Logger):
             self.AnalysisFuncSelector = AnalysisFunctionSelector(self.master.GUI.root)
         func = self.AnalysisFuncSelector.get_selection()
         self.analysis_function = func
+        self.Heatmap.analysis_function = func
 
-    
-
-    #############################
-    #### ECHEM FIG FUNCTIONS ####
-    #############################
-    
-    # Draw blank echem figure
-    def init_echem_fig(self):
-        self.FIG2_FORCED = False
-        self.data2 = [ [-1], [], [], [] ]
-        self.ax2.cla()
-        self.ln, = self.ax2.plot([], [])
-        self.ln2, = self.ax2.plot([], [])
-        self.ax2.set_xlabel('V')
-        self.ax2.set_ylabel('I')
-        self.ax2.set_xscale('linear')
-        self.fig2.canvas.draw()
-        self.fig2.tight_layout()
-        self.clear_fig2_artists()
-        self.ax2bg = self.fig2.canvas.copy_from_bbox(self.ax2.bbox)
-        self.ax2.draw_artist(self.ln)
-        # self.fig2.canvas.blit(self.ax2.bbox)
-        plt.pause(0.001)
         
     
-    def clear_fig2_artists(self):
-        if len(self.fig2_extra_artists) != 0:
-            for artist in self.fig2_extra_artists:
-                artist.remove()
-            self.fig2_extra_artists = []
-
-    
-    
-    def update_fig2(self):
-        DATAPOINT = self.master.ADC.pollingdata
-        self.last_data2checksum = checksum(DATAPOINT)
-        self.fig2_datapoint = DATAPOINT
-        self.set_echemdata(DATAPOINT)
-
-    
-    def set_echemdata(self, DATAPOINT, sample_freq=1000):
-        # Determine what to plot
-        _, _, xval, yval = get_axval_axlabels(
-                                self.master.GUI.fig2selection.get()
-                                )
-        
-        self.fig2DataPoint = DATAPOINT
-        
-        # Get the data
-        if isinstance(DATAPOINT, PointsList):
-            # Determine which to plot
-            selected_idx = self.master.GUI.fig2ptselection.get()
-            DATAPOINT = DATAPOINT[selected_idx]
-            
-        if isinstance(DATAPOINT, CVDataPoint):
-            t, V, I = DATAPOINT.get_data()
-            self.FIG2_FORCED = True
-        
-        if isinstance(DATAPOINT, SinglePoint):
-            t, V, I = [0], [0], [0]
-            
-        if isinstance(DATAPOINT, EISDataPoint):
-            self.FIG2_FORCED = True
-            option = self.master.GUI.EIS_view_selection.get()
-            if option == 'Nyquist':
-                return self.draw_nyquist(DATAPOINT)
-            elif option == '|Z| Bode':
-                return self.draw_Bode(DATAPOINT, 'Z')
-            elif option == 'Phase Bode':
-                return self.draw_Bode(DATAPOINT, 'Phase')
-            
-        if isinstance(DATAPOINT, ADCDataPoint):
-            if self.FIG2_FORCED:
-                # Don't update with new ADC data
-                return
-            t, V, I = DATAPOINT.get_data()
-            V = np.array(V)/10
-            I = np.array(I)/DATAPOINT.gain
-            if not self.rect.get_width() == 0:
-                # Unselect last point
-                self.rect.set_bounds(0,0,0,0)
-                self.ax1.draw_artist(self.rect)
-                self.fig1.canvas.draw_idle()
-         
-        
-        try:
-            d = {'t': t,
-                 'V': V,
-                 'I': I}
-        except:
-            self.log(f'Plotting error plotting {type(DATAPOINT)}')
-        
-        t = d['t']
-        x = d[xval]
-        y = d[yval]
-        
-        
-        # Plot the data
-        # t always used to determine sampling frequency
-        self.ax2.set_xscale('linear')
-        self.draw_echemfig(t, x, y, sample_freq)
-        
-        # Clear old artists
-        self.clear_fig2_artists()
-        
-        # Draw any extra artists generated by analysis function(s)
-        if hasattr(DATAPOINT, 'artists'):
-            fig_type = self.master.GUI.fig2selection.get()
-            for artist in DATAPOINT.artists:
-                if ( (hasattr(artist, 'draw_on_type')) and
-                      artist.draw_on_type != fig_type ):
-                    continue
-                try:
-                    self.ax2.add_artist(artist)
-                    self.ax2.draw_artist(artist)
-                    self.fig2_extra_artists.append(artist)
-                    self.fig2.canvas.draw_idle()
-                except:
-                    # If reloading an old data file, it fails to draw
-                    # previously-generated artists. Catch that and remove the
-                    # artist. (Can be regenerated by running the same analysis
-                    # function)
-                    artist.remove()
-                
-        self.ax2.set_xlabel(xval)
-        self.ax2.set_ylabel(yval)
-        self.fig2.tight_layout()
-        self.fig2.canvas.draw_idle()
-        plt.pause(0.001)
-        
-        self.fig2data = DATAPOINT
-        return
-    
-
-    def draw_echemfig(self, t, x, y, undersample_freq=10):
-        # Undersample data if desiredd
-        # (i.e. HEKA records CV at 10 Hz, but ADC samples at 234 Hz -
-        #  we see every step in the digital CV and pick up excess noise
-        #  as well as current spikes.)
-                
-        def average(arr, n):
-            if n < 2:
-                return arr
-            # Undersample arr by averaging over n pts
-            end =  n * int(len(arr)/n)
-            return np.mean(arr[:end].reshape(-1, n), 1)
-        
-        if len(x) > undersample_freq:
-            data_freq = 1/np.mean(np.diff(t))
-            undersample_factor = int(data_freq//undersample_freq)
-            
-            plotx = average(np.array(x), undersample_factor)
-            ploty = average(np.array(y), undersample_factor)
-        else:
-            plotx = x
-            ploty = y
-        
-        self.ln.set_data(plotx, ploty)
-        self.ln.set_marker('')
-        self.set_axlim('fig2', *get_plotlim(plotx, ploty) )
-        return True
-    
-    
-    def draw_nyquist(self, EISDataPoint):
-        '''
-        Make a Nyquist plot on Fig 2 for EIS-type data
-        '''
-        freqs, _,_,Z = EISDataPoint.data
-        
-        valid_idxs = [i for i, z in enumerate(Z) if np.abs(z) <= 20e9]
-        Z = [z for i, z in enumerate(Z) if i in valid_idxs]
-        
-        x = np.real(Z)
-        y = -np.imag(Z)
-        
-        minimum = min(0, min(min(x), min(y)))
-        maximum = max(max(x), max(y))
-        maximum += 0.1*maximum
-        
-        # Clear old artists
-        self.clear_fig2_artists()
-        
-        self.ln.set_data(x, y)
-        self.ln.set_marker('o')
-        self.ax2.set_xscale('linear')
-        self.set_axlim('fig2', (minimum, maximum), (minimum, maximum))
-        self.ax2.set_xlabel(r"Z'/ $\Omega$")
-        self.ax2.set_ylabel(r"-Z''/ $\Omega$")
-        self.ax2.xaxis.set_major_locator(matplotlib.ticker.AutoLocator())
-        self.ax2.yaxis.set_major_locator(matplotlib.ticker.AutoLocator())
-        self.fig2.tight_layout()
-        self.fig2.canvas.draw_idle()
-        plt.pause(0.001)
-        self.fig2data = EISDataPoint
-        return
-    
-    
-    def draw_Bode(self, EISDataPoint, option):
-        '''
-        Make a Bode plot on Fig 2 for EIS-type data
-        option = 'Z' or 'Phase'
-        '''
-        freqs, _, _, Z = EISDataPoint.data
-        x  = [float(f) for f in freqs]
-        # valid_idxs = [i for i, z in enumerate(Z) if np.abs(z) <= 20e9]
-        
-        # Z = [z for i, z in enumerate(Z) if i in valid_idxs]
-        # x = [X for i, X in enumerate(x) if i in valid_idxs]
-        
-        colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
-        
-        if option == 'Z':
-            y = np.abs(Z)
-            ylabel = r'|Z|/ $\Omega$'
-            self.ax2.set_ylim(
-                          min(y) - 0.05*abs(min(y)),
-                          max(y) + 0.05*abs(max(y))
-                          )
-            
-        elif option == 'Phase':
-            y = np.angle(Z, deg=True)
-            ylabel = r'Phase/ $\degree$'
-            self.ax2.set_ylim(min(y)-15, max(y)+15)
-        
-        self.ln.set_data(x,y)
-        self.ln.set_marker('o')
-        
-        self.ax2.set_xscale('log')
-        self.ax2.set_xticks([1e-2,1e-1,1e0,1e1,1e2,1e3,1e4,1e5,1e6])
-        self.ax2.set_xlim(min(x) - 0.05*min(x), max(x) + 0.05*max(x))
-        self.ax2.set_xlabel('Frequency/ Hz')
-        self.ax2.set_ylabel(ylabel)
-        
-        self.clear_fig2_artists()
-        
-        self.fig2.tight_layout()
-        self.fig2.canvas.draw_idle()
-        plt.pause(0.001)
-        self.fig2data = EISDataPoint
         
         
 

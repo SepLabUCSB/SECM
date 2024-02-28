@@ -221,6 +221,9 @@ class FeedbackController(Logger):
         # Wait for potential to equilibrate
         voltage = self.master.GUI.params['approach']['voltage'].get('1.0', 'end')
         voltage = float(voltage) 
+        step_size = self.master.GUI.params['approach']['step_size'].get('1.0', 'end')
+        step_size = float(step_size)/1000 # Convert nm -> um
+
         self.Piezo.goto(80,80,height)
         self.HekaWriter.macro('E Vhold 0')
         time.sleep(1)
@@ -234,7 +237,7 @@ class FeedbackController(Logger):
             
             time.sleep(3)
             _, on_surface = self.approach(height=height, 
-                                          forced_step_size = 0.01)
+                                          forced_step_size = step_size)
             
             if self.master.ABORT:
                 break
@@ -321,7 +324,6 @@ class FeedbackController(Logger):
         
         on_surface = False
         time.sleep(0.1)
-        self.master.Plotter.FIG2_FORCED = True # Don't draw ADC data
         while True:
             '''
             Loop checks if approach curve is finished due to
@@ -352,7 +354,6 @@ class FeedbackController(Logger):
         
         self.ADC.STOP_POLLING()  
         self.Piezo.start_monitoring()
-        self.master.Plotter.FIG2_FORCED = False
         self._piezo_counter = self.Piezo.counter
         return self.Piezo.z, on_surface
     
@@ -369,6 +370,10 @@ class FeedbackController(Logger):
         height = params['Z'].get('1.0', 'end')
         n_pts  = params['n_pts'].get('1.0', 'end')
         expt_type = params['method'].get()
+        
+        step_size = self.master.GUI.params['approach']['step_size'].get('1.0', 'end')
+        forced_step_size = float(step_size)/1000 # Convert nm -> um
+
         
         length = float(length) 
         z_max  = float(height)
@@ -390,10 +395,10 @@ class FeedbackController(Logger):
             
         
         self.master.set_expt(expt)
-        self.master.Plotter.set_axlim('fig1',
-                                      xlim=(0,length),
-                                      ylim=(0,length)
-                                      )
+        # self.master.Plotter.set_axlim('fig1',
+        #                               xlim=(0,length),
+        #                               ylim=(0,length)
+        #                               )
         
         # Overwrite points, order taking into account image point array
         pts_to_skip = -2
@@ -409,10 +414,8 @@ class FeedbackController(Logger):
         # height < 0 means retract that amount at each point
         if z_max < 0:
             retract_distance = -z_max
-            forced_step_size = 0.005
         else:
             retract_distance = 6
-            forced_step_size = None
         
         point_times = []
         
@@ -509,7 +512,7 @@ class FeedbackController(Logger):
             self.master.HekaWriter.setup_EIS(*EIS_vals)
             return True
         
-        if expt_type in ('CV then EIS', 'CV then 2x EIS', 'CV then 5x EIS'):
+        if ('CV' in expt_type) and ('EIS' in expt_type):
             # We setup potentiostat settings twice at each point:
             # first for CV then for EIS. Done in run_echems()
             
@@ -524,12 +527,15 @@ class FeedbackController(Logger):
         # if expt_type == 'Custom':
         #     self.master.GUI.set_amplifier()
         #     return True
-        
+        self.log(f'Error: {expt_type=} not recognized in potentiostat_setup()')
         return False
     
     
     def run_echems(self, expt_type, expt, loc, i):
         '''
+        ** Experiment types defined in src/gui/hopping_window.py **
+        ** Experiments also need to be defined in potentiostat_setup()**
+        
         Run echem experiments defined by expt_type at loc (x,y,z).
         
         Save .asc(s) to appropriate folder
@@ -604,6 +610,8 @@ class FeedbackController(Logger):
                 return None
             self.HekaWriter.reset_amplifier()
             time.sleep(0.2)
+            self.potentiostat_setup('CV')
+            time.sleep(0.2)
             self.HekaWriter.send_command(f'Set E Vhold {start_V}')
             time.sleep(2)
             EISdata = EISDataPoint(loc = loc, data = [t, voltage, current],
@@ -612,57 +620,7 @@ class FeedbackController(Logger):
             data = PointsList(loc=loc, data = [CVdata, EISdata])
         
         
-        if expt_type == 'CV then 2x EIS':
-            if not self.potentiostat_setup('CV'): 
-                return None
-            try:
-                t, voltage, current = self.run_CV(expt.path, i)
-            except:
-                return 'failed'
-            if type(t) == int:
-                return None
-            CVdata = CVDataPoint(loc=loc, data=[t,voltage,current])
-            
-            # Check for peak detection
-            CVdata = E0_finder_analysis(CVdata, '')
-            start_V = voltage[0]
-            E0 = CVdata.analysis[(E0_finder_analysis, '')]
-            if E0 == 0:
-                return CVdata
-            
-            self.log(f'Detected E0 = {E0:0.3f} V')
-            EIS_POINTS = []
-            # Run 5 EIS spectra at E0 +- 100 mV, E0 +- 50 mV, E0
-            for _ in range(2):
-                # Run EIS: Set DC bias
-                self.log(f'Running EIS at {E0:0.3f} V')
-                self.master.GUI.params['EIS']['E0'].delete('1.0', 'end')
-                self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E0*1000:0.1f}')
-                if not self.potentiostat_setup('EIS'): 
-                    return None
-                time.sleep(5)
-                
-                # Run EIS expt
-                try:
-                    t, voltage, current = self.run_EIS(expt.path, i)
-                except:
-                    break
-                if type(t) == int:
-                    return None
-                EISdata = EISDataPoint(loc = loc, data = [t, voltage, current],
-                                   applied_freqs = self.HekaWriter.EIS_applied_freqs,
-                                   corrections = self.HekaWriter.EIS_corrections)
-                EIS_POINTS.append(EISdata)
-                
-            self.HekaWriter.reset_amplifier()
-            time.sleep(0.2)
-            self.HekaWriter.send_command(f'Set E Vhold {start_V}')
-            time.sleep(2)
-            
-            data = PointsList(loc=loc, data = [CVdata, *EIS_POINTS])
-    
-        
-        if expt_type == 'CV then 5x EIS':
+        if expt_type == 'CV then 5x EIS amps':
             # Run CV
             if not self.potentiostat_setup('CV'): 
                 return None
@@ -683,6 +641,8 @@ class FeedbackController(Logger):
             
             
             self.log(f'Detected E0 = {E0:0.3f} V')
+            self.master.GUI.params['EIS']['E0'].delete('1.0', 'end')
+            self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E0*1000:0.1f}')
             EIS_POINTS = []
             # Run 5 EIS spectra with varying Vpp
             for mVpp in [10, 20, 50, 100, 200]:
@@ -706,6 +666,65 @@ class FeedbackController(Logger):
                 EIS_POINTS.append(EISdata)
                 
             self.HekaWriter.reset_amplifier()
+            time.sleep(0.2)
+            self.potentiostat_setup('CV')
+            time.sleep(0.2)
+            self.HekaWriter.send_command(f'Set E Vhold {start_V}')
+            time.sleep(2)
+            
+            data = PointsList(loc=loc, data = [CVdata, *EIS_POINTS])
+        
+            
+        if expt_type == 'CV then 5x EIS wait':
+            # Run CV
+            if not self.potentiostat_setup('CV'): 
+                return None
+            try:
+                t, voltage, current = self.run_CV(expt.path, i)
+            except:
+                return 'failed'
+            if type(t) == int:
+                return None
+            CVdata = CVDataPoint(loc=loc, data=[t,voltage,current])
+            
+            # Check for peak detection
+            CVdata = E0_finder_analysis(CVdata, '')
+            start_V = voltage[0]
+            E0 = CVdata.analysis[(E0_finder_analysis, '')]
+            if E0 == 0:
+                return CVdata
+            
+            
+            self.log(f'Detected E0 = {E0:0.3f} V')
+            self.master.GUI.params['EIS']['E0'].delete('1.0', 'end')
+            self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E0*1000:0.1f}')
+            if not self.potentiostat_setup('EIS'):
+                return None
+            time.sleep(5)
+            
+            EIS_POINTS = []
+            # Run 5 EIS spectra with varying Vpp
+            st = time.time()
+            for pt_idx in range(5):
+                this_pt_time = time.time()-st
+                self.log(f'Running EIS #{pt_idx}, start time = {this_pt_time:0.2f} s')
+                # Run EIS expt
+                try:
+                    t, voltage, current = self.run_EIS(expt.path, i)
+                except:
+                    break
+                if type(t) == int:
+                    return None
+                EISdata = EISDataPoint(loc = loc, data = [t, voltage, current],
+                                   applied_freqs = self.HekaWriter.EIS_applied_freqs,
+                                   corrections = self.HekaWriter.EIS_corrections)
+                EIS_POINTS.append(EISdata)
+                self.potentiostat_setup('EIS')
+                time.sleep(10)
+                
+            self.HekaWriter.reset_amplifier()
+            time.sleep(0.2)
+            self.potentiostat_setup('CV')
             time.sleep(0.2)
             self.HekaWriter.send_command(f'Set E Vhold {start_V}')
             time.sleep(2)

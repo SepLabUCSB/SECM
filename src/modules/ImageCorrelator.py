@@ -327,8 +327,8 @@ class ImageCorrelator(Logger):
         Pull heatmap data from master.Plotter.image1 and plot it on top of
         the loaded SEM image
         '''
-        data = self.master.Plotter.image1.get_array()
-        cmap = self.master.Plotter.image1.cmap
+        data = self.master.Plotter.Heatmap.image.get_array()
+        cmap = self.master.Plotter.Heatmap.image.cmap
         
         if not hasattr(self, 'image2'):
             self.image2 = self.ax.imshow(data, cmap='viridis',
