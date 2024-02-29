@@ -577,11 +577,14 @@ class EchemFig():
         '''
         t, V, I = DataPoint.get_data(downsample=True) #Only passes downsampled arg to ADCDataPoint type
         
-        if hasattr(DataPoint, 'gain'):
+        if isinstance(DataPoint, ADCDataPoint):
             # ADCDataPoints take 'gain' argument from GUI (set in HEKA), need to
             # convert output voltage -> current
-            V = np.array(V)/10
-            I = np.array(I)/DataPoint.gain
+            try:
+                V = np.array(V)/10
+                I = np.array(I)/DataPoint.gain
+            except:
+                pass
         
         d = {'t':t, 'V':V, 'I':I}
         
