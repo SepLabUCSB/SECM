@@ -32,7 +32,7 @@ def square_axes(ax):
  
 def make_plots(file1, file2):
     fig, ax = plt.subplots(figsize=(5,5), dpi=300)
-    plot(file1, ax, 'o', markeredgecolor=colors[0], markersize=10, 
+    plot(file1, ax, 'o', markeredgecolor=colors[0], markersize=8, 
          markerfacecolor='none', markeredgewidth=3)
     plot(file2, ax, '--', color='black')
     square_axes(ax)
@@ -43,14 +43,16 @@ def make_plots(file1, file2):
     ax.set_ylabel(r"Z''/ G$\Omega$")
     plt.locator_params(nbins=5)
     title = file1.split('\\')[-1].replace('_EISDataPoint1.txt', '')
+    title = title.replace('_EISDataPoint3.txt', '')
     ax.set_title(title, pad=10)
     fig.tight_layout()
     fig.savefig(file1.replace('.txt', '.png'))
+    plt.close()
  
 
 folder = r'Z:\Projects\Brian\7 - SECCM all PB particles\MEISP'
 data_files = [os.path.join(folder, f) for f in os.listdir(folder) 
-         if f.endswith('EISDataPoint1.txt')]
+         if (f.endswith('EISDataPoint1.txt') or f.endswith('EISDataPoint3.txt'))]
 fit_files = [f.replace('.txt', '_fit.txt') for f in data_files]
 
 
