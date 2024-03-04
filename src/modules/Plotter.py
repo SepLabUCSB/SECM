@@ -1056,6 +1056,7 @@ class EchemFigExporter(FigureExporter):
             self.n_xticks = StringVar(value='')
             self.n_yticks = StringVar(value='')
             self.div_const = StringVar(value='1')
+            self.draw_extras = IntVar(value=0)
         
         Label(frame, text='Heatmap Exporter       ').grid(row=0, column=0, columnspan=2)
         Button(frame, text='Redraw', command=self.redraw).grid(row=0, column=2, sticky=(W,E))
@@ -1100,6 +1101,10 @@ class EchemFigExporter(FigureExporter):
                                                     columnspan=2, sticky=(W,E))
         Entry(frame, textvariable=self.div_const, width=20).grid(
             row=8, column=1, columnspan=2, sticky=(W,E))
+        
+        Checkbutton(frame, text='Draw annotations: ', variable=self.draw_extras
+                    ).grid(row=9, column=0,columnspan=2, sticky=(W,E))
+        
         pass
     
     
@@ -1113,6 +1118,8 @@ class EchemFigExporter(FigureExporter):
         x,y = np.array(x), np.array(y)
         y /= float(self.div_const.get())
         self.ax.plot(x,y)
+        if self.draw_extras.get():
+            self.draw_extra_artists()
         self.set_xlabel()
         self.set_ylabel()
         self.set_xticks()
@@ -1120,6 +1127,32 @@ class EchemFigExporter(FigureExporter):
         
         self.fig.canvas.draw()
         plt.pause(0.001)
+        
+    
+    def draw_extra_artists(self):
+        copied_line_attributes = ('xdata', 'ydata', 'animated', 'antialiased', 'color',  
+                    'dash_capstyle', 'dash_joinstyle', 
+                    'drawstyle', 'fillstyle', 'linestyle', 'linewidth',
+                    'marker', 'markeredgecolor', 'markeredgewidth', 'markerfacecolor',
+                    'markerfacecoloralt', 'markersize', 'markevery', 'pickradius',
+                    'solid_capstyle', 'solid_joinstyle', 'visible', 'zorder')
+        
+        def copy_attributes(obj2, obj1, attr_list):
+            for attr in attr_list:
+                getattr(obj2, 'set_' + attr)( getattr(obj1, 'get_' + attr)() )
+
+        
+        artists = self.GUI.master.Plotter.EchemFig.artists
+        for artist in artists:
+            new_artist = matplotlib.lines.Line2D([],[])
+            copy_attributes(new_artist, artist, copied_line_attributes)
+            ydata = np.array(new_artist.get_ydata())
+            ydata /= float(self.div_const.get())
+            new_artist.set_ydata(ydata)
+            
+            new_artist.set_figure(self.fig)
+            self.ax.add_artist(new_artist)
+            self.ax.draw_artist(new_artist)
     
     
     def divide_by_const(self, constant):
