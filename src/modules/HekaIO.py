@@ -560,7 +560,51 @@ class HekaWriter(Logger):
         self.running()
         return
     
+    def setup_CA(self, Eapp, t,f):
+        '''
+        Apply amplifier/ filter settings
+        
+        Update CV parameters
+        '''
+        if self.isRunning(): return
+        values, duration = generate_CA_params(Eapp,t, f)
+        
+                
+        # Get and set amplifier params from GUI module        
+        self.running()
+        
+        # Set CV parameters
+        self.update_Values(values)
+        
+        self.CA_params   = values
+        self.CA_duration = duration
+        self.idle()
+        self.log('Set CA parameters', 1)
     
+    
+    def run_CA(self, mode='normal'):
+        cmds = {
+                '10Hz'  : '_CA-10Hz', 
+                '100Hz' : '_CA-100Hz',
+                '1kHz'  : '_CA-1kHz',
+                '10kHz' : '_CA-10kHz',
+                }
+        # Determine which sampling rate to use
+        Eapp = self.CA_params[0] 
+        t = self.CA_params[1]
+        f = self.CA_params[2]
+        if f <= 99:
+            mode = '10Hz'
+        elif f<=999:
+            mode = '100Hz'
+        elif f>999:
+            mode = '1kHz'
+        
+        cmd = cmds[mode]
+        self.log(f'CA {cmd}', quiet=True)
+        self.send_command(f'ExecuteSequence {cmd}')
+        self.running()
+        
     def run_custom(self):
         '''
         Run the custom, user-set PGF file
@@ -692,7 +736,33 @@ def generate_CV_params(E0, E1, E2, E3, scan_rate, quiet_time):
         }
     return values, duration
 
-
+def generate_CA_params(Eapp, t, f):
+    '''
+    *** POTENTIALS IN V, SCAN_RATE IN V/s, QUIET_TIME IN s ***
+    1. Hold at E0 for quiet_time
+    2. Ramp to E1 at scan_rate
+    3. Ramp to E2 at scan_rate
+    4. Ramp to E3 (end potential) at scan_rate
+    
+    Parameter assignments:
+            0: Holding potential (V) (p1)
+            1: Holding time      (s) (p2)
+            2: E1 potential      (V) (p3)
+            3: E1 ramp time      (s) (p4)
+            4: E2 potential      (V) (p5)
+            5: E2 ramp time      (s) (p6)
+            6: End potential     (V) (p7)
+            7: End ramp time     (s) (p8)
+    '''
+    
+    duration = t
+    
+    values = {
+        0: Eapp,
+        1: t,
+        2: f
+        }
+    return values, duration
 
 def generate_EIS_params(E_DC, duration):
     '''

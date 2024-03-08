@@ -586,6 +586,7 @@ class GUI(Logger):
         self.params['CV'] = make_CV_window(self, cv_control)
         self.params['amp'] = make_amp_window(self, amplifier_control)
         self.params['EIS'] = make_EIS_window(self, eis_control)
+        self.params['CA'] = make_CA_window(self, ca_control)
         make_CA_window(self, ca_control)
         
         self.amp_params = convert_to_index(self.params['amp'])
@@ -689,7 +690,8 @@ class GUI(Logger):
             'params': {
                 'CV': self.params['CV'],            # dict
                 'amp': self.params['amp'],          # dict
-                'EIS': self.params['EIS'],          # dict
+                'EIS': self.params['EIS'],
+                'CA': self.params['CA'],  # dict
                 'hopping': self.params['hopping'],  # dict
                 'approach': self.params['approach']
                 },
@@ -1120,8 +1122,34 @@ class GUI(Logger):
         self.master.HekaWriter.setup_EIS(*eis_params, force_waveform_rewrite=True)
         return
         
-            
+    def get_CA_params(self):
+        ca_params = self.params['CA'].copy()
+        Eapp = ca_params['Eapp'].get('1.0', 'end')
+        t = ca_params['t'].get('1.0', 'end')
+        vals = [Eapp, t]
+        try:
+            Eapp, t = [float(val) for val in vals]
+        except:
+            print('invalid CV inputs')
+            return 0,0,0,0,0,0
+        return Eapp, t
     
+    def run_CA(self):
+        if self.master.Piezo.isMoving():
+            self.log('Error: cannot run CA while piezo is moving')
+            return
+        self.reset_ADC_monitor()
+        self.set_amplifier()
+        Eapp, t = self.get_CA_params()
+        self.master.HekaWriter.setup_CA(Eapp, t)
+        path = self.master.HekaWriter.run_measurement_loop('CA')
+        DataPoint = make_datapoint_from_file(path, 'CADataPoint')
+        if DataPoint:
+            self.master.ADC.force_data(DataPoint)
+        self.master.make_ready()
+        self.log('Finished running CA.')
+        return path
+
     def run_custom(self):
         ''' Run custom, user-set PGF file '''
         if self.master.Piezo.isMoving():
