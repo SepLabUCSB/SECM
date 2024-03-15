@@ -446,7 +446,7 @@ class HEKA(Potentiostat):
         # Check if corrections are already saved
         key = (amp, n_pts, *self.EIS_freqs)
         key = str(key)
-        file = 'src/utils/EIS_waveform.json'
+        file = 'src/utils/EIS_waveforms.json'
         if os.path.exists(file):
             d = json.load(open(file, 'r'))
             if (key in d) and not forced:
@@ -483,6 +483,8 @@ class HEKA(Potentiostat):
                
         # Do the measurement - set up the right parameters first
         self.EIS_params = asDict(E0, f0, f1, n_pts, n_cycles, amp)
+        self._set_EIS_amplifier(0, f0, f1, n_pts, n_cycles, amp, gain=8)
+        time.sleep(2)
         path = self.run_EIS(path='src/temp/EIS.mat')
         
         
@@ -578,7 +580,8 @@ class HEKA(Potentiostat):
         return values, n_cycles*1/min(f0, f1)
     
     
-    def _set_EIS_amplifier(self, E0, f0, f1, n_pts, n_cycles, amp):
+    def _set_EIS_amplifier(self, E0, f0, f1, n_pts, n_cycles, amp,
+                           gain=14):
         '''
         Determine best filters to use for FFT-EIS
         
@@ -610,7 +613,7 @@ class HEKA(Potentiostat):
                   'Set E TestDacToStim1 2',
                   'Set E ExtScale 1',
                   'Set E Mode 3',
-                  'Set E Gain 14']
+                 f'Set E Gain {gain}'] # 14 --> 50 mV/pA, 8 --> 1 mV/pA
         self._send_multiple_cmds(cmds)
         time.sleep(0.1)
         
@@ -673,6 +676,7 @@ class HEKA(Potentiostat):
             cmds.append(f'Set {key} {val}')
         cmds.append('Set E TestDacToStim1 0')
         self._send_multiple_cmds(cmds)
+        time.sleep(0.2)
         return True
     
     
