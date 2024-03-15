@@ -27,6 +27,12 @@ class Potentiostat(Logger):
     
     status = 'idle'    
     
+    def __init__(self, master):
+        self.master = master
+        self.master.register(self, alias='Potentiostat')
+        self.willStop = False
+        
+    
     def _error_msg(self, method_name):
         raise NotImplementedError(f'Method {method_name} not implemented in class {self.__class__}')
     
@@ -227,10 +233,8 @@ class HEKA(Potentiostat):
     
     def __init__(self, master, input_file = input_file,
                  output_file = output_file):
-        # Register to master
-        self.master = master
-        self.master.register(self, alias='Potentiostat')
-        self.willStop = False
+        # Register self to master as master.Potentiostat
+        super().__init__(master)
         
         # Clear input file
         self.file = input_file
@@ -474,7 +478,15 @@ class HEKA(Potentiostat):
         For HEKA, just stop the reader thread.
         '''
         self.Reader.stop() 
-        
+    
+    
+    def SoftwareRunning(self):
+        for p in psutil.process_iter():
+            if 'PatchMaster.exe' in p.name():
+                return True
+        self.log('Error: PATCHMASTER not open')
+        return False
+    
     
     def isRunning(self):
         return self.status == 'running'
@@ -484,8 +496,7 @@ class HEKA(Potentiostat):
         '''
         Send commands to start ADC polling
         '''
-        run(partial(self.master.ADC.polling,
-                    timeout=timeout))
+        self.master.ADC.polling(timeout=timeout)
     
     
     def stop_ADC(self):
@@ -547,7 +558,7 @@ class HEKA(Potentiostat):
         return
     
     
-    def run_CV(self, path):
+    def run_CV(self, path:str=None):
         '''
         path: string, path to save to
         
@@ -555,6 +566,9 @@ class HEKA(Potentiostat):
         
         Returns: string, path to saved data file
         '''
+        if not self.SoftwareRunning():
+            return ''
+        
         if self.isRunning():
             self.log('Error: received command to run CV but already running')
             return ''
@@ -647,6 +661,10 @@ class HEKA(Potentiostat):
 
 
 class BioLogic(Potentiostat):
+    
+    def __init__(self, master):
+        # Register self to master as master.Potentiostat
+        super().__init__(master)
     
     
     def set_amplifier(self):

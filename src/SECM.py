@@ -1032,23 +1032,9 @@ class GUI(Logger):
     
     ########## ELECTROCHEMISTRY CALLBACKS ###########
     
-    # Take parameters from CV window and send to HEKA    
+    # Set the potentiostat amplifier (filters, gain, etc)  
     def set_amplifier(self):
-        if not self.master.HekaReader.PatchmasterRunning():
-            self.log('Error: PATCHMASTER not opened!')
-            return
-        new_params = convert_to_index(self.params['amp'])
-        cmds = []
-        for key, val in new_params.items():
-            if key == 'float_gain':
-                continue
-            cmds.append(f'Set {key} {val}')
-        cmds.append('Set E TestDacToStim1 0')
-        
-        self.master.HekaWriter.send_multiple_cmds(cmds)
-        
-        self.amp_params = new_params # Store current amplifier state to amp_params
-        return
+        self.master.Potentiostat.set_amplifier()
     
     
     def get_amplifier_params(self):
@@ -1058,17 +1044,14 @@ class GUI(Logger):
     
     def get_CV_params(self):
         cv_params = self.params['CV'].copy()
-        E0 = cv_params['E0'].get('1.0', 'end')
-        E1 = cv_params['E1'].get('1.0', 'end')
-        E2 = cv_params['E2'].get('1.0', 'end')
-        E3 = cv_params['Ef'].get('1.0', 'end')
-        v  = cv_params['v'].get('1.0', 'end')
-        t0 = cv_params['t0'].get('1.0', 'end')
-        vals = [E0, E1, E2, E3, v, t0]
+        strs = ['E0', 'E1', 'E2', 'Ef', 'v', 't0']
         try:
-            E0, E1, E2, E3, v, t0 = [float(val) for val in vals]
-        except:
+            E0, E1, E2, E3, v, t0 = map(float,
+                                        [cv_params[x].get('1.0', 'end') for x in strs])
+
+        except Exception as e:
             print('invalid CV inputs')
+            print(e)
             return 0,0,0,0,0,0
         return E0, E1, E2, E3, v, t0
     
@@ -1081,6 +1064,7 @@ class GUI(Logger):
         self.master.Potentiostat.set_amplifier()
         self.master.Potentiostat.setup_CV()
         path = self.master.Potentiostat.run_CV()
+        if not path: return
         
         DataPoint = make_datapoint_from_file(path, 'CVDataPoint')
         if DataPoint:
@@ -1093,15 +1077,10 @@ class GUI(Logger):
     
     def get_EIS_params(self):
         eis_params = self.params['EIS'].copy()
-        E0      = eis_params['E0'].get('1.0', 'end')
-        f0      = eis_params['f0'].get('1.0', 'end')
-        f1      = eis_params['f1'].get('1.0', 'end')
-        n_pts   = eis_params['n_pts'].get('1.0', 'end')
-        n_cycles= eis_params['n_cycles'].get('1.0', 'end')
-        amp     = eis_params['amp'].get('1.0', 'end')
-        vals = [E0, f0, f1, n_pts, n_cycles, amp]
+        strs = ['E0', 'f0', 'f1', 'n_pts', 'n_cycles', 'amp']
         try:
-            E0, f0, f1, n_pts, n_cycles, amp = [float(val) for val in vals]
+            vals = map(float, [eis_params[x].get('1.0', 'end') for x in strs])
+            E0, f0, f1, n_pts, n_cycles, amp = vals
             n_pts, n_cycles = int(n_pts), int(n_cycles)
         except:
             print('invalid EIS inputs')
@@ -1337,7 +1316,8 @@ class GUI(Logger):
     
     def send_heka_command(self, cmd=None):
         cmd = self.heka_command.get()
-        self.master.HekaWriter.send_command(cmd)
+        if hasattr(self.master, 'HekaReader'):
+            self.master.Potentiostat._send_command(cmd)
         
             
 
@@ -1346,8 +1326,6 @@ def run_main():
     try:
         master = MasterModule(TEST_MODE = TEST_MODE)
         pstat = HEKA(master)
-        # reader = HekaReader(master)
-        # writer = HekaWriter(master)
         adc    = ADC(master)
         piezo  = Piezo(master)
         motor  = PicoMotor(master)
@@ -1363,8 +1341,6 @@ def run_main():
             sys.exit()
         master = MasterModule(TEST_MODE = True)
         pstat  = HEKA(master)
-        # reader = HekaReader(master)
-        # writer = HekaWriter(master)
         adc    = ADC(master)
         piezo  = Piezo(master)
         motor  = PicoMotor(master)

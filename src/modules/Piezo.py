@@ -93,11 +93,13 @@ class Piezo(Logger):
    
     def start_monitoring(self):
         if not self._is_monitoring:
-            run(self.position_monitor)
+            self.position_monitor()
         
     def stop_monitoring(self):
         self._stop_monitoring = True
    
+    
+    @threads.new_thread
     def position_monitor(self):
         '''
         Called in its own thread. 

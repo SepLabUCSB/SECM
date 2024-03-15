@@ -7,27 +7,8 @@ import numpy as np
 
 
 def run(func, args=()):
-    print(f'Error: run() called on function {func}')
+    print(f'Error: deprecated function run() called on {func}')
     return func
-    # t = threading.Thread(target=func, args=args)
-    # t.start()
-    # return t
-
-
-class threads:
-    
-    @classmethod
-    def new_thread(cls, func, _new_thread=True):
-        def inner_func(*args, **kwargs):
-            t = threading.Thread(target=func, args=args, kwargs=kwargs)
-            t.start()
-        if _new_thread:
-            print(f'starting {func} in new thread')
-            return inner_func
-        else:
-            print(f'starting {func} in same thread')
-            return func
-
 
 def nearest(array, value):
     array = np.asarray(array)
@@ -45,7 +26,6 @@ def focus_next_widget(event):
     return("break")
 
 
-
 LOG_FILE = 'log/log.txt'
 if not os.path.exists(LOG_FILE):
     os.makedirs('log/', exist_ok=True)
@@ -61,13 +41,10 @@ if os.path.getsize(LOG_FILE) > 60000: # ~1000 lines
 class Logger():
     '''
     Base logging class. All submodules inherit this
-    '''
-    
+    ''' 
     LOG_FILE = LOG_FILE
     MAX_SIZE = 1e6
-    
         
-    
     def log(self, string, quiet=False):
         # All child classes inherit this so self is i.e. MasterModule,
         # GUI, etc.
@@ -83,3 +60,28 @@ class Logger():
         with open(self.LOG_FILE, 'a') as f:
             f.write(msg)
         return
+
+
+
+class threads(Logger):
+    
+    @classmethod
+    def new_thread(cls, func, _new_thread=True):
+        def inner_func(*args, **kwargs):
+            cls.log(cls, f'Starting new thread {func}')
+            t = threading.Thread(target=func, args=args, kwargs=kwargs)
+            t.start()
+        if _new_thread:
+            cls.log(cls, f'Will start {func} in new thread')
+            return inner_func
+        else:
+            cls.log(cls, f'Will start {func} in same thread')
+            return func
+        
+        
+        
+        
+        
+        
+        
+        
