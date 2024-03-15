@@ -190,7 +190,7 @@ class HekaReader(Logger):
 
             with open(self.file, 'r') as f:
                 lines = [line.rstrip() for line in f]
-                if (lines != self.last and lines != None):
+                if (lines != self.last_msg and lines != None):
                     self.last_msg = lines
         self.log('Stopped reading')
     
@@ -326,9 +326,10 @@ class HEKA(Potentiostat):
         response = self.Reader.wait_response('Reply_GetParameters', 1)
         if not response:
             return 
-        savepath = response.lstrip('Reply_GetParameters ').strip('"')
-        savepath = savepath.replace('.dat', '')
-        savepath += '.asc'
+        savepath = response[21:-5]  # savepath = where PATCHMASTER saved it to
+        
+        
+        # Set correct export format in PATCHMASTER
         # Export as ASCII if not part of a hopping mode
         if (not path or path == 'None/.asc'):
             self._send_command('Set @  ExportTarget  "ASCII"')
@@ -384,8 +385,8 @@ class HEKA(Potentiostat):
             shutil.copy2(savepath, path)
             self.log(f'Saved to {path}', 1)
         except Exception as e:
-            self.log(f'savepath: {savepath}')
-            self.log(f'path: {path}')
+            self.log(f'Looking for file: {savepath}')
+            self.log(f'To save to: {path}')
             self.log(f'Saving error: {e}')
         return path
     

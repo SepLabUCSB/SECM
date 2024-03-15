@@ -1050,7 +1050,7 @@ class GUI(Logger):
                                         [cv_params[x].get('1.0', 'end') for x in strs])
 
         except Exception as e:
-            print('invalid CV inputs')
+            print('Error: invalid CV inputs')
             print(e)
             return 0,0,0,0,0,0
         return E0, E1, E2, E3, v, t0
@@ -1068,7 +1068,7 @@ class GUI(Logger):
         
         DataPoint = make_datapoint_from_file(path, 'CVDataPoint')
         if DataPoint:
-            self.master.ADC.force_data_DataPoint()
+            self.master.ADC.force_data(DataPoint)
         
         self.master.make_ready()
         self.log('Finished running CV.')
@@ -1083,7 +1083,7 @@ class GUI(Logger):
             E0, f0, f1, n_pts, n_cycles, amp = vals
             n_pts, n_cycles = int(n_pts), int(n_cycles)
         except:
-            print('invalid EIS inputs')
+            print('Error: invalid EIS inputs')
             return 0,0,0,0,0,0
         return E0, f0, f1, n_pts, n_cycles, amp
     
