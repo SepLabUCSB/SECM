@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils.utils import run, Logger
+from ..utils.utils import run, Logger, threads
 import serial
 import time
 from PIL import Image
@@ -196,7 +196,8 @@ class Piezo(Logger):
          '''
          self._halt = True
         
-        
+    
+    @threads.new_thread
     def approach(self, forced_step_size=None):
         '''
         Starting from the current location, reduce Z in small steps at

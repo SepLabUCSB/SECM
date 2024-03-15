@@ -85,8 +85,7 @@ def make_CV_window(gui, master_frame):
                  'Ef':Ef_field,
                  'v':v_field}
     
-    Button(frame, text='Run CV', command=
-           partial(run, gui.run_CV)).grid(column=2, row=8)
+    Button(frame, text='Run CV', command=gui.run_CV).grid(column=2, row=8)
         
     
     

@@ -11,7 +11,8 @@ from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib
-from .modules.HekaIO import HekaReader, HekaWriter
+# from .modules.HekaIO import HekaReader, HekaWriter
+from .modules.Potentiostat import HEKA
 from .modules.ADC import ADC
 from .modules.Piezo import Piezo
 from .modules.FeedbackController import FeedbackController, make_datapoint_from_file, load_echem_from_file
@@ -19,7 +20,7 @@ from .modules.Plotter import Plotter, ExporterGenerator
 from .modules.DataStorage import Experiment, EISDataPoint, load_from_file
 from .modules.Picomotor import PicoMotor
 from .modules.ImageCorrelator import ImageCorrelator
-from .utils.utils import run, Logger, focus_next_widget
+from .utils.utils import run, Logger, focus_next_widget, threads
 from .gui import *
 from .gui.hopping_popup import HoppingPopup
 
@@ -127,11 +128,13 @@ class MasterModule(Logger):
         self.log('========= Master Initialized =========')
         
         
-    def register(self, module):
+    def register(self, module, alias=None):
         # register a submodule to master
-        setattr(self, module.__class__.__name__, module)
-        self.modules.append(getattr(self, module.__class__.__name__))
-        self.log(f'Loaded {module.__class__.__name__}')
+        if not alias:
+            alias = module.__class__.__name__
+        setattr(self, alias, module)
+        self.modules.append(getattr(self, alias))
+        self.log(f'Loaded {module.__class__.__name__} as master.{alias}')
     
     
     def set_expt(self, expt, name=None):
@@ -147,6 +150,7 @@ class MasterModule(Logger):
             self.GUI.savePrevious()
     
     
+    @threads.new_thread
     def run(self):
         '''
         Master main loop
@@ -173,9 +177,10 @@ class MasterModule(Logger):
         self.PicoMotor.halt()
         if not self.STOP:
             # Reset
-            run(self.make_ready)
+            self.make_ready()
     
     
+    @threads.new_thread
     def make_ready(self):
         time.sleep(2) # wait for other threads to abort
         self.ABORT = False
@@ -696,10 +701,9 @@ class GUI(Logger):
             }
     
         # Always-running functions
-        masterthread    = run(self.master.run)
-        readerthread    = run(self.master.HekaReader.read_stream)
-    
-        self.threads = [masterthread, readerthread]
+        self.master.run()
+        if hasattr(self.master, 'HekaReader'):
+            self.master.HekaReader.read()
         return
     #################### END __init__ ##############################
     
@@ -708,7 +712,7 @@ class GUI(Logger):
         #####       CALLBACK FUNCS       #####  
         #####                            #####
         ######################################
-    
+        
     
     def _update_piezo_display(self):
         # Update piezo position fields
@@ -986,7 +990,7 @@ class GUI(Logger):
     
     
     def reset_ADC_monitor(self):
-        run(self.master.Plotter.EchemFig.reset)
+        self.master.Plotter.EchemFig.reset()
     
     
     def heatmap_opt_changed(self, *args):
@@ -1047,6 +1051,11 @@ class GUI(Logger):
         return
     
     
+    def get_amplifier_params(self):
+        params = convert_to_index(self.params['amp'])
+        return params
+    
+    
     def get_CV_params(self):
         cv_params = self.params['CV'].copy()
         E0 = cv_params['E0'].get('1.0', 'end')
@@ -1063,18 +1072,20 @@ class GUI(Logger):
             return 0,0,0,0,0,0
         return E0, E1, E2, E3, v, t0
     
+    
+    @threads.new_thread
     def run_CV(self):
         if self.master.Piezo.isMoving():
             self.log('Error: cannot run CV while piezo is moving')
             return
-        self.reset_ADC_monitor()
-        self.set_amplifier()
-        E0, E1, E2, E3, v, t0 = self.get_CV_params()
-        self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
-        path = self.master.HekaWriter.run_measurement_loop('CV')
+        self.master.Potentiostat.set_amplifier()
+        self.master.Potentiostat.setup_CV()
+        path = self.master.Potentiostat.run_CV()
+        
         DataPoint = make_datapoint_from_file(path, 'CVDataPoint')
         if DataPoint:
-            self.master.ADC.force_data(DataPoint)
+            self.master.ADC.force_data_DataPoint()
+        
         self.master.make_ready()
         self.log('Finished running CV.')
         return path
@@ -1097,6 +1108,8 @@ class GUI(Logger):
             return 0,0,0,0,0,0
         return E0, f0, f1, n_pts, n_cycles, amp
     
+    
+    @threads.new_thread
     def run_EIS(self):
         if self.master.Piezo.isMoving():
             self.log('Error: cannot run EIS while piezo is moving')
@@ -1115,13 +1128,15 @@ class GUI(Logger):
         self.log('Finished running EIS')
         return
     
+    
+    @threads.new_thread
     def run_EIS_corrections(self):
         eis_params = self.get_EIS_params()
         self.master.HekaWriter.setup_EIS(*eis_params, force_waveform_rewrite=True)
         return
         
             
-    
+    @threads.new_thread
     def run_custom(self):
         ''' Run custom, user-set PGF file '''
         if self.master.Piezo.isMoving():
@@ -1142,6 +1157,7 @@ class GUI(Logger):
     
     ########## SECM SCAN CALLBACKS ###########
     
+    @threads.new_thread
     def run_approach_curve(self):
         self.reset_ADC_monitor()
         self.set_amplifier()
@@ -1152,20 +1168,19 @@ class GUI(Logger):
         step_size = self.params['approach']['step_size'].get('1.0', 'end')
         step_size = float(step_size)/1000 # Convert nm -> um
 
-        func = partial(self.master.FeedbackController.approach,
-                       height, forced_step_size=step_size)
-        run(func)
+        self.master.FeedbackController.approach(height, forced_step_size=step_size)
     
     
+    @threads.new_thread
     def run_retract(self):
-        func = partial(self.master.Piezo.retract, 10, True)
-        run(func)
+        self.master.Piezo.retract(10, True)
     
-        
+    
+    @threads.new_thread    
     def run_automatic_approach(self):
         self.set_amplifier()
         self.reset_ADC_monitor()
-        run(self.master.FeedbackController.automatic_approach)
+        self.master.FeedbackController.automatic_approach()
         
     
     def run_hopping(self, img=None):
@@ -1179,10 +1194,10 @@ class GUI(Logger):
             return
         
         self.set_amplifier()
-        func = partial(self._run_hopping, fname, img)
-        run(func)
+        self._run_hopping(fname, img)
         
     
+    @threads.new_thread
     def _run_hopping(self, fname, img=None):
         success = self.master.FeedbackController.hopping_mode(self.params['hopping'], img)
         settings = self.save_settings(ask_prompt = False)
@@ -1211,10 +1226,10 @@ class GUI(Logger):
         n_scans = int(popup.n_scans.get())
         dist    = int(popup.move_dist.get())
         
-        func = partial(self._multi_hopping, fname, n_scans, dist)
-        run(func)
+        self._multi_hopping(fname, n_scans, dist)
         
     
+    @threads.new_thread
     def _multi_hopping(self, fname, n_scans, dist):
         for i in range(n_scans):
             this_fname = fname.replace('.secmdata', f'_{(i+1):03d}.secmdata')
@@ -1330,8 +1345,9 @@ class GUI(Logger):
 def run_main():
     try:
         master = MasterModule(TEST_MODE = TEST_MODE)
-        reader = HekaReader(master)
-        writer = HekaWriter(master)
+        pstat = HEKA(master)
+        # reader = HekaReader(master)
+        # writer = HekaWriter(master)
         adc    = ADC(master)
         piezo  = Piezo(master)
         motor  = PicoMotor(master)
@@ -1343,10 +1359,12 @@ def run_main():
         print(e)
         sel = input('Load in test mode? (y/n) >>>')
         if sel != 'y':
+            master.endState()
             sys.exit()
         master = MasterModule(TEST_MODE = True)
-        reader = HekaReader(master)
-        writer = HekaWriter(master)
+        pstat  = HEKA(master)
+        # reader = HekaReader(master)
+        # writer = HekaWriter(master)
         adc    = ADC(master)
         piezo  = Piezo(master)
         motor  = PicoMotor(master)

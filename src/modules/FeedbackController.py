@@ -5,7 +5,7 @@ import os
 import scipy.io
 import datetime
 from functools import partial
-from ..utils.utils import run, Logger
+from ..utils.utils import run, Logger, threads
 from .DataStorage import (Experiment, CVDataPoint, EISDataPoint,
                                  PointsList)
 from ..analysis.analysis_funcs import E0_finder_analysis
@@ -187,7 +187,7 @@ class FeedbackController(Logger):
         # Get local refs to other modules
         self.Piezo = self.master.Piezo
         self.ADC = self.master.ADC
-        self.HekaWriter = self.master.HekaWriter
+        self.Potentiostat = self.master.Potentiostat
         
         self.est_time_remaining = 0
         
@@ -225,11 +225,9 @@ class FeedbackController(Logger):
         step_size = float(step_size)/1000 # Convert nm -> um
 
         self.Piezo.goto(80,80,height)
-        self.HekaWriter.macro('E Vhold 0')
-        time.sleep(1)
-        self.HekaWriter.macro('E AutoCFast')
-        self.HekaWriter.run_OCP()
-        self.HekaWriter.macro(f'E Vhold {voltage}')
+        
+        self.Potentiostat.run_OCP(1)
+        self.Potentiostat.hold_potential(voltage)
         
         while True:
             if self.master.ABORT:
@@ -245,7 +243,7 @@ class FeedbackController(Logger):
             if on_surface:
                 time.sleep(0.1)
                 # Take a CV on the surface
-                self.master.GUI.run_CV()
+                self.master.GUI.run_CV(_new_thread=False)
                 # Retract from surface by 10 um
                 self.Piezo.retract(10, relative=True)
                 break
@@ -300,11 +298,11 @@ class FeedbackController(Logger):
         
         
         # Setup potentiostat and ADC
-        self.HekaWriter.macro(f'E Vhold {voltage}')
+        self.Potentiostat.hold_potential(voltage)
         gain  = 1e9 * self.master.GUI.amp_params['float_gain']
         srate = 1000
         self.ADC.set_sample_rate(srate)
-        run(partial(self.ADC.polling, 5000))
+        self.ADC.polling(timeout=5000)
         time.sleep(0.005)
         
         
@@ -320,7 +318,7 @@ class FeedbackController(Logger):
 
         # Start it
         self._piezo_counter = self.Piezo.counter # Counter tracks when piezo stops
-        run(partial(self.Piezo.approach, forced_step_size=forced_step_size))
+        self.Piezo.approach(forced_step_size=forced_step_size)
         
         on_surface = False
         time.sleep(0.1)
@@ -362,8 +360,7 @@ class FeedbackController(Logger):
         '''
         Run a hopping mode scan.
         
-        Runs in its own thread!
-        
+        Runs in a thread created by GUI
         '''
         # Pull parameters from GUI
         length = params['size'].get('1.0', 'end')

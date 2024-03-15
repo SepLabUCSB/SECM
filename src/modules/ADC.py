@@ -4,7 +4,7 @@ import struct
 import numpy as np
 # from modules.DataStorage import ADCDataPoint
 from .DataStorage import ADCDataPoint
-from ..utils.utils import run, Logger
+from ..utils.utils import run, Logger, threads
 
 CONST_SER_PORT = 'COM6'   #get the com port from device manger and enter it here
 
@@ -147,6 +147,7 @@ class ADC(Logger):
         return
     
     
+    @threads.new_thread
     def polling(self, timeout=3, params=None):
         '''
         Polling mode recording.

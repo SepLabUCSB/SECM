@@ -109,8 +109,7 @@ def make_amp_window(gui, master_frame):
                   'gain': gain}
 
     Button(frame, text='Apply settings',
-           command=partial(gui.set_amplifier)
-           ).grid(column=2, row=8)
+           command=gui.set_amplifier).grid(column=2, row=8)
         
     return amp_params
 

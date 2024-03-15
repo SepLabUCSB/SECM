@@ -7,7 +7,7 @@ import numpy as np
 from tkinter import messagebox
 from .FeedbackController import read_heka_data
 from .DataStorage import EISDataPoint
-from ..utils.utils import run, Logger
+from ..utils.utils import run, Logger, threads
 from ..utils.EIS_util import generate_tpl, get_EIS_sample_rate
 from functools import partial
 
@@ -160,7 +160,8 @@ class HekaReader(Logger):
     def stop(self):
         self.willStop = True
         
-                
+    
+    @threads.new_thread  
     def read(self):
         '''
         Called in its own thread. Continually reads HEKA output file and
@@ -172,6 +173,7 @@ class HekaReader(Logger):
             
         Writer should check Reader.last_msg[0] to get index, [1] to get message
         '''
+        self.log('Starting reading')
         while True:
             if (self.master.STOP or self.willStop):
                 self.willStop = True
@@ -228,6 +230,7 @@ class HEKA(Potentiostat):
         # Register to master
         self.master = master
         self.master.register(self, alias='Potentiostat')
+        self.willStop = False
         
         # Clear input file
         self.file = input_file
@@ -237,7 +240,6 @@ class HEKA(Potentiostat):
         
         # Initialize Reader object
         self.Reader = HekaReader(master, output_file)
-        run(self.Reader.read)
         
         # Initialize local parameter storage
         self.CV_params          = None
@@ -384,8 +386,12 @@ class HEKA(Potentiostat):
         return path
     
     
-    def _update_Values(self):
-        pass
+    def _update_Values(self, values):
+        cmds = []
+        for i, val in values.items():
+            cmds.append(f'SetValue {int(i)} {val}')
+        cmds.append('ExecuteProtocol _update_pgf_params_') # Set PgfParams = Values
+        self._send_multiple_cmds(cmds)
     
     
     def _make_EIS_waveform(self):

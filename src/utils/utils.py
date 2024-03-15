@@ -7,9 +7,26 @@ import numpy as np
 
 
 def run(func, args=()):
-    t = threading.Thread(target=func, args=args)
-    t.start()
-    return t
+    print(f'Error: run() called on function {func}')
+    return func
+    # t = threading.Thread(target=func, args=args)
+    # t.start()
+    # return t
+
+
+class threads:
+    
+    @classmethod
+    def new_thread(cls, func, _new_thread=True):
+        def inner_func(*args, **kwargs):
+            t = threading.Thread(target=func, args=args, kwargs=kwargs)
+            t.start()
+        if _new_thread:
+            print(f'starting {func} in new thread')
+            return inner_func
+        else:
+            print(f'starting {func} in same thread')
+            return func
 
 
 def nearest(array, value):

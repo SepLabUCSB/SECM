@@ -70,13 +70,12 @@ def make_EIS_window(gui, master_frame):
         
     Label(frame, text='').grid(column=2, row=6)
     
-    Button(frame, text='Run EIS', command=
-            partial(run, gui.run_EIS)).grid(column=2, row=7, columnspan=2,
-                                           sticky=(E,W))  
+    Button(frame, text='Run EIS', command=gui.run_EIS).grid(
+        column=2, row=7, columnspan=2, sticky=(E,W))  
     
-    Button(frame, text='Record Correction Factors', command=
-           partial(run, gui.run_EIS_corrections)).grid(
-               column=2, row=8, columnspan=2, sticky=(E,W))
+    Button(frame, text='Record Correction Factors', 
+           command=gui.run_EIS_corrections).grid(
+           column=2, row=8, columnspan=2, sticky=(E,W))
                                             
     EIS_params = {'E0':DC_field,
                   'f0':f0_field,
