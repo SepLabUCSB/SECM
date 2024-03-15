@@ -19,7 +19,7 @@ output_file = r'C:/ProgramData/HEKA/com/E9Batch.Out'
 DEFAULT_SAVE_PATH = r'D:/SECM/Data'
 
 
-class Potentiostat():
+class Potentiostat(Logger):
     ''' 
     Abstract base class defining all Potentiostat methods.
     All methods should be overwritten in potentiostat-specific subclasses
@@ -52,7 +52,7 @@ class Potentiostat():
         Read amplifier settings from GUI
         Send commands to set amplifier
         
-        Returns: None
+        Returns: bool, whether or not setup was successful
         '''
         self._error_msg('set_amplifier')
         return
@@ -64,7 +64,7 @@ class Potentiostat():
         Send commands to setup amplifier
         Store settings to self
         
-        Returns: None
+        Returns: bool, whether or not setup was successful
         '''
         self._error_msg('setup_CV')
         return
@@ -76,7 +76,7 @@ class Potentiostat():
         Send commands to setup amplifier
         Store settings to self
         
-        Returns: None
+        Returns: bool, whether or not setup was successful
         '''
         self._error_msg('setup_EIS')
         return
@@ -151,7 +151,7 @@ class HekaReader(Logger):
         self.master = master
         self.master.register(self)
         self.file = output_file
-        self.last = None
+        self.last_msg = None
         self.willStop = False
         if os.path.exists(self.file):
             with open(self.file, 'w') as f:
@@ -164,7 +164,13 @@ class HekaReader(Logger):
     def read(self):
         '''
         Called in its own thread. Continually reads HEKA output file and
-        stores last response in self.last
+        stores last response in self.last_msg
+        
+        Response has 2 lines:
+            +0001                      // Response index
+            Reply_whatever             // Response message
+            
+        Writer should check Reader.last_msg[0] to get index, [1] to get message
         '''
         while True:
             if (self.master.STOP or self.willStop):
@@ -177,7 +183,7 @@ class HekaReader(Logger):
             with open(self.file, 'r') as f:
                 lines = [line.rstrip() for line in f]
                 if (lines != self.last and lines != None):
-                    self.last = lines
+                    self.last_msg = lines
         self.log('Stopped reading')
     
     
@@ -188,7 +194,7 @@ class HekaReader(Logger):
         st = time.time()
         while time.time() - st < timeout:
             try:
-                response = self.last[1]
+                response = self.last_msg[1] 
                 if response.startswith(string):
                     return response
             except:
@@ -221,7 +227,7 @@ class HEKA(Potentiostat):
                  output_file = output_file):
         # Register to master
         self.master = master
-        self.master.register(self)
+        self.master.register(self, alias='Potentiostat')
         
         # Clear input file
         self.file = input_file
@@ -279,6 +285,25 @@ class HEKA(Potentiostat):
                                   'Set N Stop 1',
                                   'Set N Store 1'])
         self._idle()
+        
+        
+    def _await(self, timeout):
+        '''
+        Wait for HEKA to finish a recording. Send status update queries and break
+        when recording finishes
+        '''
+        st = time.time()
+        while time.time() - st < timeout:
+            if self.master.ABORT:
+                self.abort()
+                return 'abort'
+            self._send_command('Query')
+            try:
+                if self.Reader.last_msg[1] == 'Query_Idle':
+                    return 'success'
+            except: pass
+        return 'failed'
+        
         
     def _save_last_experiment(self, path:str=None):
         '''
@@ -375,12 +400,58 @@ class HEKA(Potentiostat):
         pass
     
     
-    def _generate_CV_params(self):
-        pass
+    def _generate_CV_params(self, E0, E1, E2, E3, scan_rate, quiet_time):
+        '''
+        *** POTENTIALS IN V, SCAN_RATE IN V/s, QUIET_TIME IN s ***
+        1. Hold at E0 for quiet_time
+        2. Ramp to E1 at scan_rate
+        3. Ramp to E2 at scan_rate
+        4. Ramp to E3 (end potential) at scan_rate
+        
+        Parameter assignments:
+                0: Holding potential (V) (p1)
+                1: Holding time      (s) (p2)
+                2: E1 potential      (V) (p3)
+                3: E1 ramp time      (s) (p4)
+                4: E2 potential      (V) (p5)
+                5: E2 ramp time      (s) (p6)
+                6: End potential     (V) (p7)
+                7: End ramp time     (s) (p8)
+        '''
+        rt1 = abs(E1 - E0) / scan_rate
+        rt2 = abs(E2 - E1) / scan_rate
+        rt3 = abs(E3 - E2) / scan_rate
+        
+        duration = quiet_time + rt1 + rt2 + rt3
+        
+        values = {
+            0: E0,
+            1: quiet_time,
+            2: E1,
+            3: rt1,
+            4: E2,
+            5: rt2,
+            6: E3,
+            7: rt3
+            }
+        return values, duration
+        
     
-    
-    def _generate_EIS_params(self):
-        pass
+    def _generate_EIS_params(self, E_DC, duration):
+        '''
+        *** POTENTIALS IN V, ***
+        
+        Parameter assignments:
+            0: DC bias   (V) (p1)
+            1: scan time (s) (p2)
+        '''
+        
+        values = {
+            0: E_DC,
+            1: duration,
+            }
+        
+        return values, duration
     
         
     
@@ -403,33 +474,65 @@ class HEKA(Potentiostat):
         return self.status == 'running'
     
     
+    def start_ADC(self, timeout):
+        '''
+        Send commands to start ADC polling
+        '''
+        run(partial(self.master.ADC.polling,
+                    timeout=timeout))
+    
+    
+    def stop_ADC(self):
+        self.master.ADC.STOP_POLLING()
+    
+    
     def set_amplifier(self):
         '''
         Read amplifier settings from GUI
-        Send commands to set amplifier
+        Send commands to set amplifier (filters, gain, etc)
         
-        Returns: None
+        Returns: bool, whether or not setup was successful
         '''
-        self._error_msg('set_amplifier')
-        return
+        parameters = self.master.GUI.get_amplifier_params()
+        cmds = []
+        for key, val in parameters.items():
+            cmds.append(f'Set {key} {val}')
+        cmds.append('Set E TestDacToStim1 0')
+        self._send_multiple_cmds(cmds)
+        return True
     
     
     def setup_CV(self):
         '''
         Read CV settings from GUI
-        Send commands to setup amplifier
+        Send commands to setup PGF (voltages, times)
         Store settings to self
         
-        Returns: None
+        Returns: bool, whether or not setup was successful
         '''
-        self._error_msg('setup_CV')
+        # Pull parameters from GUI        
+        parameters = self.master.GUI.get_CV_params()
+        if parameters == (0,0,0,0,0,0):
+            return False
+        
+        # Update Values in pgf
+        values, duration = self._generate_CV_params(*parameters)
+        self._update_Values(values)
+        
+        # Store locally
+        self.CV_params = values
+        self.CV_params['scan_rate'] = abs(values[2] - values[0])/values[3]
+        self.CV_params['duration'] = duration
+        
+        self.log(f'Set CV parameters: {self.CV_params}', quiet=True)
         return
     
     
     def setup_EIS(self):
         '''
         Read EIS settings from GUI
-        Send commands to setup amplifier
+        Make EIS waveform
+        Send commands to setup PGF (E0, duration)
         Store settings to self
         
         Returns: None
@@ -438,14 +541,48 @@ class HEKA(Potentiostat):
         return
     
     
-    def run_CV(self):
+    def run_CV(self, path):
         '''
+        path: string, path to save to
+        
         Send command to run a CV using the current settings
         
         Returns: string, path to saved data file
         '''
-        self._error_msg('run_CV')
-        return
+        if self.isRunning():
+            self.log('Error: received command to run CV but already running')
+            return ''
+        
+        self._running()
+        
+        # Determine what sampling rate to use based on scan rate
+        scan_rate = self.CV_params['scan_rate']
+        if scan_rate <= 0.1:
+            mode = '10Hz'
+        elif scan_rate > 0.1 and scan_rate <= 0.5:
+            mode = '100Hz'
+        elif scan_rate > 0.5 and scan_rate <= 1:
+            mode = '1kHz'
+        elif scan_rate > 1:
+            mode = '10kHz'
+        
+        sequence = f'_CV-{mode}'
+        timeout = self.CV_params['duration'] + 3
+        
+        self.log(f'Running sequence {sequence}', quiet=True)
+        self._send_command(f'ExecuteSequence {sequence}')
+        self.start_ADC(timeout=timeout)
+        
+        success = self._await(timeout=timeout)
+        
+        self.stop_ADC()
+        
+        self._idle()
+        
+        if success == 'success':
+            return self._save_last_experiment(path)
+        
+        return ''
     
     
     def run_CA(self):
