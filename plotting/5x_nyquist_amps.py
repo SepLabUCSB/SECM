@@ -6,19 +6,19 @@ colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 
 
-# files = ["Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_2_004_75_75_EISDataPoint5.txt",
-# "Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_2_004_75_75_EISDataPoint1.txt",
-# "Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_2_004_75_75_EISDataPoint2.txt",
-# "Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_2_004_75_75_EISDataPoint3.txt",
-# "Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_2_004_75_75_EISDataPoint4.txt"
-# ]
-
-files = ["Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_002_75_10_EISDataPoint5.txt",
-"Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_002_75_10_EISDataPoint1.txt",
-"Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_002_75_10_EISDataPoint2.txt",
-"Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_002_75_10_EISDataPoint3.txt",
-"Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_002_75_10_EISDataPoint4.txt"
+files = ["Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_2_004_75_75_EISDataPoint5.txt",
+"Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_2_004_75_75_EISDataPoint1.txt",
+"Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_2_004_75_75_EISDataPoint2.txt",
+"Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_2_004_75_75_EISDataPoint3.txt",
+"Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_2_004_75_75_EISDataPoint4.txt"
 ]
+
+# files = ["Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_002_75_10_EISDataPoint5.txt",
+# "Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_002_75_10_EISDataPoint1.txt",
+# "Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_002_75_10_EISDataPoint2.txt",
+# "Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_002_75_10_EISDataPoint3.txt",
+# "Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_002_75_10_EISDataPoint4.txt"
+# ]
 
 
 voltages = [10, 20, 50, 100, 200]
@@ -83,3 +83,14 @@ l = 2
 ax.axvline(x = xpos, ymin=scale(ypos, miny, maxy), ymax=scale(ypos+l, miny, maxy), color='k')
 ax.axhline(y = ypos, xmin=scale(xpos, minx, maxx), xmax=scale(xpos+l, minx, maxx), color='k')
 ax.text(xpos+l/2, ypos-0.1, r'2 G$\Omega$', ha='center', va='top')
+
+
+
+fig, ax = plt.subplots()
+for i in range(len(files)):
+    f, re, im = plot(files[i], ax, 0, '', colors[i], 'o-')
+ax.set_xlabel(r"Z'/ G$\Omega$")
+ax.set_ylabel(r"Z''/ G$\Omega$")
+ax.set_xticks([0,2,4,6])
+ax.set_yticks([0,2,4,6])
+square_axes(ax)

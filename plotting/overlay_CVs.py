@@ -12,6 +12,8 @@ file2 = r'Z:/Projects/Brian/7 - SECCM/20231207 BR30 GC D/exports/background.csv'
 file1 = r'Z:/Projects/Brian/7 - SECCM/20240214 BR7 GC A/export/0214_001_67_71_CVDataPoint0.csv'
 file1 = r'Z:/Projects/Brian/7 - SECCM/20240216 BR7 GCA 1x 5xEISwait then 11x CVEIS/export/0216_004_20_75_CVDataPoint0.csv'
 
+file1 = r'Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_001_40_15_CVDataPoint0.csv'
+
 def plot(file, ax, *args, **kwargs):
     t, v, I = np.loadtxt(file, delimiter=',', unpack=True, skiprows=1)
     ax.plot(v, I/1e-12, *args, **kwargs)
@@ -26,6 +28,7 @@ ax.set_xlabel('E/ V vs Ag/AgCl QRCE')
 ax.set_ylabel('I/ pA')
 ax.set_xticks([-0.5, 0, 0.5, 1])
 # ax.set_yticks([-150,-75,0,75,150])
-ax.legend()
+# ax.set_yticks([-100, -50, 0, 50, 100])
+# ax.legend()
 # ax.set_title('1010_003_70_10', pad=20)
 

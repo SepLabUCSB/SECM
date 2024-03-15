@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.metrics import r2_score
 plt.style.use('style.mplstyle')
 colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
@@ -23,18 +24,29 @@ def plot(file, ax, *args, **kwargs):
             skiprows=0
     f, re, im = np.loadtxt(file, unpack=True, skiprows=skiprows)
     ax.plot(re/1e9, -im/1e9, *args, **kwargs)
+    return re+1j*im
 
 def square_axes(ax):
     mini = min(*ax.get_xlim(), *ax.get_ylim())
     maxi = max(*ax.get_xlim(), *ax.get_ylim())
     ax.set_xlim(mini, maxi)
-    ax.set_ylim(mini, maxi)       
+    ax.set_ylim(mini, maxi)  
+
+def calc_chi_sq(data, fit):
+    # residuals = data - fit
+    # chisq = np.sum(np.abs((residuals**2)/fit))
+    data = np.array((np.real(data), np.imag(data)))
+    fit  = np.array((np.real(fit), np.imag(fit)))
+    rsq = r2_score(data, fit)
+    return rsq
+         
  
 def make_plots(file1, file2):
     fig, ax = plt.subplots(figsize=(5,5), dpi=300)
-    plot(file1, ax, 'o', markeredgecolor=colors[0], markersize=8, 
-         markerfacecolor='none', markeredgewidth=3)
-    plot(file2, ax, '--', color='black')
+    data = plot(file1, ax, 'o', markeredgecolor=colors[0], markersize=8, 
+                markerfacecolor='none', markeredgewidth=3)
+    fit  = plot(file2, ax, '--', color='black')
+    rsq = calc_chi_sq(data, fit)
     square_axes(ax)
     # ticks = [0,1,2,3,4]
     # ax.set_xticks(ticks)
@@ -44,10 +56,11 @@ def make_plots(file1, file2):
     plt.locator_params(nbins=5)
     title = file1.split('\\')[-1].replace('_EISDataPoint1.txt', '')
     title = title.replace('_EISDataPoint3.txt', '')
+    print(f'{title}, {rsq}')
     ax.set_title(title, pad=10)
     fig.tight_layout()
-    fig.savefig(file1.replace('.txt', '.png'))
-    plt.close()
+    # fig.savefig(file1.replace('.txt', '_titled.png'))
+    # plt.close()
  
 
 folder = r'Z:\Projects\Brian\7 - SECCM all PB particles\MEISP'
@@ -58,5 +71,6 @@ fit_files = [f.replace('.txt', '_fit.txt') for f in data_files]
 
 for data_file, fit_file in zip(data_files, fit_files):  
     make_plots(data_file, fit_file)
-    
+
+# make_plots(file, fit)
     

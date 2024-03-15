@@ -5,10 +5,11 @@ colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
 
 
 # file1 = r'Z:/Projects/Brian/7 - SECCM/20231207 BR30 GC D/exports/002_20_30_EISDataPoint1.txt'
-file1 = r'Z:/Projects/Brian/7 - SECCM/20231010 BR7 PB/eis.csv'
+# file1 = r'Z:/Projects/Brian/7 - SECCM/20231010 BR7 PB/eis.csv'
 file2 = r'Z:/Projects/Brian/7 - SECCM all PB particles/EIS_200mV_noNP2.asc'
 
-file1 = r'Z:/Projects/Brian/7 - SECCM/20240214 BR7 GC A/export/0214_001_67_71_EISDataPoint1.txt'
+file1 = r'Z:/Projects/Brian/7 - SECCM all PB particles/0214_001_67_71_EISDataPoint1.txt'
+# file1 = r'Z:/Projects/Brian/7 - SECCM/20240226 BR7 GCA 5xEISamps/export/0226_001_40_15_EISDataPoint3.txt'
 
 
 def plot(file, ax, *args, **kwargs):
@@ -44,7 +45,7 @@ square_axes(ax)
 ax.set_xlabel(r"Z'/ G$\Omega$")
 ax.set_ylabel(r"Z''/ G$\Omega$")
 ticks = [0,2.5,5,7.5,10]
-ax.set_xticks(ticks)
-ax.set_yticks(ticks)
+# ax.set_xticks(ticks)
+# ax.set_yticks(ticks)
 ax.legend()
 # ax.set_title('1010_003_70_10')
