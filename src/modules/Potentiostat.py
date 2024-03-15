@@ -76,6 +76,18 @@ class Potentiostat(Logger):
         return
     
     
+    def setup_CA(self):
+        '''
+        Read CA settings from GUI
+        Send commands to setup amplifier
+        Store settings to self
+        
+        Returns: bool, whether or not setup was successful
+        '''
+        self._error_msg('setup_CA')
+        return
+    
+    
     def setup_EIS(self):
         '''
         Read EIS settings from GUI
@@ -248,7 +260,7 @@ class HEKA(Potentiostat):
         # Initialize local parameter storage
         self.CV_params          = None
         self.EIS_params         = None
-        self.EIS_WF_params      = None
+        self.EIS_freqs          = None
         self.EIS_corrections    = None
     
     
@@ -397,15 +409,116 @@ class HEKA(Potentiostat):
             cmds.append(f'SetValue {int(i)} {val}')
         cmds.append('ExecuteProtocol _update_pgf_params_') # Set PgfParams = Values
         self._send_multiple_cmds(cmds)
+        return
     
     
-    def _make_EIS_waveform(self):
-        pass
+    def _make_EIS_waveform(self, E0, f0, f1, n_pts, n_cycles, amp):
+        sample_rate = get_EIS_sample_rate(max(f0, f1))
+        file = f'D:/SECM/_auto_eis-{sample_rate//1000}kHz_1.tpl'
+        self.EIS_freqs = generate_tpl(f0, f1, n_pts, n_cycles, 
+                                     amp, file)
+        self.log(f'Wrote new EIS waveform to {file}')
+        return 
     
     
-    def _check_EIS_corrections(self):
-        pass
-    
+    def _check_EIS_corrections(self, E0, f0, f1, n_pts, n_cycles, amp,
+                               forced=False):
+        '''
+        Checks if the current waveform is in the stored corrections file.
+        
+        If it is, take its correction factors from the file.
+        If forced == True, re-record correction factors
+        
+        Otherwise, prompt user to plug in the model circuit to record
+        a reference waveform
+        
+        Corrections file is a json which stores a dictionary. Dictionary keys
+        are defined by the waveform parameters: amplitude, number of points,
+        and all the applied frequencies.
+        
+        d = {
+            (amp, n_pts, *applied_frequencies) = [(f, Z_corr, phase_corr) for
+                                                  f in applied frequencies]            
+            }
+                
+        '''
+        
+        # Check if corrections are already saved
+        key = (amp, n_pts, *self.EIS_freqs)
+        key = str(key)
+        file = 'src/utils/EIS_waveform.json'
+        if os.path.exists(file):
+            d = json.load(open(file, 'r'))
+            if (key in d) and not forced:
+                self.EIS_corrections = d[key]
+                return
+        else:
+            d = {}
+        
+        # Prompt for model circuit
+        connected = messagebox.askokcancel('Waveform corrections', 
+                                           message=
+                                           'EIS correction factors not found for this waveform.\nPlease plug in the model circuit and set to 10 MOhm.\nPress OK when ready.'
+                                           )
+        if not connected:
+            self.EIS_corrections = None
+            return
+        
+        
+        '''
+        Model circuit 10MOhm resistor is in parallel (series?) with a capacitor
+        HEKA intends users to put the model circuit to the middle position
+        and click "Auto C-Fast" button on PATCHMASTER, which measures this capacitance
+        and then corrects for it (analog-ly). We separately use the 
+        C-fast feature to compensate for stray capacitance in the substrate or
+        probe (FeedbackController calls AutoCFast at the beginning of the 
+        automatic approach to the substrate), so we need to manually reset 
+        C-Fast to be correct for the model circuit. 5.56 pF and 0.6 us.
+        '''
+        
+        self._send_multiple_cmds([
+            'Set E CFastTot 5.56',
+            'Set E CFastTau 0.6'
+            ])
+               
+        # Do the measurement - set up the right parameters first
+        self.EIS_params = asDict(E0, f0, f1, n_pts, n_cycles, amp)
+        path = self.run_EIS(path='src/temp/EIS.mat')
+        
+        
+        # Read data from file
+        t, V, I = read_heka_data(path)
+        correction_datapoint = EISDataPoint(loc=(0,0,0), data=[t,V,I],
+                                            applied_freqs = self.EIS_freqs,
+                                            corrections = None)
+        self.master.Plotter.EchemFig.set_datapoint(correction_datapoint)
+        freq, _, _, Z = correction_datapoint.data
+        
+        modZ  = np.abs(Z)
+        phase = np.angle(Z, deg=True)
+        
+        Z_corrections     = modZ / 10e6
+        phase_corrections = phase
+        
+        '''
+            Corrected |Z| = |Z| / Z_corrections
+            Corrected  p  =  p  - phase_corrections
+            Corrected  Z  = |Z| * exp(1j * phase * pi/180)
+        '''
+        self.log('|Z| corrections (multiplicative):')
+        self.log(Z_corrections)
+        self.log('Phase corrections (additive):')
+        self.log(phase_corrections)
+        self.EIS_corrections = list(zip(freq, Z_corrections, phase_corrections))
+        
+        # Save corrections to file
+        d[key] = self.EIS_corrections
+        json.dump(d, open(file, 'w'))
+        
+        messagebox.askokcancel('Waveform corrections',
+                               message='Correction factors recorded.\nUnplug the model circuit and reconnect your experiment. \n Press OK when ready.')
+        
+            
     
     def _get_EIS_filters(self):
         pass
@@ -448,7 +561,7 @@ class HEKA(Potentiostat):
         return values, duration
         
     
-    def _generate_EIS_params(self, E_DC, duration):
+    def _generate_EIS_params(self, E0, f0, f1, n_pts, n_cycles, amp):
         '''
         *** POTENTIALS IN V, ***
         
@@ -458,11 +571,54 @@ class HEKA(Potentiostat):
         '''
         
         values = {
-            0: E_DC,
-            1: duration,
+            0: E0/1000,
+            1: n_cycles*1/min(f0, f1),
             }
         
-        return values, duration
+        return values, n_cycles*1/min(f0, f1)
+    
+    
+    def _set_EIS_amplifier(self, E0, f0, f1, n_pts, n_cycles, amp):
+        '''
+        Determine best filters to use for FFT-EIS
+        
+        Send commands to configure amplifier for EIS measurement
+        '''
+        filt1s = [10, 30, 100]
+        best_filt1 = 100
+        for filt in filt1s:
+            if filt*1000 >= 5*max(f0, f1):
+                best_filt1 = filt
+                break
+        best_filt2 = 5*max(f0, f1)
+        if best_filt2 > 8000:
+            f2_val  = 8000
+            f2_type = 2
+        else:
+            f2_val  = best_filt2
+            f2_type = 0 # Sets as Bessel filter
+            
+        filter1options = [100, 30, 10]    # Order filters appear in PATCHMASTER
+        f1_idx = [i for i, val in enumerate(filter1options) 
+                  if val == best_filt1][0]
+        
+        # Commands to send to amplifier
+        cmds =  [f'Set E Filter1 {f1_idx}', 
+                 f'Set E F2Response {f2_type}', 
+                 f'Set E Filter2 {f2_val/1000}',
+                  'Set E StimFilter 0',
+                  'Set E TestDacToStim1 2',
+                  'Set E ExtScale 1',
+                  'Set E Mode 3',
+                  'Set E Gain 14']
+        self._send_multiple_cmds(cmds)
+        time.sleep(0.1)
+        
+        self.hold_potential(E0)
+        time.sleep(1)
+        return
+        
+        
     
         
     
@@ -528,7 +684,8 @@ class HEKA(Potentiostat):
         
         Returns: bool, whether or not setup was successful
         '''
-        # Pull parameters from GUI        
+        # Pull parameters from GUI  
+        # E0, E1, E2, E3, v, t0
         parameters = self.master.GUI.get_CV_params()
         if parameters == (0,0,0,0,0,0):
             return False
@@ -546,7 +703,19 @@ class HEKA(Potentiostat):
         return
     
     
-    def setup_EIS(self):
+    def setup_CA(self):
+        '''
+        Read CA settings from GUI
+        Send commands to setup amplifier
+        Store settings to self
+        
+        Returns: bool, whether or not setup was successful
+        '''
+        self._error_msg('setup_CA')
+        return
+    
+    
+    def setup_EIS(self, force_waveform_rewrite=False):
         '''
         Read EIS settings from GUI
         Make EIS waveform
@@ -555,8 +724,24 @@ class HEKA(Potentiostat):
         
         Returns: None
         '''
-        self._error_msg('setup_EIS')
-        return
+        # Pull parameters from GUI
+        # E0, f0, f1, n_pts, n_cycles, amp
+        parameters = self.master.GUI.get_EIS_params()
+        if parameters == (0,0,0,0,0,0):
+            return False
+        
+        values, duration = self._generate_EIS_params(*parameters)
+        self._update_Values(values)
+        self._set_EIS_amplifier(*parameters)
+        
+        if (asDict(*parameters) != self.EIS_params or force_waveform_rewrite):
+            self._make_EIS_waveform(*parameters)
+            self._check_EIS_corrections(*parameters,
+                                        forced=force_waveform_rewrite)
+        
+        self.EIS_params = asDict(*parameters)
+        self.log('Set EIS parameters', 1)
+        return True
     
     
     def run_CV(self, path:str=None):
@@ -616,14 +801,39 @@ class HEKA(Potentiostat):
         return
     
     
-    def run_EIS(self):
+    def run_EIS(self, path:str=None):
         '''
         Send command to run an EIS spectrum using the current settings
         
         Returns: string, path to saved data file
         '''
-        self._error_msg('run_EIS')
-        return
+        if not self.SoftwareRunning():
+            return ''
+        
+        if self.isRunning():
+            self.log('Error: received command to run CV but already running')
+            return ''
+        
+        self._running()
+        
+        timeout = self.EIS_params['duration'] + 3
+        fmax = max(self.EIS_params['f0'], self.EIS_params['f1'])
+        sample_rate = get_EIS_sample_rate(fmax)
+        # Possible sampling rates are 10k, 20k, 40k, 100k, 200k
+        cmd = f'_auto_eis-{sample_rate//1000}kHz'
+        self._send_command(f'ExecuteSequence {cmd}')
+        self.start_ADC(timeout=timeout)
+        
+        success = self._await(timeout=timeout)
+        
+        self.stop_ADC()
+        
+        self._idle()
+        
+        if success == 'success':
+            return self._save_last_experiment(path)
+        
+        return ''
     
     
     def run_custom(self):
@@ -652,7 +862,7 @@ class HEKA(Potentiostat):
         
         Returns: string, path to saved data file
         '''
-        self._error_msg('hold_potential')
+        self._send_command(f'Set E Vhold {voltage}')
         return
     
     
@@ -762,3 +972,9 @@ class BioLogic(Potentiostat):
         self._error_msg('hold_potential')
         return
 
+
+def asDict(E0, f0, f1, n_pts, n_cycles, amp):
+    # Helper function for HEKA EIS parameters
+    return {'E0': E0, 'f0': f0, 'f1': f1, 'n_pts': n_pts, 
+            'n_cycles': n_cycles, 'amp': amp, 'duration':n_cycles*1/min(f0, f1)}
+        

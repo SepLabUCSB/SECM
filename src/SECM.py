@@ -1094,12 +1094,13 @@ class GUI(Logger):
             self.log('Error: cannot run EIS while piezo is moving')
             return
         self.reset_ADC_monitor()
-        eis_params = self.get_EIS_params()
-        self.master.HekaWriter.setup_EIS(*eis_params)
-        path = self.master.HekaWriter.run_measurement_loop('EIS')
+        self.master.Potentiostat.setup_EIS()
+        path = self.master.Potentiostat.run_EIS()
+        if not path: return
+        
         DataPoint = make_datapoint_from_file(path, 'EISDataPoint', 
-                                             applied_freqs=self.master.HekaWriter.EIS_applied_freqs,
-                                             corrections=self.master.HekaWriter.EIS_corrections)
+                                             applied_freqs=self.master.Potentiostat.EIS_freqs,
+                                             corrections=self.master.Potentiostat.EIS_corrections)
         if DataPoint:
             self.master.ADC.force_data(DataPoint)
             DataPoint._save(path[:-4] + '_EIS.asc')
@@ -1110,8 +1111,7 @@ class GUI(Logger):
     
     @threads.new_thread
     def run_EIS_corrections(self):
-        eis_params = self.get_EIS_params()
-        self.master.HekaWriter.setup_EIS(*eis_params, force_waveform_rewrite=True)
+        self.master.Potentiostat.setup_EIS(force_waveform_rewrite=True)
         return
         
             
