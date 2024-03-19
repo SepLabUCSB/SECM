@@ -815,7 +815,7 @@ class HEKA(Potentiostat):
             return ''
         
         if self.isRunning():
-            self.log('Error: received command to run CV but already running')
+            self.log('Error: received command to run EIS but already running')
             return ''
         
         self._running()
@@ -840,23 +840,47 @@ class HEKA(Potentiostat):
         return ''
     
     
-    def run_custom(self):
+    def run_custom(self, path:str=None):
         '''
         Send command to run the custom waveform using the current settings
         
         Returns: string, path to saved data file
         '''
-        self._error_msg('run_custom')
-        return
+        if not self.SoftwareRunning():
+            return ''
+        
+        if self.isRunning():
+            self.log('Error: received command to run custom but already running')
+            return ''
+        
+        self._running()
+        
+        self._send_command('ExecuteSequence _custom')
+        self.start_ADC(timeout=3600)
+        
+        success = self._await(timeout=3600)
+        
+        self.stop_ADC()
+        
+        self._idle()
+        
+        if success == 'success':
+            return self._save_last_experiment(path)
+        
+        return ''
     
     
     def run_OCP(self):
         '''
         Send command to run an OCP measurement
         
+        Used to add an initial measurement to the HEKA data file, 
+        otherwise trying to export the first measurement sometimes gives problems.
+        
         Returns: string, path to saved data file
         '''
-        self._error_msg('run_OCP')
+        self._send_command('ExecuteSequence _OCP')
+        time.sleep(0.8)
         return
     
     

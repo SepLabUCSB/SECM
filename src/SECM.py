@@ -1122,10 +1122,10 @@ class GUI(Logger):
             self.log('Error: cannot run custom waveform while piezo is moving')
             return
         self.reset_ADC_monitor()
-        self.set_amplifier()
-        E0, E1, E2, E3, v, t0 = self.get_CV_params()
-        self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
-        path = self.master.HekaWriter.run_measurement_loop('Custom')
+        self.master.Potentiostat.set_amplifier()
+        path = self.master.Potentiostat.run_custom()
+        if not path: return 
+        
         DataPoint = make_datapoint_from_file(path, 'CVDataPoint')
         if DataPoint:
             self.master.ADC.force_data(DataPoint)
