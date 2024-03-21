@@ -350,6 +350,8 @@ class HEKA(Potentiostat):
         else:
             self._send_command('Set @  ExportTarget  "MatLab"')
             savepath += '.mat'
+            if not path.endswith('.mat'): path += '.mat'
+            
         if os.path.exists(savepath):
             os.remove(savepath)
         

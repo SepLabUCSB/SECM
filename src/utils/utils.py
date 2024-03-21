@@ -68,14 +68,14 @@ class threads(Logger):
     @classmethod
     def new_thread(cls, func, _new_thread=True):
         def inner_func(*args, **kwargs):
-            cls.log(cls, f'Starting new thread {func}')
+            # cls.log(cls, f'Starting new thread {func}')
             t = threading.Thread(target=func, args=args, kwargs=kwargs)
             t.start()
         if _new_thread:
-            cls.log(cls, f'Will start {func} in new thread')
+            # cls.log(cls, f'Will start {func} in new thread')
             return inner_func
         else:
-            cls.log(cls, f'Will start {func} in same thread')
+            # cls.log(cls, f'Will start {func} in same thread')
             return func
         
         

@@ -4,6 +4,7 @@ from io import StringIO
 import os
 import scipy.io
 import datetime
+import traceback
 from functools import partial
 from ..utils.utils import run, Logger, threads
 from .DataStorage import (Experiment, CVDataPoint, EISDataPoint,
@@ -528,7 +529,8 @@ class FeedbackController(Logger):
         if expt_type == 'CV':
             try:
                 t, voltage, current = self.run_CV(expt.path, i)
-            except:
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
                 return 'failed'
             if type(t) == int:
                 return None
@@ -538,7 +540,8 @@ class FeedbackController(Logger):
         if expt_type == 'EIS':
             try:
                 t, voltage, current = self.run_EIS(expt.path, i)
-            except:
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
                 return 'failed'
             if type(t) == int:
                 return None
@@ -550,7 +553,8 @@ class FeedbackController(Logger):
         if expt_type == 'Custom':
             try:
                 t, voltage, current = self.run_custom(expt.path, i)
-            except:
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
                 return 'failed'
             if type(t) == int:
                 return None
@@ -563,7 +567,8 @@ class FeedbackController(Logger):
                 return None
             try:
                 t, voltage, current = self.run_CV(expt.path, i)
-            except:
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
                 return 'failed'
             if type(t) == int:
                 return None
@@ -587,7 +592,8 @@ class FeedbackController(Logger):
             # Run EIS expt
             try:
                 t, voltage, current = self.run_EIS(expt.path, i)
-            except:
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
                 return CVdata
             if type(t) == int:
                 return None
@@ -607,7 +613,8 @@ class FeedbackController(Logger):
                 return None
             try:
                 t, voltage, current = self.run_CV(expt.path, i)
-            except:
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
                 return 'failed'
             if type(t) == int:
                 return None
@@ -637,7 +644,8 @@ class FeedbackController(Logger):
                 # Run EIS expt
                 try:
                     t, voltage, current = self.run_EIS(expt.path, i)
-                except:
+                except Exception as e:
+                    self.log(traceback.format_exc(), quiet=True)
                     break
                 if type(t) == int:
                     return None
@@ -660,7 +668,8 @@ class FeedbackController(Logger):
                 return None
             try:
                 t, voltage, current = self.run_CV(expt.path, i)
-            except:
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
                 return 'failed'
             if type(t) == int:
                 return None
@@ -690,7 +699,8 @@ class FeedbackController(Logger):
                 # Run EIS expt
                 try:
                     t, voltage, current = self.run_EIS(expt.path, i)
-                except:
+                except Exception as e:
+                    self.log(traceback.format_exc(), quiet=True)
                     break
                 if type(t) == int:
                     return None

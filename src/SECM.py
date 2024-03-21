@@ -229,6 +229,8 @@ class PrintLogger():
         self.textbox = textbox # tk.Text object
         self.textbox.tag_config("red", foreground="red")
         self.textbox.tag_config('black', foreground='black')
+        self.textbox.tag_config('blue', foreground='blue')
+        self.textbox.tag_config('green', foreground='green')
 
     def write(self, text):
         self.textbox.configure(state='normal')
