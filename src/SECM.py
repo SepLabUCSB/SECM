@@ -29,7 +29,7 @@ default_stderr = sys.stderr
 
 matplotlib.use('TkAgg')
 
-TEST_MODE = True
+TEST_MODE = False
 
 
     
