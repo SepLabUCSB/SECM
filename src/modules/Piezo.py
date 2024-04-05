@@ -34,6 +34,7 @@ class Piezo(Logger):
     def stop(self):
         if not hasattr(self, 'port'):
             return
+        self.goto(40, 40, 40)
         self.stop_monitoring()
         self.port.close()
         self.log('Serial port closed')
