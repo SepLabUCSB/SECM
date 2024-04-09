@@ -383,22 +383,15 @@ class GUI(Logger):
             'Avg. current',
             'Analysis func.'
             ]
-        self.heatmapselection = StringVar(topfigframe)
-        OptionMenu(topfigframe, self.heatmapselection, 
-                   heatmapOptions[0], *heatmapOptions).grid(column=2, 
-                                                            row=1, 
-                                                            sticky=(W,E))
+        self.heatmapselection, _ = OptionMenuStringVar(topfigframe, heatmapOptions,
+                                                    row=1,col=2,sticky=(W,E))
         self.heatmapselection.trace('w', self.heatmap_opt_changed)
         
-        # self.HeatMapDisplayParam = Text(topfigframe, height=1, width=8)
-        # self.HeatMapDisplayParam.insert('1.0', '')
-        # self.HeatMapDisplayParam.grid(column=3, row=1, sticky=(W,E))
-        # self.HeatMapDisplayParam.bind('<Return>', self.heatmap_opt_changed)
         
-        self.HeatMapDisplayParam = StringVar()
-        heatmapentry = Entry(topfigframe, width=8, textvariable=self.HeatMapDisplayParam)
-        heatmapentry.grid(row=1, column=3, sticky=(W,E))
-        heatmapentry.bind('<Return>', self.heatmap_opt_changed)
+        self.HeatMapDisplayParam, _ = EntryStringVar(topfigframe, width=8, row=1,
+                                            col=3, sticky=(W,E), bind_key='<Return>',
+                                            bind_func = self.heatmap_opt_changed)
+
         
         Button(topfigframe, text='Zoom to grid...', 
                command=self.heatmap_rect_zoom).grid(column=0, row=1,
@@ -422,10 +415,9 @@ class GUI(Logger):
         Label(botfigframe, text='Electrochemistry').grid(column=0, row=0)
         
         # Voltammetry view options
-        self.fig2selection = StringVar(botfigframe)
-        self.fig2typeoptmenu = OptionMenu(botfigframe, self.fig2selection, fig2Options[2], 
-                   *fig2Options, command=self.fig_opt_changed)
-        self.fig2typeoptmenu.grid(column=0, row=1, sticky=(W,E))
+        self.fig2selection, self.fig2typeoptmenu = OptionMenuStringVar(
+                                                botfigframe, fig2Options,idx=2,
+                                                row=1, col=0, sticky=(W,E))
         
         # PointsList selection options
         self.fig2ptselection = IntVar(botfigframe)
