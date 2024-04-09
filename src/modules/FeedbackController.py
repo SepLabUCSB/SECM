@@ -595,8 +595,7 @@ class FeedbackController(Logger):
             
             # Run EIS: Set DC bias
             self.log(f'Detected E0 = {E0:0.3f} V')
-            self.master.GUI.params['EIS']['E0'].delete('1.0', 'end')
-            self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E0*1000:0.1f}')
+            self.master.GUI.params['EIS']['E0'].set(f'{E0*1000:0.1f}')
             if not self.potentiostat_setup('EIS'): 
                 return None
             time.sleep(5)
@@ -641,14 +640,12 @@ class FeedbackController(Logger):
             
             
             self.log(f'Detected E0 = {E0:0.3f} V')
-            self.master.GUI.params['EIS']['E0'].delete('1.0', 'end')
-            self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E0*1000:0.1f}')
+            self.master.GUI.params['EIS']['E0'].set(f'{E0*1000:0.1f}')
             EIS_POINTS = []
             # Run 5 EIS spectra with varying Vpp
             for mVpp in [10, 20, 50, 100, 200]:
                 self.log(f'Running EIS with amplitude = {mVpp} mV')
-                self.master.GUI.params['EIS']['amp'].delete('1.0', 'end')
-                self.master.GUI.params['EIS']['amp'].insert('1.0', f'{mVpp}')
+                self.master.GUI.params['EIS']['amp'].set(f'{mVpp}')
                 if not self.potentiostat_setup('EIS'):
                     return None
                 time.sleep(5)
@@ -696,8 +693,7 @@ class FeedbackController(Logger):
             
             
             self.log(f'Detected E0 = {E0:0.3f} V')
-            self.master.GUI.params['EIS']['E0'].delete('1.0', 'end')
-            self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E0*1000:0.1f}')
+            self.master.GUI.params['EIS']['E0'].set(f'{E0*1000:0.1f}')
             if not self.potentiostat_setup('EIS'):
                 return None
             time.sleep(5)

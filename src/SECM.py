@@ -19,9 +19,8 @@ from .modules.Plotter import Plotter, ExporterGenerator
 from .modules.DataStorage import Experiment, EISDataPoint, load_from_file
 from .modules.Picomotor import PicoMotor
 from .modules.ImageCorrelator import ImageCorrelator
-from .modules.GUISetup import GUISetupMethods
+from .modules.GUISetup import GUISetupMethods, convert_to_index
 from .utils.utils import run, Logger, focus_next_widget
-# from .gui import *
 from .gui.hopping_popup import HoppingPopup
 default_stdout = sys.stdout
 default_stdin  = sys.stdin
@@ -32,34 +31,6 @@ matplotlib.use('TkAgg')
 TEST_MODE = True
 
 
-    
-'''
-TODO:
-    - image exporting
-    
-    - Bode plot options
-            
-    - check on opening new file procedure (might overwrite/ not save)
-    
-        
-    Write documentation
-        
-    HEKA control
-    - choose EIS sample rate based on max freq.
-    
-    
-
-Bugs:
-    - Starting hopping mode scan doesn't go to correct spot??
-    - Sometimes doesn't send run CV command to PATCHMASTER
-    - SerialTimeOut for xyz piezo communications
-    - Position tracking doesn't restart on abort
-    - Weird behavior running/ saving HEKA data. Possibly if aborting halfway through
-    or when saving on new file and changing target
-    - Running approach curve when PATCHMASTER isn't open raises an error
-    because master.GUI.amp_params doesn't have key 'float_gain'
-    
-'''
 
 global gl_st 
 gl_st = time.time()

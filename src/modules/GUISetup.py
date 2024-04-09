@@ -72,22 +72,26 @@ def focus_next_widget(event):
     return("break")
 
 
-def OptionMenuStringVar(frame, options,row,col,sticky,idx=0):
+def OptionMenuStringVar(frame, options,row,col,sticky,idx=0, return_widget=False):
     var = StringVar()
     menu = OptionMenu(frame, var, options[idx],*options)
     menu.grid(row=row, column=col, sticky=sticky)
-    return var, menu
+    if return_widget:
+        return var, menu
+    return var
 
 
-def OptionMenuIntVar(frame, options,row,col,sticky,idx=0):
+def OptionMenuIntVar(frame, options,row,col,sticky,idx=0, return_widget=False):
     var = IntVar()
     menu = OptionMenu(frame, var, options[idx],*options)
     menu.grid(row=row, column=col, sticky=sticky)
-    return var, menu
+    if return_widget:
+        return var, menu
+    return var
 
 
 def EntryStringVar(frame, width, row, col, sticky, default='', bind_key=None,
-                   bind_func=None, tab=False, returnTab = False):
+                   bind_func=None, tab=False, returnTab = False, return_widget=False):
     var = StringVar(value=str(default))
     entry = Entry(frame, width=width, textvariable=var)
     entry.grid(row=row, column=col, sticky=sticky)
@@ -97,7 +101,9 @@ def EntryStringVar(frame, width, row, col, sticky, default='', bind_key=None,
         entry.bind('<Return>', focus_next_widget)
     if bind_key:
         entry.bind(bind_key, bind_func)
-    return var, entry
+    if return_widget:
+        return var, entry
+    return var
 
 
 
@@ -155,15 +161,15 @@ class GUISetupMethods():
         Labels_in_column(frame, right_labels, 2, 0, (W))
         
         
-        Vhold, _ = EntryStringVar(frame, 6, 0, 1, (E,W), tab=True, returnTab=True,
+        Vhold = EntryStringVar(frame, 6, 0, 1, (E,W), tab=True, returnTab=True,
                                         default='0')
-        filter1, _ = OptionMenuStringVar(frame, filter1options, 1, 1, (E,W), 2)
-        filter2type, _ = OptionMenuStringVar(frame, filter2types, 2, 1, (W,E))
-        f2_field, _ = EntryStringVar(frame, 6, 3, 1, (W,E), tab=True,
+        filter1 = OptionMenuStringVar(frame, filter1options, 1, 1, (E,W), 2)
+        filter2type = OptionMenuStringVar(frame, filter2types, 2, 1, (W,E))
+        f2_field = EntryStringVar(frame, 6, 3, 1, (W,E), tab=True,
                                         returnTab=True, default='0.5')
-        stimfilter, _ = OptionMenuStringVar(frame, stimfilters, 4, 1, (W,E))
-        elecmode, _   = OptionMenuStringVar(frame, elecmodes, 5, 1, (W,E))
-        gain, _       = OptionMenuStringVar(frame, gains, 6, 1, (W,E), idx=8)
+        stimfilter = OptionMenuStringVar(frame, stimfilters, 4, 1, (W,E))
+        elecmode   = OptionMenuStringVar(frame, elecmodes, 5, 1, (W,E))
+        gain       = OptionMenuStringVar(frame, gains, 6, 1, (W,E), idx=8)
         
         Button(frame, text='Apply settings', command=self.set_amplifier).grid(column=1, row=7)
         
@@ -189,17 +195,17 @@ class GUISetupMethods():
         Labels_in_column(frame, left_labels, 0, 0, (E))
         Labels_in_column(frame, right_labels, 2, 0, (W))
         
-        E0, _ = EntryStringVar(frame, 6, 0, 1, (W,E), tab=True, 
+        E0 = EntryStringVar(frame, 6, 0, 1, (W,E), tab=True, 
                                returnTab=True, default= '0')
-        t0, _ = EntryStringVar(frame, 6, 1, 1, (W,E), tab=True, 
+        t0 = EntryStringVar(frame, 6, 1, 1, (W,E), tab=True, 
                                returnTab=True, default= '0.2')
-        E1, _ = EntryStringVar(frame, 6, 2, 1, (W,E), tab=True, 
+        E1 = EntryStringVar(frame, 6, 2, 1, (W,E), tab=True, 
                                returnTab=True, default= '0.5')
-        E2, _ = EntryStringVar(frame, 6, 3, 1, (W,E), tab=True, 
+        E2 = EntryStringVar(frame, 6, 3, 1, (W,E), tab=True, 
                                returnTab=True, default= '0')
-        Ef, _ = EntryStringVar(frame, 6, 4, 1, (W,E), tab=True, 
+        Ef = EntryStringVar(frame, 6, 4, 1, (W,E), tab=True, 
                                returnTab=True, default= '0')
-        v, _  = EntryStringVar(frame, 6, 5, 1, (W,E), tab=True, 
+        v  = EntryStringVar(frame, 6, 5, 1, (W,E), tab=True, 
                                returnTab=True, default= '0.1')
         
         Button(frame, text='Run CV', command = self.run_CV).grid(row=6, column=1, sticky=(W,E))
@@ -385,11 +391,11 @@ class GUISetupMethods():
         
         Label(frame, text='SECCM').grid(row=0, column=0, sticky=(W,E))
         Label(frame, text='Display:').grid(row=0, column=2, sticky=(W,E))
-        self.heatmapselection, _ = OptionMenuStringVar(frame, heatmapOptions,
+        self.heatmapselection = OptionMenuStringVar(frame, heatmapOptions,
                                                     row=1,col=2,sticky=(W,E))
         self.heatmapselection.trace('w', self.heatmap_opt_changed)
         
-        self.HeatMapDisplayParam, _ = EntryStringVar(frame, width=8, row=1,
+        self.HeatMapDisplayParam = EntryStringVar(frame, width=8, row=1,
                                             col=3, sticky=(W,E), bind_key='<Return>',
                                             bind_func = self.heatmap_opt_changed)
         Button(frame, text='Zoom to grid...', 
@@ -415,13 +421,15 @@ class GUISetupMethods():
         # Voltammetry view options
         self.fig2selection, self.fig2typeoptmenu = OptionMenuStringVar(
                                                 frame, fig2Options,idx=2,
-                                                row=1, col=0, sticky=(W,E))
+                                                row=1, col=0, sticky=(W,E),
+                                                return_widget=True)
         
         # PointsList selection options
-        self.fig2ptselection, self.fig2ptoptmenu = OptionMenuIntVar(frame, [0,], 1, 1, (W,E))                    
+        self.fig2ptselection, self.fig2ptoptmenu = OptionMenuIntVar(frame, [0,], 1, 1, (W,E),
+                                                                    return_widget=True)                    
         
         # EIS view options
-        self.EIS_view_selection, _ = OptionMenuStringVar(frame, EIS_options, 1, 2, (W,E))
+        self.EIS_view_selection = OptionMenuStringVar(frame, EIS_options, 1, 2, (W,E))
         
                        
         # Reset ADC view button
