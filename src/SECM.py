@@ -21,7 +21,7 @@ from .modules.DataStorage import Experiment, EISDataPoint, load_from_file
 from .modules.Picomotor import PicoMotor
 from .modules.ImageCorrelator import ImageCorrelator
 from .modules.GUISetup import GUISetupMethods, convert_to_index
-from .utils.utils import run, Logger, focus_next_widget
+from .utils.utils import run, Logger, threads
 from .gui.hopping_popup import HoppingPopup
 default_stdout = sys.stdout
 default_stdin  = sys.stdin
@@ -29,7 +29,7 @@ default_stderr = sys.stderr
 
 matplotlib.use('TkAgg')
 
-TEST_MODE = True
+TEST_MODE = False
 
 
 

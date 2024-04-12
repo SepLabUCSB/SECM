@@ -223,7 +223,7 @@ class GUISetupMethods():
     
     def MakeEISFrame(self, frame):
         
-        left_labels = ['DC bias:', 'Scan from...', 'To...', 'Collect:' 'Cycles:', 'Amplitude:', '']
+        left_labels = ['DC bias:', 'Scan from...', 'To...', 'Collect:', 'Cycles:', 'Amplitude:', '']
         right_labels = ['mV', 'Hz', 'Hz', 'points', '', 'mVpp', '']
         Labels_in_column(frame, left_labels, 0, 0, (E))
         Labels_in_column(frame, right_labels, 2, 0, (W))

@@ -14,16 +14,6 @@ def nearest(array, value):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
     return idx, array[idx]
-    
-
-def focus_next_widget(event):
-    widget = event.widget.tk_focusNext()
-    widget.focus()
-    try:
-        widget.select_range(0, 'end')
-    except:
-        pass
-    return("break")
 
 
 LOG_FILE = 'log/log.txt'
