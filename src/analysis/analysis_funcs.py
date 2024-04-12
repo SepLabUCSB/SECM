@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter.ttk import *
 import matplotlib
+from matplotlib.lines import Line2D
 import numpy as np
 from scipy.signal import find_peaks, savgol_filter
 
@@ -30,6 +31,8 @@ def get_functions():
                     'Shift in voltage (relative to first cycle) required to reach x current after n cycles.\nInput format: "x,n"'),
         'E0 finder': (E0_finder_analysis,
                      'Half potential of detected redox waves larger than 5 pA.\nInput: none'),
+        'Epp calculator': (Epp_finder_analysis,
+                           'Peak-to-peak separation of detected redox waves. \nInput: none'),
         'Peak integral (forward)': (forward_peak_integration,
                                     'Integral of the forward redox peak.\nInput: none'),
         'Peak integral (reverse)': (reverse_peak_integration,
@@ -92,9 +95,9 @@ def find_redox_peaks(t, V, I):
         direction = np.diff(V)[fpeak]
         res = False
         if direction > 0:   # oxidative scan for fpeak, look for reductive bpeak
-            res = True if V[bpeak] < V[fpeak] else False
+            res = True if V[bpeak] <= V[fpeak] else False
         elif direction < 0: # reductive scan for fpeak, look for more oxidative bpeak
-            res = True if V[bpeak] > V[fpeak] else False
+            res = True if V[bpeak] >= V[fpeak] else False
         return res
 
     pairs = []
@@ -270,6 +273,22 @@ def count_CV_cycles(V):
 ########                             ########
 #############################################
 
+
+def alreadyProcessed(DataPoint, DataPointStr, func, *args):
+    if not hasattr(DataPoint, 'analysis'):
+        DataPoint.analysis = {}
+    
+    if (func, *args) in DataPoint.analysis.keys():
+        return True
+    
+    if DataPointStr not in DataPoint.__repr__():
+        DataPoint.analysis[(func, *args)] = 0.0
+        return True
+    
+    return False
+    
+
+
 def CV_decay_analysis(CVDataPoint, n):
     '''
     Returns fraction current (at negative limit) decayed after n cycles
@@ -279,19 +298,9 @@ def CV_decay_analysis(CVDataPoint, n):
         true_n = 0        # DO NOT modify n or else we can't access the result in the CVDataPoint
     true_n = int(true_n)
     
-    if not hasattr(CVDataPoint, 'analysis'):
-        CVDataPoint.analysis = {}
-    
-    if (CV_decay_analysis, n) in CVDataPoint.analysis.keys():
-        # Already did this function at this condition
-        return CVDataPoint
-        
-    if 'CVDataPoint' not in CVDataPoint.__repr__():
-        val = 0.0
-        CVDataPoint.analysis[(CV_decay_analysis, n)] = val
+    if alreadyProcessed(CVDataPoint, 'CVDataPoint', CV_decay_analysis, n):
         return CVDataPoint
     
-        
     t, V, I = CVDataPoint.data
     dt = np.mean(np.diff(t[:1000]))
     t = np.arange(t[0], dt*len(t), dt)
@@ -314,17 +323,10 @@ def CV_decay_analysis(CVDataPoint, n):
 
 
 def threshold_current_analysis(CVDataPoint, thresh):
-    if not hasattr(CVDataPoint, 'analysis'):
-        CVDataPoint.analysis = {}
+    if alreadyProcessed(CVDataPoint, 'CVDataPoint', 
+                        threshold_current_analysis, thresh):
+        return CVDataPoint
         
-    if 'CVDataPoint' not in CVDataPoint.__repr__():
-        CVDataPoint.analysis[(threshold_current_analysis, thresh)] = 0.0
-        return CVDataPoint
-    
-    if (threshold_current_analysis, thresh) in CVDataPoint.analysis.keys():
-        # Already did this function at this condition
-        return CVDataPoint
-    
     
     d = {'p':'e-12',
          'n':'e-9',
@@ -358,11 +360,8 @@ def threshold_current_decay_analysis(CVDataPoint, thresh_and_n):
     Returns the change in voltage required to pass 'thresh' current after 'n'
     cycles, relative to the voltage required in the first cycle.
     '''
-    if not hasattr(CVDataPoint, 'analysis'):
-        CVDataPoint.analysis = {}
-        
-    if 'CVDataPoint' not in CVDataPoint.__repr__():
-        CVDataPoint.analysis[(threshold_current_decay_analysis, thresh_and_n)] = 0.0
+    if alreadyProcessed(CVDataPoint, 'CVDataPoint', 
+                        threshold_current_decay_analysis, thresh_and_n):
         return CVDataPoint
     
     try:
@@ -384,11 +383,7 @@ def threshold_current_decay_analysis(CVDataPoint, thresh_and_n):
         print(f"Requires both threshold and n cycles to evaluate after, i.e. '-200p,2' evaluates at -200 pA after 2 cycles")
         CVDataPoint.analysis[(threshold_current_decay_analysis, thresh_and_n)] = 0.0
         return CVDataPoint
-    
-    if (threshold_current_decay_analysis, thresh_and_n) in CVDataPoint.analysis.keys():
-        # Already did this function at this condition
-        return CVDataPoint  
-    
+        
     
     t, V, I = CVDataPoint.data
     
@@ -435,11 +430,8 @@ def threshold_current_decay_analysis(CVDataPoint, thresh_and_n):
 
 
 def E0_finder_analysis(CVDataPoint, *args):
-    if not hasattr(CVDataPoint, 'analysis'):
-        CVDataPoint.analysis = {}
-        
-    if 'CVDataPoint' not in CVDataPoint.__repr__():
-        CVDataPoint.analysis[(E0_finder_analysis, *args)] = 0.0
+    if alreadyProcessed(CVDataPoint, 'CVDataPoint', 
+                        E0_finder_analysis, *args):
         return CVDataPoint
     
     t, V, I = CVDataPoint.data
@@ -452,19 +444,62 @@ def E0_finder_analysis(CVDataPoint, *args):
     
     E0 = (V[fpeak] + V[bpeak])/2
     
-    pts = matplotlib.lines.Line2D( [V[fpeak], V[bpeak]],
-                                   [I[fpeak], I[bpeak]],
-                                   linestyle='', marker='o', color='red')
-    pts.draw_on_type = 'I vs V'
-    ln  = matplotlib.lines.Line2D( [E0, E0],
-                                   [I[fpeak], I[bpeak]], color='black')
-    ln.draw_on_type = 'I vs V'
-    avgln = matplotlib.lines.Line2D( V, I, color='navy')
-    avgln.draw_on_type = 'I vs V'
+    # Plotting
+    x0, x1 = V[fpeak], V[bpeak]
+    y0, y1 = I[fpeak], I[bpeak]
+    
+    artists = [
+        # Peak markers
+        Line2D( [x0, x1], [y0, y1], ls='', marker='o', color='red'),
+        # E1/2 line
+        Line2D( [E0, E0], [y0, y1], color='black'),
+        # Filtered current
+        Line2D( V, I, color='navy'),
+        ]
+    
+    for artist in artists:
+        artist.draw_on_type = 'I vs V'
     CVDataPoint.analysis[(E0_finder_analysis, *args)] = E0
-    CVDataPoint.artists = [pts, ln, avgln]
+    CVDataPoint.artists = artists
     return CVDataPoint
 
+
+
+def Epp_finder_analysis(CVDataPoint, *args):
+    if alreadyProcessed(CVDataPoint, 'CVDataPoint', 
+                        Epp_finder_analysis, *args):
+        return CVDataPoint
+    
+    t, V, I = CVDataPoint.data
+    I = savgol_filter(I, 15, 1)  # Do a little filtering
+    peaks = find_redox_peaks(t,V,I)
+    if not peaks:
+        CVDataPoint.analysis[(Epp_finder_analysis, *args)] = 0.0
+        return CVDataPoint
+    fpeak, bpeak = peaks
+    
+    Epp = V[fpeak] - V[bpeak]
+    
+    # Plotting
+    x0, x1 = V[fpeak], V[bpeak]
+    y0, y1, y_mid = I[fpeak], I[bpeak], 0
+
+    artists = [
+        # Peak markers
+        Line2D( [x0, x1], [y0, y1], ls='', marker='o', color='red'),
+        # Drop lines showing p-p separation
+        Line2D( (x0, x0), (y0, y_mid), ls=':', color='orange'),
+        Line2D( (x0, x1), (y_mid, y_mid), color='orange'),
+        Line2D( (x1, x1), (y1, y_mid), ls=':', color='orange'),
+        # Averaged current
+        Line2D(V, I, color='navy'),
+           ]
+    for artist in artists:
+        artist.draw_on_type = 'I vs V'
+        
+    CVDataPoint.analysis[(Epp_finder_analysis, *args)] = Epp
+    CVDataPoint.artists = artists
+    return CVDataPoint
 
 
 
@@ -544,14 +579,12 @@ def _peak_integration(CVDataPoint):
     reverse_integral = integrate(t, I, *rbounds)
     
     
-    fln  = matplotlib.lines.Line2D([V[fbounds[0]], V[fbounds[1]]],
-                                   [I[fbounds[0]], I[fbounds[1]]], 
-                                   linestyle='--', color='orange',
-                                   marker='o')
-    bln  = matplotlib.lines.Line2D([V[rbounds[0]], V[rbounds[1]]],
-                                   [I[rbounds[0]], I[rbounds[1]]], 
-                                   linestyle='--', color='orange',
-                                   marker='o')
+    fln  = Line2D([V[fbounds[0]], V[fbounds[1]]],
+                  [I[fbounds[0]], I[fbounds[1]]], 
+                  linestyle='--', color='orange', marker='o')
+    bln  = Line2D([V[rbounds[0]], V[rbounds[1]]],
+                  [I[rbounds[0]], I[rbounds[1]]], 
+                  linestyle='--', color='orange', marker='o')
     smoothed_data = matplotlib.lines.Line2D(V, I, color='navy')
     
     fln.draw_on_type = 'I vs V'

@@ -6,6 +6,63 @@ from PIL import Image
 
 PIEZO_COMPORT = 'COM7'
 
+
+def get_xy_coords(length, n_pts, point_array=None, starting_coord=0):
+    '''
+    length: float, side length of grid in um
+    n_pts: int, for n_pts x n_pts grid
+    point_array: n x n array of bool, whether or not to approach at each point
+                 (used for image patterning)
+    starting_coord: float, 0 -> 80, start grid at (starting_coord, starting_coord)
+    '''
+    # Generate ordered list of xy coordinates for a scan
+    # ----->
+    # <-----
+    # ----->
+    if type(point_array) != np.ndarray:
+        # If point_array == None, approach at every point on the grid
+        point_array = np.array([
+                                np.array([True for _ in range(n_pts)])
+                                for _ in range(n_pts)
+                                ])
+        
+    points = []
+    order  = []
+    coords = np.linspace(starting_coord, length, n_pts)
+    
+    reverse = False
+    cnt = 0
+    for j, y in reversed(list(enumerate(coords))):
+        s = ''
+        o = ''
+        
+        if reverse:
+            for i, x in reversed(list(enumerate(coords))):
+                if not point_array[i][j]:
+                    continue
+                points.append((x,y))
+                order.append((i,j))
+                # s = f'({x:0.0f}, {y:0.0f}) ' + s
+                s = f'{str(cnt).ljust(3)} ' + s
+                o = f'({i}, {j}) ' + o
+                cnt += 1
+            reverse = False
+        else:
+            for i, x in enumerate(coords):
+                if not point_array[i][j]:
+                    continue
+                points.append((x,y))
+                order.append((i,j))
+                o += f'({i}, {j}) '
+                s += f'{str(cnt).ljust(3)} '
+                # s += f'({x:0.0f}, {y:0.0f}) '
+                cnt += 1
+            reverse = True
+        # print(s)
+    
+    return points, order
+
+
 class Piezo(Logger):
     
     def __init__(self, master):
@@ -34,6 +91,7 @@ class Piezo(Logger):
     def stop(self):
         if not hasattr(self, 'port'):
             return
+        self.goto(40, 40, 40)
         self.stop_monitoring()
         self.port.close()
         self.log('Serial port closed')
@@ -324,51 +382,10 @@ class Piezo(Logger):
         # ----->
         # <-----
         # ----->
-        points = []
-        order  = []
-        coords = np.linspace(self.starting_coords[0], 
-                             self.starting_coords[0] + length, 
-                             n_points)
         
-        if type(point_array) != np.ndarray:
-            # If point_array == None, approach at every point on the grid
-            point_array = np.array([
-                                    np.array([True for _ in range(n_points)])
-                                    for _ in range(n_points)
-                                    ])
-            
+        return get_xy_coords(length, n_points, point_array, 
+                             self.starting_coords[0])
         
-        reverse = False
-        cnt = 0
-        for j, y in reversed(list(enumerate(coords))):
-            s = ''
-            o = ''
-            
-            if reverse:
-                for i, x in reversed(list(enumerate(coords))):
-                    if not point_array[i][j]:
-                        continue
-                    points.append((x,y))
-                    order.append((i,j))
-                    # s = f'({x:0.0f}, {y:0.0f}) ' + s
-                    s = f'{str(cnt).ljust(3)} ' + s
-                    o = f'({i}, {j}) ' + o
-                    cnt += 1
-                reverse = False
-            else:
-                for i, x in enumerate(coords):
-                    if not point_array[i][j]:
-                        continue
-                    points.append((x,y))
-                    order.append((i,j))
-                    o += f'({i}, {j}) '
-                    s += f'{str(cnt).ljust(3)} '
-                    # s += f'({x:0.0f}, {y:0.0f}) '
-                    cnt += 1
-                reverse = True
-            # print(s)
-        
-        return points, order
 
     def get_xy_coords_from_image(self, file):
         '''

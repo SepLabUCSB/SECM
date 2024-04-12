@@ -3,6 +3,7 @@ from io import StringIO
 import os
 import pickle
 import numpy as np
+from .Piezo import get_xy_coords
 
 
 def nearest(arr, val):
@@ -11,33 +12,7 @@ def nearest(arr, val):
     return idx, arr[idx]
 
 
-def get_xy_coords(length, n_pts):
-        # Generate ordered list of xy coordinates for a scan
-        # ----->
-        # <-----
-        # ----->
-        # !!!          NOW DONE BY PIEZO CLASS       !!!
-        # !!! ONLY HERE FOR DEFAULT EXPERIMENT INIT  !!!
-        points = []
-        order  = []
-        coords = np.linspace(0, length, n_pts)
-        
-        reverse = False
-        # i, j = 0, 0 # i -> x, j -> y
-        for i, y in enumerate(coords):
-            if reverse:
-                for j, x in reversed(list(enumerate(coords))):
-                    points.append((x,y))
-                    order.append((i,j))
-                reverse = False
-            else:
-                for j, x in enumerate(coords):
-                    points.append((x,y))
-                    order.append((i,j))
-                reverse = True
-            # j += 1
-        
-        return points, order
+
 
 
 class Experiment:

@@ -1,6 +1,7 @@
 
 figure.figsize: 5, 5
 figure.dpi: 300
+figure.constrained_layout.use: True
 font.family: Calibri
 font.size: 20
 mathtext.default: regular
