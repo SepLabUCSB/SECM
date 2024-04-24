@@ -134,7 +134,7 @@ def unit_label(d:float,dec=0):
         s = f"{scaled:0.{dec}f}".rjust(4, ' ') + f" {prefix}"
 
     else:
-        s = f"{d:0.2f}".rjust(4, ' ')
+        s = f"{d:0.4f}".rjust(4, ' ')
     return s
 
 

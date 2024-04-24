@@ -19,10 +19,9 @@ from .modules.Plotter import Plotter, ExporterGenerator
 from .modules.DataStorage import Experiment, EISDataPoint, load_from_file
 from .modules.Picomotor import PicoMotor
 from .modules.ImageCorrelator import ImageCorrelator
+from .modules.GUISetup import GUISetupMethods, convert_to_index
 from .utils.utils import run, Logger, focus_next_widget
-from .gui import *
 from .gui.hopping_popup import HoppingPopup
-
 default_stdout = sys.stdout
 default_stdin  = sys.stdin
 default_stderr = sys.stderr
@@ -32,34 +31,6 @@ matplotlib.use('TkAgg')
 TEST_MODE = False
 
 
-    
-'''
-TODO:
-    - image exporting
-    
-    - Bode plot options
-            
-    - check on opening new file procedure (might overwrite/ not save)
-    
-        
-    Write documentation
-        
-    HEKA control
-    - choose EIS sample rate based on max freq.
-    
-    
-
-Bugs:
-    - Starting hopping mode scan doesn't go to correct spot??
-    - Sometimes doesn't send run CV command to PATCHMASTER
-    - SerialTimeOut for xyz piezo communications
-    - Position tracking doesn't restart on abort
-    - Weird behavior running/ saving HEKA data. Possibly if aborting halfway through
-    or when saving on new file and changing target
-    - Running approach curve when PATCHMASTER isn't open raises an error
-    because master.GUI.amp_params doesn't have key 'float_gain'
-    
-'''
 
 global gl_st 
 gl_st = time.time()
@@ -245,7 +216,7 @@ class PrintLogger():
 
 
 
-class GUI(Logger):
+class GUI(Logger, GUISetupMethods):
     '''
     Graphical user interface
     '''
@@ -300,387 +271,64 @@ class GUI(Logger):
         
         menu_image_corr.add_command(label='Load SEM image...', command=self.load_SEM_image)
         
-                
-        # Left panel: potentiostat/ SECM parameters
-        leftpanel = Frame(self.root)
-        leftpanel.grid(row=1, column=0, sticky=(N,S,W,E))
         
-        # Right panel: Figures
+        ### SET UP FRAMES ###
+        
+        leftpanel  = Frame(self.root)
         rightpanel = Frame(self.root)
-        rightpanel.grid(row=1, column=1, sticky=(N,S,W,E))
-        
-        # Bottom panel: Console
-        bottompanel = Frame(self.root)
-        bottompanel.grid(row=2, column=0, columnspan=2, sticky=(N,W,E))
-        console = Text(bottompanel, width=125, height=10)
+        ConsoleFrame = Frame(self.root)
+        leftpanel.grid(row=0, column=0, sticky=(N,S,E,W))
+        rightpanel.grid(row=0, column=1, sticky=(N,S,E,W))
+        ConsoleFrame.grid(row=1, column=0, columnspan=2, sticky=(N,S,E,W))
+        console = Text(ConsoleFrame, width=125, height=10)
         console.grid(row=0, column=0, sticky=(N,S,E,W))
-        pl = PrintLogger(console)
-        sys.stdout = pl
+        
+ 
+        StopButtonFrame = Frame(leftpanel)
+        PstatFrame      = Frame(leftpanel)
+        SECMFrame       = Frame(leftpanel)
+        PiezoFrame      = Frame(leftpanel)
+        StopButtonFrame.grid(row=0, column=0, sticky=(N,S,E,W))
+        PstatFrame.grid(row=1, column=0, sticky=(N,S,E,W))
+        SECMFrame.grid(row=2, column=0, sticky=(N,S,E,W))
+        PiezoFrame.grid(row=3, column=0, sticky=(N,S,E,W))
+        
+        HeatmapFrame = Frame(rightpanel)
+        EchemFrame   = Frame(rightpanel)
+        OptionFrame  = Frame(rightpanel)
+        HeatmapFrame.grid(row=0, column=0, sticky=(N,S,E,W))
+        Separator(rightpanel, orient='vertical').grid(row=0, column=1, 
+                                                      padx=5,sticky=(N,S))
+        EchemFrame.grid(row=0, column=2, sticky=(N,S,E,W))
+        Separator(rightpanel, orient='horizontal').grid(row=1, column=0, 
+                                                        columnspan=10, pady=5,
+                                                        sticky=(W,E))
+        OptionFrame.grid(row=2, column=0, columnspan=10, sticky=(N,S,E,W))
         
         
-        abortbuttonframe = Frame(leftpanel)
-        abortbuttonframe.grid(row=0, column=0)
-        Button(abortbuttonframe, text='Stop', command=self.master.abort,
-               width=50).grid(row=0, column=0, sticky=(W,E))
         
-        timeestframe = Frame(leftpanel)
-        timeestframe.grid(row=1, column=0)
-        Label(timeestframe, text='Estimated time remaining: ').grid(
-            row=0, column=0, sticky=(W))
-        self._time_est = StringVar()
-        Label(timeestframe, textvariable=self._time_est, width=20).grid(
-            row=0, column=1, sticky=(W), columnspan=2)
+        # All inherited from GUISetupMethods
+        self.MakeHeatmapFrame(HeatmapFrame)
+        self.MakeEchemFrame(EchemFrame)
         
-        pstat_frame = Frame(leftpanel)
-        pstat_frame.grid(row=2, column=0, sticky=(N,S,W,E))
-        secm_frame = Frame(leftpanel)
-        secm_frame.grid(row=3, column=0, sticky=(N,S,W,E))
-        piezo_frame = Frame(leftpanel)
-        piezo_frame.grid(row=4, column=0, sticky=(N,S,W,E))
-        
-                   
-        ######################################
-        #####                            #####
-        #####          FIGURES           #####                            
-        #####                            #####
-        ######################################
-        
-        ## Figures ##
-        topfigframe = Frame(rightpanel)
-        topfigframe.grid(row=0, column=0)
-        
-        Separator(rightpanel,orient='vertical').grid(
-            row=0, column=1, padx=5, sticky=(N,S))
-        
-        botfigframe = Frame(rightpanel)
-        botfigframe.grid(row=0, column=2)
-        
-        self.topfig = plt.Figure(figsize=(4.5,4.5), dpi=75)
-        self.botfig = plt.Figure(figsize=(4.5,4.5), dpi=75)
-        
-        self.topfig.add_subplot(111)
-        self.botfig.add_subplot(111)
-        
-        Separator(rightpanel, orient='horizontal').grid(
-            row=1, column=0, columnspan=10, pady=5, sticky=(W,E))
-        
-        
-        ###############################
-        ### HEATMAP DISPLAY OPTIONS ###
-        ###############################
-        
-        Label(topfigframe, text='SECM').grid(column=0, row=0, 
-                                                  sticky=(W,E))
-        
-        Label(topfigframe, text='Display:').grid(column=2, row=0,
-                                                 sticky=(W,E))
-        
-        heatmapOptions = [
-            'Max. current',
-            'Current @ ... (V)',
-            'Current @ ... (t)',
-            'Z height',
-            'Avg. current',
-            'Analysis func.'
-            ]
-        self.heatmapselection = StringVar(topfigframe)
-        OptionMenu(topfigframe, self.heatmapselection, 
-                   heatmapOptions[0], *heatmapOptions).grid(column=2, 
-                                                            row=1, 
-                                                            sticky=(W,E))
-        self.heatmapselection.trace('w', self.heatmap_opt_changed)
-        
-        # self.HeatMapDisplayParam = Text(topfigframe, height=1, width=8)
-        # self.HeatMapDisplayParam.insert('1.0', '')
-        # self.HeatMapDisplayParam.grid(column=3, row=1, sticky=(W,E))
-        # self.HeatMapDisplayParam.bind('<Return>', self.heatmap_opt_changed)
-        
-        self.HeatMapDisplayParam = StringVar()
-        heatmapentry = Entry(topfigframe, width=8, textvariable=self.HeatMapDisplayParam)
-        heatmapentry.grid(row=1, column=3, sticky=(W,E))
-        heatmapentry.bind('<Return>', self.heatmap_opt_changed)
-        
-        Button(topfigframe, text='Zoom to grid...', 
-               command=self.heatmap_rect_zoom).grid(column=0, row=1,
-                                                    sticky=(W,E))
-        Button(topfigframe, text='Set new area',
-               command=self.set_new_area).grid(column=1, row=1,
-                                               sticky=(W,E))
-        
-        FigureCanvasTkAgg(self.topfig, master=topfigframe
-                          ).get_tk_widget().grid(
-                                              row=2, column=0,
-                                              columnspan=10)
-        
-        
-        ##################    
-        #### FIGURE 2 ####
-        ##################    
-                 
-        fig2Options = ['V vs t','I vs t','I vs V',]
-        EIS_options = ['Nyquist', '|Z| Bode', 'Phase Bode']
-        Label(botfigframe, text='Electrochemistry').grid(column=0, row=0)
-        
-        # Voltammetry view options
-        self.fig2selection = StringVar(botfigframe)
-        self.fig2typeoptmenu = OptionMenu(botfigframe, self.fig2selection, fig2Options[2], 
-                   *fig2Options, command=self.fig_opt_changed)
-        self.fig2typeoptmenu.grid(column=0, row=1, sticky=(W,E))
-        
-        # PointsList selection options
-        self.fig2ptselection = IntVar(botfigframe)
-        self.fig2ptoptmenu = OptionMenu(botfigframe, self.fig2ptselection, 0, 
-                    *[0,], command=self.fig_opt_changed)
-        self.fig2ptoptmenu.grid(column=1, row=1, sticky=(W,E))                      
-        
-        # EIS view options
-        self.EIS_view_selection = StringVar()    
-        OptionMenu(botfigframe, self.EIS_view_selection, EIS_options[0],
-                   *EIS_options, command=self.fig_opt_changed).grid(
-                       column=2, row=1, sticky=(W,E))
-                       
-        # Reset ADC view button
-        Button(botfigframe, text='View ADC', 
-               command=self.reset_ADC_monitor).grid(
-                   column=3, row=1, sticky=(E))
-                       
-        FigureCanvasTkAgg(self.botfig, master=botfigframe
-                          ).get_tk_widget().grid(
-                                              row=2, column=0,
-                                              columnspan=10)        
-         
         # Initialize plotter
-        Plotter(self.master, self.topfig, self.botfig)
+        Plotter(self.master, self.HeatmapFig, self.EchemFig)
         
-                              
-        ###############################    
-        #### HEATMAP IMAGE OPTIONS ####
-        ###############################
-        
-        bottom_menu_frame = Frame(rightpanel)
-        bottom_menu_frame.grid(row=2, column=0, sticky=(N,W,S,E))
-        
-        HEATMAP_TABS = Notebook(bottom_menu_frame)
-    
-        heatmapscaleframe = Frame(HEATMAP_TABS)
-        heatmapcolorframe = Frame(HEATMAP_TABS)
-               
-        ### Scaling ###
-        heatmapscaleframe.grid(row=2, column=0)
-        self.heatmap_min_val = StringVar(value='0')
-        self.heatmap_max_val = StringVar(value='0')
-        Button(heatmapscaleframe, text='Zoom out', 
-               command=self.master.Plotter.Heatmap.zoom_out).grid(
-               row=1, column=2, sticky=(W,E))
-        Button(heatmapscaleframe, text='Zoom in', 
-               command=self.master.Plotter.Heatmap.zoom_in).grid(
-               row=1, column=3, sticky=(W,E))
-        
-        Button(heatmapscaleframe, text='-', width=1,
-               command=self.master.Plotter.Heatmap.zoom_lower_subt).grid(
-               row=2, column=0, sticky=(W,E))  
-        Button(heatmapscaleframe, text='+', width=1,
-               command=self.master.Plotter.Heatmap.zoom_lower_add).grid(
-               row=2, column=1, sticky=(W,E))         
-        _min_entry = Entry(heatmapscaleframe, textvariable=self.heatmap_min_val, width=5)
-        _min_entry.grid(row=2, column=2, sticky=(W,E))
-        _min_entry.bind('<Tab>', focus_next_widget)
-        _min_entry.bind('<Return>', self.master.Plotter.Heatmap.apply_minmax_fields)
-        
-        _max_entry = Entry(heatmapscaleframe, textvariable=self.heatmap_max_val, width=5)
-        _max_entry.grid(row=2, column=3, sticky=(W,E))
-        _max_entry.bind('<Tab>', focus_next_widget)
-        _max_entry.bind('<Return>', self.master.Plotter.Heatmap.apply_minmax_fields)
-        Button(heatmapscaleframe, text='-', width=1,
-               command=self.master.Plotter.Heatmap.zoom_upper_subt).grid(
-               row=2, column=4)
-        Button(heatmapscaleframe, text='+', width=1,
-               command=self.master.Plotter.Heatmap.zoom_upper_add).grid(
-               row=2, column=5)
+        self.MakeStopButtonFrame(StopButtonFrame)
+        self.MakePstatFrame(PstatFrame)
+        self.MakeSECMFrame(SECMFrame)
+        self.MakePiezoFrame(PiezoFrame)
+        self.MakeOptionFrame(OptionFrame)
+                
         
         
-        Button(heatmapscaleframe, text='Apply', 
-               command=self.master.Plotter.Heatmap.apply_minmax_fields).grid(
-               row=3, column=2, sticky=(W,E))
-        Button(heatmapscaleframe, text='Reset', 
-               command=self.master.Plotter.Heatmap.cancel_popup).grid(
-               row=3, column=3, sticky=(W,E))
-                   
-                   
-        ### Color map ###
-        cmaps = ['viridis', 'hot', 'gist_gray', 'afmhot', 'plasma', 'inferno', 
-                 'magma', 'cividis','Greys', 'Purples', 'Blues', 'Greens', 
-                 'Oranges', 'Reds', 'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 
-                 'BuPu','GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn',
-                 'PiYG', 'PRGn', 'BrBG', 'PuOr', 'RdGy', 'RdBu', 'RdYlBu',
-                 'RdYlGn', 'coolwarm', 'bwr']
-        
-        
-        self.heatmap_cmap = StringVar()
-        OptionMenu(heatmapcolorframe, self.heatmap_cmap, cmaps[0], *cmaps, 
-                   command=self.master.Plotter.Heatmap.update_colormap).grid(
-                       row=0, column=1, columnspan=2)
-        
-        self.heatmap_cmap_minval = StringVar(value='0')
-        self.heatmap_cmap_maxval = StringVar(value='1')
-        Label(heatmapcolorframe, text='Min: ').grid(row=1, column=0, sticky=(W,E))
-        _cm_lower = Entry(heatmapcolorframe, textvariable=self.heatmap_cmap_minval, width=3)
-        _cm_lower.grid(row=1, column=1, sticky=(W,E))
-        _cm_lower.bind('<Tab>', focus_next_widget)
-        _cm_lower.bind('<Return>', self.master.Plotter.Heatmap.update_colormap)
-        Label(heatmapcolorframe, text='Max: ').grid(row=1, column=2, sticky=(W,E))
-        _cm_upper = Entry(heatmapcolorframe, textvariable=self.heatmap_cmap_maxval, width=3)
-        _cm_upper.grid(row=1, column=3, sticky=(W,E))
-        _cm_upper.bind('<Tab>', focus_next_widget)
-        _cm_upper.bind('<Return>', self.master.Plotter.Heatmap.update_colormap)
-        Button(heatmapcolorframe, text='Apply', command=self.master.Plotter.Heatmap.update_colormap).grid(
-            row=2, column=1, columnspan=2)
-        
-  
-                   
-        HEATMAP_TABS.add(heatmapscaleframe, text='Heatmap Scale')
-        HEATMAP_TABS.add(heatmapcolorframe, text='Colors')
-        HEATMAP_TABS.pack(expand=1, fill='both')
-        
-        
-        bottom_cmd_frame = Frame(rightpanel)
-        bottom_cmd_frame.grid(row=3, column=0, sticky=(N,S,W,E))
-        cmd_tab = Notebook(bottom_cmd_frame)
-        cmd_frame = Frame(cmd_tab)
-        
-        self.heka_command = StringVar()
-        _cmd_entry = Entry(cmd_frame, width=25, textvariable=self.heka_command)
-        _cmd_entry.grid(row=0, column=0, sticky=(E,W))
-        _cmd_entry.bind('<Return>', self.send_heka_command)
-        Button(cmd_frame, text='Send', command=self.send_heka_command).grid(
-            row=0, column=1, sticky=(E,W))
-        
-        cmd_tab.add(cmd_frame, text='Send HEKA Command')
-        cmd_tab.pack(expand=1, fill='both')
-        
-        
-        
-        
-
-        ######################################
-        #####                            #####
-        #####   POTENTIOSTAT CONTROLS    #####                            
-        #####                            #####
-        ######################################
-        
-        
-        PSTAT_TABS = Notebook(pstat_frame)
-        
-        amplifier_control = Frame(PSTAT_TABS)
-        cv_control        = Frame(PSTAT_TABS)
-        eis_control       = Frame(PSTAT_TABS)
-        ca_control        = Frame(PSTAT_TABS)
-        
-        PSTAT_TABS.add(amplifier_control, text='Amplifier')
-        PSTAT_TABS.add(cv_control, text='  CV  ')
-        PSTAT_TABS.add(eis_control, text='  EIS  ')
-        PSTAT_TABS.add(ca_control, text='  CA  ')
-        PSTAT_TABS.pack(expand=1, fill='both')
-        
-        
-        self.params['CV'] = make_CV_window(self, cv_control)
-        self.params['amp'] = make_amp_window(self, amplifier_control)
-        self.params['EIS'] = make_EIS_window(self, eis_control)
-        make_CA_window(self, ca_control)
-        
-        self.amp_params = convert_to_index(self.params['amp'])
-        ###  TODO: UNCOMMENT ME FOR FINAL CONFIG. STARTUP FROM KNOWN AMP. STATE ###
-        # self.set_amplifier()
-        ######################
-    
-    
-    
-    
-    
-        ######################################
-        #####                            #####
-        #####       SECM CONTROLS        ##### 
-        #####                            #####
-        ######################################
-    
-    
-        SECM_TABS = Notebook(secm_frame)
-        
-        approach_curve = Frame(SECM_TABS)
-        hopping_mode   = Frame(SECM_TABS)
-        
-        SECM_TABS.add(approach_curve, text=' Approach Curve ')
-        SECM_TABS.add(hopping_mode, text=' Hopping ')
-        SECM_TABS.pack(expand=1, fill='both')
-        SECM_TABS.select(approach_curve)
-        
-        
-        self.params['approach'] = make_approach_window(self, approach_curve)
-        self.params['hopping']  = make_hopping_window(self, hopping_mode)
-        
-        
-        ######################################
-        #####                            #####
-        #####      PIEZO CONTROLS        ##### 
-        #####                            #####
-        ######################################
-        
-        PIEZO_TABS = Notebook(piezo_frame)
-        piezo_control = Frame(PIEZO_TABS)
-        z_piezo_control = Frame(PIEZO_TABS)
-        piezo_control.grid(row=0, column=0, sticky=(W,E))
-        
-        self._x_display = StringVar()
-        self._y_display = StringVar()
-        self._z_display = StringVar()
-        
-        self._x_set = StringVar(value='0')
-        self._y_set = StringVar(value='0')
-        self._z_set = StringVar(value='0')
-        
-        Label(piezo_control, text='  X:').grid(row=0, column=0, sticky=(W,E))
-        Label(piezo_control, textvariable=self._x_display).grid(row=0, column=1, sticky=(W,E))
-        Label(piezo_control, text='  Y:').grid(row=0, column=2, sticky=(W,E))
-        Label(piezo_control, textvariable=self._y_display).grid(row=0, column=3, sticky=(W,E))
-        Label(piezo_control, text='  Z:').grid(row=0, column=4, sticky=(W,E))
-        Label(piezo_control, textvariable=self._z_display).grid(row=0, column=5, sticky=(W,E))
-        Label(piezo_control, text= ' (μm)').grid(row=0, column=6, sticky=(W))
-        
-        Entry(piezo_control, textvariable=self._x_set, width=6).grid(row=1, column=0, columnspan=2, sticky=(W,E))
-        Entry(piezo_control, textvariable=self._y_set, width=6).grid(row=1, column=2, columnspan=2, sticky=(W,E))
-        Entry(piezo_control, textvariable=self._z_set, width=6).grid(row=1, column=4, columnspan=2, sticky=(W,E))
-        Button(piezo_control, text='Set', command=self.piezo_goto).grid(row=1, column=6, sticky=(W,E))
-        
-        Button(piezo_control, text='Restart Position Monitoring', command=self.piezo_reading_reset).grid(
-            row=2, column=0, columnspan=7, sticky=(W,E))
-        
-        self._z_piezosteps  = StringVar(value='0')
-        self._y_piezosteps  = StringVar(value='0')
-        
-        Label(z_piezo_control, text='Z Steps:').grid(row=0, column=0, sticky=(W,E))
-        Entry(z_piezo_control, textvariable=self._z_piezosteps, width=8).grid(row=0, column=1, sticky=(W,E))
-        Button(z_piezo_control, text='Go Z', command=self.z_piezo_go).grid(row=0, column=2, sticky=(W,E))
-        
-        Label(z_piezo_control, text='Y Steps:').grid(row=1, column=0, sticky=(W,E))
-        Entry(z_piezo_control, textvariable=self._y_piezosteps, width=8).grid(row=1, column=1, sticky=(W,E))
-        Button(z_piezo_control, text='Go Y', command=self.y_piezo_go).grid(row=1, column=2, sticky=(W,E))
-        
-        Label(z_piezo_control, text='(1000 steps = ~30 μm)').grid(row=0, column=3, sticky=(W))
-        Button(z_piezo_control, text='Stop', command=self.z_piezo_stop).grid(row=2, column=1, columnspan=2, sticky=(W,E))
-        
-        
-        PIEZO_TABS.add(piezo_control, text='Piezo')
-        PIEZO_TABS.add(z_piezo_control, text='Coarse Piezos')
-        PIEZO_TABS.pack(expand=1, fill='both')
-        
-        
-    
-        
+        # Send print messages to the console
+        sys.stdout = PrintLogger(console)
         
         # Collect all settings for saving/ loading
         self.__settings = {
             'heatmapselection': self.heatmapselection,          # StringVar
-            'HeatMapDisplayParam': self.HeatMapDisplayParam,    # Text
+            'HeatMapDisplayParam': self.HeatMapDisplayParam,    # StringVar
             'HeatMapColorMap': self.heatmap_cmap,               # StringVar
             'Heatmap_minval': self.heatmap_cmap_minval,         # StringVar
             'Heatmap_maxval': self.heatmap_cmap_maxval,         # StringVar
@@ -1049,12 +697,12 @@ class GUI(Logger):
     
     def get_CV_params(self):
         cv_params = self.params['CV'].copy()
-        E0 = cv_params['E0'].get('1.0', 'end')
-        E1 = cv_params['E1'].get('1.0', 'end')
-        E2 = cv_params['E2'].get('1.0', 'end')
-        E3 = cv_params['Ef'].get('1.0', 'end')
-        v  = cv_params['v'].get('1.0', 'end')
-        t0 = cv_params['t0'].get('1.0', 'end')
+        E0 = cv_params['E0'].get()
+        E1 = cv_params['E1'].get()
+        E2 = cv_params['E2'].get()
+        E3 = cv_params['Ef'].get()
+        v  = cv_params['v'].get()
+        t0 = cv_params['t0'].get()
         vals = [E0, E1, E2, E3, v, t0]
         try:
             E0, E1, E2, E3, v, t0 = [float(val) for val in vals]
@@ -1082,12 +730,12 @@ class GUI(Logger):
     
     def get_EIS_params(self):
         eis_params = self.params['EIS'].copy()
-        E0      = eis_params['E0'].get('1.0', 'end')
-        f0      = eis_params['f0'].get('1.0', 'end')
-        f1      = eis_params['f1'].get('1.0', 'end')
-        n_pts   = eis_params['n_pts'].get('1.0', 'end')
-        n_cycles= eis_params['n_cycles'].get('1.0', 'end')
-        amp     = eis_params['amp'].get('1.0', 'end')
+        E0      = eis_params['E0'].get()
+        f0      = eis_params['f0'].get()
+        f1      = eis_params['f1'].get()
+        n_pts   = eis_params['n_pts'].get()
+        n_cycles= eis_params['n_cycles'].get()
+        amp     = eis_params['amp'].get()
         vals = [E0, f0, f1, n_pts, n_cycles, amp]
         try:
             E0, f0, f1, n_pts, n_cycles, amp = [float(val) for val in vals]
@@ -1146,10 +794,10 @@ class GUI(Logger):
         self.reset_ADC_monitor()
         self.set_amplifier()
         
-        height = self.params['approach']['z_height'].get('1.0', 'end')
+        height = self.params['approach']['z_height'].get()
         height  = float(height)
         
-        step_size = self.params['approach']['step_size'].get('1.0', 'end')
+        step_size = self.params['approach']['step_size'].get()
         step_size = float(step_size)/1000 # Convert nm -> um
 
         func = partial(self.master.FeedbackController.approach,
@@ -1320,9 +968,6 @@ class GUI(Logger):
         self.master.PicoMotor.halt()
         return
     
-    def send_heka_command(self, cmd=None):
-        cmd = self.heka_command.get()
-        self.master.HekaWriter.send_command(cmd)
         
             
 

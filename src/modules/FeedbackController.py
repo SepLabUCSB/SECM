@@ -219,9 +219,9 @@ class FeedbackController(Logger):
             return
         
         # Wait for potential to equilibrate
-        voltage = self.master.GUI.params['approach']['voltage'].get('1.0', 'end')
+        voltage = self.master.GUI.params['approach']['voltage'].get()
         voltage = float(voltage) 
-        step_size = self.master.GUI.params['approach']['step_size'].get('1.0', 'end')
+        step_size = self.master.GUI.params['approach']['step_size'].get()
         step_size = float(step_size)/1000 # Convert nm -> um
 
         self.Piezo.goto(80,80,height)
@@ -274,8 +274,8 @@ class FeedbackController(Logger):
         '''
         
         # Get cutoff current from GUI
-        voltage = self.master.GUI.params['approach']['voltage'].get('1.0', 'end')
-        cutoff  = self.master.GUI.params['approach']['cutoff'].get('1.0', 'end')
+        voltage = self.master.GUI.params['approach']['voltage'].get()
+        cutoff  = self.master.GUI.params['approach']['cutoff'].get()
         rel_opt = self.master.GUI.params['approach']['rel_current'].get()
         try:
             voltage = float(voltage)
@@ -366,12 +366,12 @@ class FeedbackController(Logger):
         
         '''
         # Pull parameters from GUI
-        length = params['size'].get('1.0', 'end')
-        height = params['Z'].get('1.0', 'end')
-        n_pts  = params['n_pts'].get('1.0', 'end')
+        length = params['size'].get()
+        height = params['Z'].get()
+        n_pts  = params['n_pts'].get()
         expt_type = params['method'].get()
         
-        step_size = self.master.GUI.params['approach']['step_size'].get('1.0', 'end')
+        step_size = self.master.GUI.params['approach']['step_size'].get()
         forced_step_size = float(step_size)/1000 # Convert nm -> um
 
         
@@ -595,8 +595,7 @@ class FeedbackController(Logger):
             
             # Run EIS: Set DC bias
             self.log(f'Detected E0 = {E0:0.3f} V')
-            self.master.GUI.params['EIS']['E0'].delete('1.0', 'end')
-            self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E0*1000:0.1f}')
+            self.master.GUI.params['EIS']['E0'].set(f'{E0*1000:0.1f}')
             if not self.potentiostat_setup('EIS'): 
                 return None
             time.sleep(5)
@@ -641,14 +640,12 @@ class FeedbackController(Logger):
             
             
             self.log(f'Detected E0 = {E0:0.3f} V')
-            self.master.GUI.params['EIS']['E0'].delete('1.0', 'end')
-            self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E0*1000:0.1f}')
+            self.master.GUI.params['EIS']['E0'].set(f'{E0*1000:0.1f}')
             EIS_POINTS = []
             # Run 5 EIS spectra with varying Vpp
             for mVpp in [10, 20, 50, 100, 200]:
                 self.log(f'Running EIS with amplitude = {mVpp} mV')
-                self.master.GUI.params['EIS']['amp'].delete('1.0', 'end')
-                self.master.GUI.params['EIS']['amp'].insert('1.0', f'{mVpp}')
+                self.master.GUI.params['EIS']['amp'].set(f'{mVpp}')
                 if not self.potentiostat_setup('EIS'):
                     return None
                 time.sleep(5)
@@ -696,8 +693,7 @@ class FeedbackController(Logger):
             
             
             self.log(f'Detected E0 = {E0:0.3f} V')
-            self.master.GUI.params['EIS']['E0'].delete('1.0', 'end')
-            self.master.GUI.params['EIS']['E0'].insert('1.0', f'{E0*1000:0.1f}')
+            self.master.GUI.params['EIS']['E0'].set(f'{E0*1000:0.1f}')
             if not self.potentiostat_setup('EIS'):
                 return None
             time.sleep(5)
