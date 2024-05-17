@@ -706,8 +706,27 @@ class GUI(Logger, GUISetupMethods):
         return E0, E1, E2, E3, v, t0
     
     
+    
+    def run_CV(self, _new_thread=True):
+        if new_thread:
+            # Run a CV and process the data in a new thread.
+            return self._run_CV_thread()
+        else:
+            # Run a CV and process the data in the thread that called this function.
+            # Used when approach curve finds the surface (runs in automatic_approach thread)
+            return self._run_CV_noThread()
+    
+    
     @threads.new_thread
-    def run_CV(self):
+    def _run_CV_thread(self):
+        return self._run_CV()
+    
+    
+    def _run_CV_noThread(self):
+        return self._run_CV()
+       
+    
+    def _run_CV(self):
         if self.master.Piezo.isMoving():
             self.log('Error: cannot run CV while piezo is moving')
             return
