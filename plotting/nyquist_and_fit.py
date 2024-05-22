@@ -62,15 +62,15 @@ def make_plots(file1, file2):
     # fig.savefig(file1.replace('.txt', '_titled.png'))
     # plt.close()
  
-
-folder = r'Z:\Projects\Brian\7 - SECCM all PB particles\MEISP'
-data_files = [os.path.join(folder, f) for f in os.listdir(folder) 
-         if (f.endswith('EISDataPoint1.txt') or f.endswith('EISDataPoint3.txt'))]
-fit_files = [f.replace('.txt', '_fit.txt') for f in data_files]
-
-
-for data_file, fit_file in zip(data_files, fit_files):  
-    make_plots(data_file, fit_file)
-
-# make_plots(file, fit)
+if __name__ == '__main__':
+    folder = r'Z:\Projects\Brian\7 - SECCM all PB particles\MEISP'
+    data_files = [os.path.join(folder, f) for f in os.listdir(folder) 
+             if (f.endswith('EISDataPoint1.txt') or f.endswith('EISDataPoint3.txt'))]
+    fit_files = [f.replace('.txt', '_fit.txt') for f in data_files]
+    
+    
+    for data_file, fit_file in zip(data_files, fit_files):  
+        make_plots(data_file, fit_file)
+    
+    # make_plots(file, fit)
     
