@@ -7,7 +7,6 @@ Functions for generating multi-sin EIS waveforms and saving
 them in HEKA-compatible format.
 '''
 
-
 def nearest(value, array):
     array = np.asarray(array)
     idx = (np.abs(array - value)).argmin()
@@ -138,6 +137,8 @@ def optimize_waveform_default(freqs, phases, n_cycles, mVpp):
     '''
     amp_factor = 1/np.sqrt(freqs)
     mVpp = mVpp * amp_factor/max(amp_factor)
+    if __name__ == '__main__':
+        plot_freqs(freqs, amp_factor)
     return make_time_domain(freqs, phases, n_cycles, mVpp)
 
 
@@ -171,13 +172,13 @@ def plot_freqs(freqs, amps):
     plt.ylabel('Amplitude/ a.u.')
     
 
-def write_tpl_file(voltages, fname):
+def write_tpl_file(vs, fname):
     '''
     voltages: list or array of time-domain voltages
     fname: file to write to
     '''
     # write list of short floats to .tpl file
-    buff = struct.pack('f'*len(voltages), *voltages)
+    buff = struct.pack('f'*len(vs), *vs)
     with open(fname, 'wb') as f:
         f.write(buff)
         
@@ -185,10 +186,21 @@ def write_tpl_file(voltages, fname):
         
         
 if __name__ == '__main__':        
-    freqs, phases, mVpp = generate_waveform(1, 1000, 18, 20)
+    
+    file_name = r'C:\Users\miguelorozco\Desktop\EIS_test4.tpl'
+    starting_frequency = 1         # Hz
+    ending_frequency = 10000       # Hz
+    number_of_points = 18
+    peak_to_peak_amplitude = 0.020 # Volts
+    number_of_cycles = 1
+    
+    freqs, phases, mVpp = generate_waveform(starting_frequency,
+                                            ending_frequency,
+                                            number_of_points,
+                                            peak_to_peak_amplitude)
     
     # v = make_time_domain(freqs, phases, mVpp)
-    v = optimize_waveform_default(freqs, phases, mVpp)
+    voltages = optimize_waveform_default(freqs, phases, number_of_cycles, mVpp)
     
     # Hz = 50000 #sampling rate
     # A = -0.514   #amplitude
@@ -204,8 +216,9 @@ if __name__ == '__main__':
     # y2 = -A*np.sqrt(abs(1-(2*(t[half:]/x-1))**2))
     
     # v = list(y1) + list(y2)
-    # plt.plot(v)
-    # write_tpl_file(v, r'D:/Brian/circular_1.tpl')
+    fig, ax = plt.subplots()
+    ax.plot(voltages)
+    write_tpl_file(voltages, file_name)
         
 
 
