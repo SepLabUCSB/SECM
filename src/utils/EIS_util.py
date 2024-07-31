@@ -114,7 +114,7 @@ def make_time_domain(freqs, phases, n_cycles, mVpp):
     
     v *= max(mVpp)/max(v) # rescale to set max Vpp
         
-    return v
+    return v, sample_rate
         
 
 
@@ -170,6 +170,7 @@ def plot_freqs(freqs, amps):
     plt.xscale('log')
     plt.xlabel('Frequency/ Hz')
     plt.ylabel('Amplitude/ a.u.')
+    plt.title('Chosen Frequencies')
     
 
 def write_tpl_file(vs, fname):
@@ -200,7 +201,9 @@ if __name__ == '__main__':
                                             peak_to_peak_amplitude)
     
     # v = make_time_domain(freqs, phases, mVpp)
-    voltages = optimize_waveform_default(freqs, phases, number_of_cycles, mVpp)
+    voltages, sample_rate = optimize_waveform_default(freqs, phases, number_of_cycles, mVpp)
+    
+    print(f'Sample Interval: {sample_rate} Hz')
     
     # Hz = 50000 #sampling rate
     # A = -0.514   #amplitude
@@ -218,6 +221,7 @@ if __name__ == '__main__':
     # v = list(y1) + list(y2)
     fig, ax = plt.subplots()
     ax.plot(voltages)
+    plt.title('Sine Wave generated for HEKA')
     write_tpl_file(voltages, file_name)
         
 
