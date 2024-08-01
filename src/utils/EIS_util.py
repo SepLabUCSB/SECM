@@ -114,7 +114,7 @@ def make_time_domain(freqs, phases, n_cycles, mVpp):
     
     v *= max(mVpp)/max(v) # rescale to set max Vpp
         
-    return v, sample_rate
+    return v
         
 
 
@@ -188,12 +188,12 @@ def write_tpl_file(vs, fname):
         
 if __name__ == '__main__':        
     
-    file_name = r'C:\Users\miguelorozco\Desktop\EIS_test4.tpl'
+    file_name = r'C:\Users\miguelorozco\Desktop\FT-EIS_1.tpl'
     starting_frequency = 1         # Hz
-    ending_frequency = 10000       # Hz
+    ending_frequency = 1000       # Hz
     number_of_points = 18
-    peak_to_peak_amplitude = 0.020 # Volts
-    number_of_cycles = 1
+    peak_to_peak_amplitude = 0.050 # Volts
+    number_of_cycles = 5
     
     freqs, phases, mVpp = generate_waveform(starting_frequency,
                                             ending_frequency,
@@ -201,9 +201,11 @@ if __name__ == '__main__':
                                             peak_to_peak_amplitude)
     
     # v = make_time_domain(freqs, phases, mVpp)
-    voltages, sample_rate = optimize_waveform_default(freqs, phases, number_of_cycles, mVpp)
+    voltages = optimize_waveform_default(freqs, phases, number_of_cycles, mVpp)
+    sample_rate = get_EIS_sample_rate(max(freqs))
     
     print(f'Sample Interval: {sample_rate} Hz')
+    print(f'TPL file saved as: {file_name}')
     
     # Hz = 50000 #sampling rate
     # A = -0.514   #amplitude
