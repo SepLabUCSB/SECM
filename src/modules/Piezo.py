@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils.utils import run, Logger
+from ..utils.utils import run, Logger, threads
 import serial
 import time
 from PIL import Image
@@ -151,11 +151,13 @@ class Piezo(Logger):
    
     def start_monitoring(self):
         if not self._is_monitoring:
-            run(self.position_monitor)
+            self.position_monitor()
         
     def stop_monitoring(self):
         self._stop_monitoring = True
    
+    
+    @threads.new_thread
     def position_monitor(self):
         '''
         Called in its own thread. 
@@ -254,7 +256,8 @@ class Piezo(Logger):
          '''
          self._halt = True
         
-        
+    
+    @threads.new_thread
     def approach(self, forced_step_size=None):
         '''
         Starting from the current location, reduce Z in small steps at

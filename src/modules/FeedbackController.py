@@ -4,8 +4,9 @@ from io import StringIO
 import os
 import scipy.io
 import datetime
+import traceback
 from functools import partial
-from ..utils.utils import run, Logger
+from ..utils.utils import run, Logger, threads
 from .DataStorage import (Experiment, CVDataPoint, EISDataPoint,
                                  PointsList)
 from ..analysis.analysis_funcs import E0_finder_analysis
@@ -187,7 +188,7 @@ class FeedbackController(Logger):
         # Get local refs to other modules
         self.Piezo = self.master.Piezo
         self.ADC = self.master.ADC
-        self.HekaWriter = self.master.HekaWriter
+        self.Potentiostat = self.master.Potentiostat
         
         self.est_time_remaining = 0
         
@@ -225,11 +226,9 @@ class FeedbackController(Logger):
         step_size = float(step_size)/1000 # Convert nm -> um
 
         self.Piezo.goto(80,80,height)
-        self.HekaWriter.macro('E Vhold 0')
-        time.sleep(1)
-        self.HekaWriter.macro('E AutoCFast')
-        self.HekaWriter.run_OCP()
-        self.HekaWriter.macro(f'E Vhold {voltage}')
+        
+        self.Potentiostat.run_OCP()
+        self.Potentiostat.hold_potential(voltage)
         
         while True:
             if self.master.ABORT:
@@ -245,7 +244,7 @@ class FeedbackController(Logger):
             if on_surface:
                 time.sleep(0.1)
                 # Take a CV on the surface
-                self.master.GUI.run_CV()
+                self.master.GUI.run_CV(_new_thread=False)
                 # Retract from surface by 10 um
                 self.Piezo.retract(10, relative=True)
                 break
@@ -300,11 +299,11 @@ class FeedbackController(Logger):
         
         
         # Setup potentiostat and ADC
-        self.HekaWriter.macro(f'E Vhold {voltage}')
+        self.Potentiostat.hold_potential(voltage)
         gain  = 1e9 * self.master.GUI.amp_params['float_gain']
         srate = 1000
         self.ADC.set_sample_rate(srate)
-        run(partial(self.ADC.polling, 5000))
+        self.ADC.polling(timeout=5000)
         time.sleep(0.005)
         
         
@@ -320,7 +319,7 @@ class FeedbackController(Logger):
 
         # Start it
         self._piezo_counter = self.Piezo.counter # Counter tracks when piezo stops
-        run(partial(self.Piezo.approach, forced_step_size=forced_step_size))
+        self.Piezo.approach(forced_step_size=forced_step_size)
         
         on_surface = False
         time.sleep(0.1)
@@ -362,8 +361,7 @@ class FeedbackController(Logger):
         '''
         Run a hopping mode scan.
         
-        Runs in its own thread!
-        
+        Runs in a thread created by GUI
         '''
         # Pull parameters from GUI
         length = params['size'].get()
@@ -392,13 +390,8 @@ class FeedbackController(Logger):
         expt = Experiment(points    = points,
                           order     = order,
                           expt_type = expt_type)
-            
-        
         self.master.set_expt(expt)
-        # self.master.Plotter.set_axlim('fig1',
-        #                               xlim=(0,length),
-        #                               ylim=(0,length)
-        #                               )
+        
         
         # Overwrite points, order taking into account image point array
         pts_to_skip = -2
@@ -461,7 +454,7 @@ class FeedbackController(Logger):
                 time.sleep(0.01)
                 continue
             if not data:
-                # Aborted during HEKA measurement
+                # Aborted during potentiostat measurement
                 self.log('Hopping mode aborted')
                 return False
             
@@ -497,19 +490,12 @@ class FeedbackController(Logger):
             return True
         
         if expt_type in ('CV', 'Custom'):
-            self.master.GUI.set_amplifier()
-            CV_vals = self.master.GUI.get_CV_params()
-            if CV_vals == (0,0,0,0,0,0):
-                return False
-            self.master.HekaWriter.setup_CV(*CV_vals)
+            self.Potentiostat.set_amplifier()
+            self.Potentiostat.setup_CV()
             return True
         
         if expt_type == 'EIS':
-            self.master.GUI.set_amplifier()
-            EIS_vals = self.master.GUI.get_EIS_params()
-            if EIS_vals == (0,0,0,0,0):
-                return False
-            self.master.HekaWriter.setup_EIS(*EIS_vals)
+            self.Potentiostat.setup_EIS()
             return True
         
         if ('CV' in expt_type) and ('EIS' in expt_type):
@@ -524,9 +510,7 @@ class FeedbackController(Logger):
             # Then do CV setup to set up for approach curve and 1st CV
             return self.potentiostat_setup('CV')
         
-        # if expt_type == 'Custom':
-        #     self.master.GUI.set_amplifier()
-        #     return True
+        
         self.log(f'Error: {expt_type=} not recognized in potentiostat_setup()')
         return False
     
@@ -545,7 +529,8 @@ class FeedbackController(Logger):
         if expt_type == 'CV':
             try:
                 t, voltage, current = self.run_CV(expt.path, i)
-            except:
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
                 return 'failed'
             if type(t) == int:
                 return None
@@ -555,19 +540,21 @@ class FeedbackController(Logger):
         if expt_type == 'EIS':
             try:
                 t, voltage, current = self.run_EIS(expt.path, i)
-            except:
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
                 return 'failed'
             if type(t) == int:
                 return None
             data = EISDataPoint(loc = loc, data = [t, voltage, current],
-                                applied_freqs = self.HekaWriter.EIS_applied_freqs,
-                                corrections = self.HekaWriter.EIS_corrections)
+                                applied_freqs = self.Potentiostat.EIS_freqs,
+                                corrections = self.Potentiostat.EIS_corrections)
         
             
         if expt_type == 'Custom':
             try:
                 t, voltage, current = self.run_custom(expt.path, i)
-            except:
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
                 return 'failed'
             if type(t) == int:
                 return None
@@ -580,7 +567,8 @@ class FeedbackController(Logger):
                 return None
             try:
                 t, voltage, current = self.run_CV(expt.path, i)
-            except:
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
                 return 'failed'
             if type(t) == int:
                 return None
@@ -603,19 +591,18 @@ class FeedbackController(Logger):
             # Run EIS expt
             try:
                 t, voltage, current = self.run_EIS(expt.path, i)
-            except:
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
                 return CVdata
             if type(t) == int:
                 return None
-            self.HekaWriter.reset_amplifier()
-            time.sleep(0.2)
             self.potentiostat_setup('CV')
             time.sleep(0.2)
-            self.HekaWriter.send_command(f'Set E Vhold {start_V}')
+            self.Potentiostat.hold_potential(start_V)
             time.sleep(2)
             EISdata = EISDataPoint(loc = loc, data = [t, voltage, current],
-                                   applied_freqs = self.HekaWriter.EIS_applied_freqs,
-                                   corrections = self.HekaWriter.EIS_corrections)
+                                applied_freqs = self.Potentiostat.EIS_freqs,
+                                corrections = self.Potentiostat.EIS_corrections)
             data = PointsList(loc=loc, data = [CVdata, EISdata])
         
         
@@ -625,7 +612,8 @@ class FeedbackController(Logger):
                 return None
             try:
                 t, voltage, current = self.run_CV(expt.path, i)
-            except:
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
                 return 'failed'
             if type(t) == int:
                 return None
@@ -653,20 +641,19 @@ class FeedbackController(Logger):
                 # Run EIS expt
                 try:
                     t, voltage, current = self.run_EIS(expt.path, i)
-                except:
+                except Exception as e:
+                    self.log(traceback.format_exc(), quiet=True)
                     break
                 if type(t) == int:
                     return None
                 EISdata = EISDataPoint(loc = loc, data = [t, voltage, current],
-                                   applied_freqs = self.HekaWriter.EIS_applied_freqs,
-                                   corrections = self.HekaWriter.EIS_corrections)
+                                applied_freqs = self.Potentiostat.EIS_freqs,
+                                corrections = self.Potentiostat.EIS_corrections)
                 EIS_POINTS.append(EISdata)
                 
-            self.HekaWriter.reset_amplifier()
-            time.sleep(0.2)
             self.potentiostat_setup('CV')
             time.sleep(0.2)
-            self.HekaWriter.send_command(f'Set E Vhold {start_V}')
+            self.Potentiostat.hold_potential(start_V)
             time.sleep(2)
             
             data = PointsList(loc=loc, data = [CVdata, *EIS_POINTS])
@@ -678,7 +665,8 @@ class FeedbackController(Logger):
                 return None
             try:
                 t, voltage, current = self.run_CV(expt.path, i)
-            except:
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
                 return 'failed'
             if type(t) == int:
                 return None
@@ -707,22 +695,21 @@ class FeedbackController(Logger):
                 # Run EIS expt
                 try:
                     t, voltage, current = self.run_EIS(expt.path, i)
-                except:
+                except Exception as e:
+                    self.log(traceback.format_exc(), quiet=True)
                     break
                 if type(t) == int:
                     return None
                 EISdata = EISDataPoint(loc = loc, data = [t, voltage, current],
-                                   applied_freqs = self.HekaWriter.EIS_applied_freqs,
-                                   corrections = self.HekaWriter.EIS_corrections)
+                                applied_freqs = self.Potentiostat.EIS_freqs,
+                                corrections = self.Potentiostat.EIS_corrections)
                 EIS_POINTS.append(EISdata)
                 self.potentiostat_setup('EIS')
                 time.sleep(10)
                 
-            self.HekaWriter.reset_amplifier()
-            time.sleep(0.2)
             self.potentiostat_setup('CV')
             time.sleep(0.2)
-            self.HekaWriter.send_command(f'Set E Vhold {start_V}')
+            self.Potentiostat.hold_potential(start_V)
             time.sleep(2)
             
             data = PointsList(loc=loc, data = [CVdata, *EIS_POINTS])
@@ -748,12 +735,8 @@ class FeedbackController(Logger):
         
         if save_path.endswith('.secmdata'):
             save_path = save_path.replace('.secmdata', '')
-            
-        path = self.master.HekaWriter.run_measurement_loop(
-                                           'CV',
-                                           save_path=save_path,
-                                           name=name
-                                           )
+        
+        path = self.Potentiostat.run_CV(path=f'{save_path}/{name}')
         t, v, i = read_heka_data(path)
         return t, v, i
     
@@ -766,9 +749,7 @@ class FeedbackController(Logger):
         if save_path.endswith('.secmdata'):
             save_path = save_path.replace('.secmdata', '')
             
-        path = self.master.HekaWriter.run_measurement_loop(
-            'EIS', save_path = save_path, name=name)
-        
+        path = self.Potentiostat.run_EIS(path=f'{save_path}/{name}')
         t, v, i = read_heka_data(path)
         return t, v, i
     
@@ -780,9 +761,7 @@ class FeedbackController(Logger):
         if save_path.endswith('.secmdata'):
             save_path = save_path.replace('.secmdata', '')
             
-        path = self.master.HekaWriter.run_measurement_loop(
-            'Custom', save_path = save_path, name=name)
-        
+        path = self.Potentiostat.run_custom(path=f'{save_path}/{name}')        
         t, v, i = read_heka_data(path)
         return t, v, i
     

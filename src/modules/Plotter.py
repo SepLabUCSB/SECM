@@ -7,7 +7,7 @@ import os
 from tkinter import *
 from tkinter.ttk import *
 from tkinter import filedialog
-from ..utils.utils import Logger, nearest
+from ..utils.utils import Logger, nearest, threads
 from .DataStorage import (ADCDataPoint, CVDataPoint, 
                                  SinglePoint, EISDataPoint, PointsList)
 

@@ -4,7 +4,7 @@ import struct
 import numpy as np
 # from modules.DataStorage import ADCDataPoint
 from .DataStorage import ADCDataPoint
-from ..utils.utils import run, Logger
+from ..utils.utils import run, Logger, threads
 
 CONST_SER_PORT = 'COM6'   #get the com port from device manger and enter it here
 
@@ -42,6 +42,13 @@ class ADC(Logger):
         if not self.master.TEST_MODE:
             self.port = serial.Serial(port = SER_PORT, timeout=0.5)
             self.setup()
+        else:
+            try:
+                self.port = serial.Serial(port = SER_PORT, timeout=0.5)
+                self.setup()
+            except Exception as e:
+                self.log('ADC not found!')
+                self.log(e)
             
         self.pollingcount = 0
         self.pollingdata  = ADCDataPoint(loc=(0,),
@@ -147,6 +154,7 @@ class ADC(Logger):
         return
     
     
+    @threads.new_thread
     def polling(self, timeout=3, params=None):
         '''
         Polling mode recording.

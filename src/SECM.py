@@ -11,7 +11,8 @@ from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib
-from .modules.HekaIO import HekaReader, HekaWriter
+# from .modules.HekaIO import HekaReader, HekaWriter
+from .modules.Potentiostat import HEKA
 from .modules.ADC import ADC
 from .modules.Piezo import Piezo
 from .modules.FeedbackController import FeedbackController, make_datapoint_from_file, load_echem_from_file
@@ -20,7 +21,7 @@ from .modules.DataStorage import Experiment, EISDataPoint, load_from_file
 from .modules.Picomotor import PicoMotor
 from .modules.ImageCorrelator import ImageCorrelator
 from .modules.GUISetup import GUISetupMethods, convert_to_index
-from .utils.utils import run, Logger, focus_next_widget
+from .utils.utils import run, Logger, threads
 from .gui.hopping_popup import HoppingPopup
 default_stdout = sys.stdout
 default_stdin  = sys.stdin
@@ -98,11 +99,13 @@ class MasterModule(Logger):
         self.log('========= Master Initialized =========')
         
         
-    def register(self, module):
+    def register(self, module, alias=None):
         # register a submodule to master
-        setattr(self, module.__class__.__name__, module)
-        self.modules.append(getattr(self, module.__class__.__name__))
-        self.log(f'Loaded {module.__class__.__name__}')
+        if not alias:
+            alias = module.__class__.__name__
+        setattr(self, alias, module)
+        self.modules.append(getattr(self, alias))
+        self.log(f'Loaded {module.__class__.__name__} as master.{alias}')
     
     
     def set_expt(self, expt, name=None):
@@ -118,6 +121,7 @@ class MasterModule(Logger):
             self.GUI.savePrevious()
     
     
+    @threads.new_thread
     def run(self):
         '''
         Master main loop
@@ -144,9 +148,10 @@ class MasterModule(Logger):
         self.PicoMotor.halt()
         if not self.STOP:
             # Reset
-            run(self.make_ready)
+            self.make_ready()
     
     
+    @threads.new_thread
     def make_ready(self):
         time.sleep(2) # wait for other threads to abort
         self.ABORT = False
@@ -195,6 +200,8 @@ class PrintLogger():
         self.textbox = textbox # tk.Text object
         self.textbox.tag_config("red", foreground="red")
         self.textbox.tag_config('black', foreground='black')
+        self.textbox.tag_config('blue', foreground='blue')
+        self.textbox.tag_config('green', foreground='green')
 
     def write(self, text):
         self.textbox.configure(state='normal')
@@ -344,10 +351,9 @@ class GUI(Logger, GUISetupMethods):
             }
     
         # Always-running functions
-        masterthread    = run(self.master.run)
-        readerthread    = run(self.master.HekaReader.read_stream)
-    
-        self.threads = [masterthread, readerthread]
+        self.master.run()
+        if hasattr(self.master, 'HekaReader'):
+            self.master.HekaReader.read()
         return
     #################### END __init__ ##############################
     
@@ -356,7 +362,7 @@ class GUI(Logger, GUISetupMethods):
         #####       CALLBACK FUNCS       #####  
         #####                            #####
         ######################################
-    
+        
     
     def _update_piezo_display(self):
         # Update piezo position fields
@@ -634,7 +640,7 @@ class GUI(Logger, GUISetupMethods):
     
     
     def reset_ADC_monitor(self):
-        run(self.master.Plotter.EchemFig.reset)
+        self.master.Plotter.EchemFig.reset()
     
     
     def heatmap_opt_changed(self, *args):
@@ -676,53 +682,63 @@ class GUI(Logger, GUISetupMethods):
     
     ########## ELECTROCHEMISTRY CALLBACKS ###########
     
-    # Take parameters from CV window and send to HEKA    
+    # Set the potentiostat amplifier (filters, gain, etc)  
     def set_amplifier(self):
-        if not self.master.HekaReader.PatchmasterRunning():
-            self.log('Error: PATCHMASTER not opened!')
-            return
-        new_params = convert_to_index(self.params['amp'])
-        cmds = []
-        for key, val in new_params.items():
-            if key == 'float_gain':
-                continue
-            cmds.append(f'Set {key} {val}')
-        cmds.append('Set E TestDacToStim1 0')
-        
-        self.master.HekaWriter.send_multiple_cmds(cmds)
-        
-        self.amp_params = new_params # Store current amplifier state to amp_params
-        return
+        self.master.Potentiostat.set_amplifier()
+    
+    
+    def get_amplifier_params(self):
+        params = convert_to_index(self.params['amp'])
+        return params
     
     
     def get_CV_params(self):
         cv_params = self.params['CV'].copy()
-        E0 = cv_params['E0'].get()
-        E1 = cv_params['E1'].get()
-        E2 = cv_params['E2'].get()
-        E3 = cv_params['Ef'].get()
-        v  = cv_params['v'].get()
-        t0 = cv_params['t0'].get()
-        vals = [E0, E1, E2, E3, v, t0]
+        strs = ['E0', 'E1', 'E2', 'Ef', 'v', 't0']
         try:
-            E0, E1, E2, E3, v, t0 = [float(val) for val in vals]
-        except:
-            print('invalid CV inputs')
+            E0, E1, E2, E3, v, t0 = map(float,
+                                        [cv_params[x].get() for x in strs])
+
+        except Exception as e:
+            print('Error: invalid CV inputs')
+            print(e)
             return 0,0,0,0,0,0
         return E0, E1, E2, E3, v, t0
     
-    def run_CV(self):
+    
+    
+    def run_CV(self, _new_thread=True):
+        if _new_thread:
+            # Run a CV and process the data in a new thread.
+            return self._run_CV_thread()
+        else:
+            # Run a CV and process the data in the thread that called this function.
+            # Used when approach curve finds the surface (runs in automatic_approach thread)
+            return self._run_CV_noThread()
+    
+    
+    @threads.new_thread
+    def _run_CV_thread(self):
+        return self._run_CV()
+    
+    
+    def _run_CV_noThread(self):
+        return self._run_CV()
+       
+    
+    def _run_CV(self):
         if self.master.Piezo.isMoving():
             self.log('Error: cannot run CV while piezo is moving')
             return
-        self.reset_ADC_monitor()
-        self.set_amplifier()
-        E0, E1, E2, E3, v, t0 = self.get_CV_params()
-        self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
-        path = self.master.HekaWriter.run_measurement_loop('CV')
+        self.master.Potentiostat.set_amplifier()
+        self.master.Potentiostat.setup_CV()
+        path = self.master.Potentiostat.run_CV()
+        if not path: return
+        
         DataPoint = make_datapoint_from_file(path, 'CVDataPoint')
         if DataPoint:
             self.master.ADC.force_data(DataPoint)
+        
         self.master.make_ready()
         self.log('Finished running CV.')
         return path
@@ -730,32 +746,30 @@ class GUI(Logger, GUISetupMethods):
     
     def get_EIS_params(self):
         eis_params = self.params['EIS'].copy()
-        E0      = eis_params['E0'].get()
-        f0      = eis_params['f0'].get()
-        f1      = eis_params['f1'].get()
-        n_pts   = eis_params['n_pts'].get()
-        n_cycles= eis_params['n_cycles'].get()
-        amp     = eis_params['amp'].get()
-        vals = [E0, f0, f1, n_pts, n_cycles, amp]
+        strs = ['E0', 'f0', 'f1', 'n_pts', 'n_cycles', 'amp']
         try:
-            E0, f0, f1, n_pts, n_cycles, amp = [float(val) for val in vals]
+            vals = map(float, [eis_params[x].get() for x in strs])
+            E0, f0, f1, n_pts, n_cycles, amp = vals
             n_pts, n_cycles = int(n_pts), int(n_cycles)
         except:
-            print('invalid EIS inputs')
+            print('Error: invalid EIS inputs')
             return 0,0,0,0,0,0
         return E0, f0, f1, n_pts, n_cycles, amp
     
+    
+    @threads.new_thread
     def run_EIS(self):
         if self.master.Piezo.isMoving():
             self.log('Error: cannot run EIS while piezo is moving')
             return
         self.reset_ADC_monitor()
-        eis_params = self.get_EIS_params()
-        self.master.HekaWriter.setup_EIS(*eis_params)
-        path = self.master.HekaWriter.run_measurement_loop('EIS')
+        self.master.Potentiostat.setup_EIS()
+        path = self.master.Potentiostat.run_EIS()
+        if not path: return
+        
         DataPoint = make_datapoint_from_file(path, 'EISDataPoint', 
-                                             applied_freqs=self.master.HekaWriter.EIS_applied_freqs,
-                                             corrections=self.master.HekaWriter.EIS_corrections)
+                                             applied_freqs=self.master.Potentiostat.EIS_freqs,
+                                             corrections=self.master.Potentiostat.EIS_corrections)
         if DataPoint:
             self.master.ADC.force_data(DataPoint)
             DataPoint._save(path[:-4] + '_EIS.asc')
@@ -763,23 +777,24 @@ class GUI(Logger, GUISetupMethods):
         self.log('Finished running EIS')
         return
     
+    
+    @threads.new_thread
     def run_EIS_corrections(self):
-        eis_params = self.get_EIS_params()
-        self.master.HekaWriter.setup_EIS(*eis_params, force_waveform_rewrite=True)
+        self.master.Potentiostat.setup_EIS(force_waveform_rewrite=True)
         return
         
             
-    
+    @threads.new_thread
     def run_custom(self):
         ''' Run custom, user-set PGF file '''
         if self.master.Piezo.isMoving():
             self.log('Error: cannot run custom waveform while piezo is moving')
             return
         self.reset_ADC_monitor()
-        self.set_amplifier()
-        E0, E1, E2, E3, v, t0 = self.get_CV_params()
-        self.master.HekaWriter.setup_CV(E0, E1, E2, E3, v, t0)
-        path = self.master.HekaWriter.run_measurement_loop('Custom')
+        self.master.Potentiostat.set_amplifier()
+        path = self.master.Potentiostat.run_custom()
+        if not path: return 
+        
         DataPoint = make_datapoint_from_file(path, 'CVDataPoint')
         if DataPoint:
             self.master.ADC.force_data(DataPoint)
@@ -790,6 +805,7 @@ class GUI(Logger, GUISetupMethods):
     
     ########## SECM SCAN CALLBACKS ###########
     
+    @threads.new_thread
     def run_approach_curve(self):
         self.reset_ADC_monitor()
         self.set_amplifier()
@@ -800,20 +816,19 @@ class GUI(Logger, GUISetupMethods):
         step_size = self.params['approach']['step_size'].get()
         step_size = float(step_size)/1000 # Convert nm -> um
 
-        func = partial(self.master.FeedbackController.approach,
-                       height, forced_step_size=step_size)
-        run(func)
+        self.master.FeedbackController.approach(height, forced_step_size=step_size)
     
     
+    @threads.new_thread
     def run_retract(self):
-        func = partial(self.master.Piezo.retract, 10, True)
-        run(func)
+        self.master.Piezo.retract(10, True)
     
-        
+    
+    @threads.new_thread    
     def run_automatic_approach(self):
         self.set_amplifier()
         self.reset_ADC_monitor()
-        run(self.master.FeedbackController.automatic_approach)
+        self.master.FeedbackController.automatic_approach()
         
     
     def run_hopping(self, img=None):
@@ -827,10 +842,10 @@ class GUI(Logger, GUISetupMethods):
             return
         
         self.set_amplifier()
-        func = partial(self._run_hopping, fname, img)
-        run(func)
+        self._run_hopping(fname, img)
         
     
+    @threads.new_thread
     def _run_hopping(self, fname, img=None):
         success = self.master.FeedbackController.hopping_mode(self.params['hopping'], img)
         settings = self.save_settings(ask_prompt = False)
@@ -859,10 +874,10 @@ class GUI(Logger, GUISetupMethods):
         n_scans = int(popup.n_scans.get())
         dist    = int(popup.move_dist.get())
         
-        func = partial(self._multi_hopping, fname, n_scans, dist)
-        run(func)
+        self._multi_hopping(fname, n_scans, dist)
         
     
+    @threads.new_thread
     def _multi_hopping(self, fname, n_scans, dist):
         for i in range(n_scans):
             this_fname = fname.replace('.secmdata', f'_{(i+1):03d}.secmdata')
@@ -975,8 +990,7 @@ class GUI(Logger, GUISetupMethods):
 def run_main():
     try:
         master = MasterModule(TEST_MODE = TEST_MODE)
-        reader = HekaReader(master)
-        writer = HekaWriter(master)
+        pstat = HEKA(master)
         adc    = ADC(master)
         piezo  = Piezo(master)
         motor  = PicoMotor(master)
@@ -988,10 +1002,12 @@ def run_main():
         print(e)
         sel = input('Load in test mode? (y/n) >>>')
         if sel != 'y':
+            master.endState()
             sys.exit()
+        master.endState() # Close already-opened modules
+        
         master = MasterModule(TEST_MODE = True)
-        reader = HekaReader(master)
-        writer = HekaWriter(master)
+        pstat  = HEKA(master)
         adc    = ADC(master)
         piezo  = Piezo(master)
         motor  = PicoMotor(master)
