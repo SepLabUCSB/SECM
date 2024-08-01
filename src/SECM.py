@@ -708,7 +708,7 @@ class GUI(Logger, GUISetupMethods):
     
     
     def run_CV(self, _new_thread=True):
-        if new_thread:
+        if _new_thread:
             # Run a CV and process the data in a new thread.
             return self._run_CV_thread()
         else:
@@ -1004,6 +1004,8 @@ def run_main():
         if sel != 'y':
             master.endState()
             sys.exit()
+        master.endState() # Close already-opened modules
+        
         master = MasterModule(TEST_MODE = True)
         pstat  = HEKA(master)
         adc    = ADC(master)
