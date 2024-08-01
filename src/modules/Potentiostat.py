@@ -276,8 +276,8 @@ class HEKA(Potentiostat):
         self.status = 'idle'
     
     def _send_command(self, cmd):
-        if self.master.TEST_MODE:
-            return
+        # if self.master.TEST_MODE:
+        #     return
         with open(self.file, 'w') as f:
             f.write(f'+{self.num}\n{cmd}\n')
         self.num += 1
@@ -583,7 +583,7 @@ class HEKA(Potentiostat):
     
     
     def _set_EIS_amplifier(self, E0, f0, f1, n_pts, n_cycles, amp,
-                           gain=14):
+                           gain=8):
         '''
         Determine best filters to use for FFT-EIS
         
@@ -615,7 +615,7 @@ class HEKA(Potentiostat):
                   'Set E TestDacToStim1 2',
                   'Set E ExtScale 1',
                   'Set E Mode 3',
-                 f'Set E Gain {gain}'] # 14 --> 50 mV/pA, 8 --> 1 mV/pA
+                  f'Set E Gain {gain}'] # 14 --> 50 mV/pA, 8 --> 1 mV/pA
         self._send_multiple_cmds(cmds)
         time.sleep(0.1)
         

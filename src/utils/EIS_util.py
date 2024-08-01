@@ -192,7 +192,7 @@ if __name__ == '__main__':
     starting_frequency = 1         # Hz
     ending_frequency = 1000       # Hz
     number_of_points = 18
-    peak_to_peak_amplitude = 0.050 # Volts
+    peak_to_peak_amplitude = 0.020 # Volts
     number_of_cycles = 5
     
     freqs, phases, mVpp = generate_waveform(starting_frequency,
