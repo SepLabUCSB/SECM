@@ -206,7 +206,7 @@ if __name__ == '__main__':
     
     print(f'Sample Interval: {sample_rate} Hz')
     print(f'TPL file saved as: {file_name}')
-    
+    print(f"Frequencies: {','.join([str(elem) for elem in freqs])}")
     # Hz = 50000 #sampling rate
     # A = -0.514   #amplitude
     # A *= 2

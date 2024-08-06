@@ -4,7 +4,7 @@ import serial
 import time
 from PIL import Image
 
-PIEZO_COMPORT = 'COM7'
+PIEZO_COMPORT = 'COM4'
 
 
 def get_xy_coords(length, n_pts, point_array=None, starting_coord=0):
