@@ -915,8 +915,7 @@ class GUI(Logger, GUISetupMethods):
         except Exception as e:
             print(f'Error: {e}')
             return
-        self.params['hopping']['n_pts'].delete('1.0', 'end')
-        self.params['hopping']['n_pts'].insert('1.0', f'{img.shape[0]}')
+        self.params['hopping']['n_pts'].set(f'{img.shape[0]}')
         self.run_hopping(img)
         return
         
