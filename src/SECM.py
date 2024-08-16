@@ -146,6 +146,7 @@ class MasterModule(Logger):
         # general callback for aborting an operation
         self.ABORT = True
         self.PicoMotor.halt()
+        self.Potentiostat._abort()
         if not self.STOP:
             # Reset
             self.make_ready()
@@ -782,6 +783,38 @@ class GUI(Logger, GUISetupMethods):
     def run_EIS_corrections(self):
         self.master.Potentiostat.setup_EIS(force_waveform_rewrite=True)
         return
+    
+    def get_CA_params(self):
+        ca_params = self.params['CA'].copy()
+        strs = ['voltage', 't']
+        try:
+            voltage, t = map(float,
+                                        [ca_params[x].get() for x in strs])
+
+        except Exception as e:
+            print('Error: invalid CV inputs')
+            print(e)
+            return 0,0
+        return voltage, t
+    
+
+    @threads.new_thread
+    def run_CA(self):
+        if self.master.Piezo.isMoving():
+            self.log('Error: cannot run CV while piezo is moving')
+            return
+        self.master.Potentiostat.set_amplifier()
+        self.master.Potentiostat.setup_CA()
+        path = self.master.Potentiostat.run_CA()
+        if not path: return
+        
+        DataPoint = make_datapoint_from_file(path, 'CVDataPoint')
+        if DataPoint:
+            self.master.ADC.force_data(DataPoint)
+        
+        self.master.make_ready()
+        self.log('Finished running CA.')
+        return path
         
             
     @threads.new_thread
