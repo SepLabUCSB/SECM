@@ -7,6 +7,7 @@ import tracemalloc
 import json
 import sys
 import os
+import ast
 from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -23,6 +24,8 @@ from .modules.ImageCorrelator import ImageCorrelator
 from .modules.GUISetup import GUISetupMethods, convert_to_index
 from .utils.utils import run, Logger, threads
 from .gui.hopping_popup import HoppingPopup
+# from .gui.hoppingcapopup import HoppingCAPopup
+
 default_stdout = sys.stdout
 default_stdin  = sys.stdin
 default_stderr = sys.stderr
@@ -344,6 +347,7 @@ class GUI(Logger, GUISetupMethods):
             'fig2EISselection': self.EIS_view_selection,        # StringVar
             'params': {
                 'CV': self.params['CV'],            # dict
+                'CA': self.params['CA'],
                 'amp': self.params['amp'],          # dict
                 'EIS': self.params['EIS'],          # dict
                 'hopping': self.params['hopping'],  # dict
@@ -699,6 +703,7 @@ class GUI(Logger, GUISetupMethods):
         try:
             E0, E1, E2, E3, v, t0 = map(float,
                                         [cv_params[x].get() for x in strs])
+            print(E0, E1, E2, E3, v, t0)
 
         except Exception as e:
             print('Error: invalid CV inputs')
@@ -784,17 +789,57 @@ class GUI(Logger, GUISetupMethods):
         self.master.Potentiostat.setup_EIS(force_waveform_rewrite=True)
         return
     
-    def get_CA_params(self):
+    def get_CA_params(self, n_scans):
+        array = []
         ca_params = self.params['CA'].copy()
         strs = ['voltage', 't']
+        voltage, t = map(ast.literal_eval, [ca_params[x].get() for x in strs])
         try:
-            voltage, t = map(float,
-                                        [ca_params[x].get() for x in strs])
-
-        except Exception as e:
-            print('Error: invalid CV inputs')
-            print(e)
+            float(voltage)
+            v = [voltage]
+        except:
+            v = list(voltage)
+        try:
+            float(t)
+            time = [t]
+        except:
+            time = list(t)
+            
+        print (v, time)
+        
+        if len(v) == 1:
+            for i in range(len(time)):
+                g = {0: v[0], 1: time[i]}
+                array.append(g)
+                
+        elif len(v) == len(time):
+            for i in range(len(time)):
+                g = {0: v[i], 1: time[i]}
+                array.append(g)
+                
+        else:
+            print('you done fucked up (Error: invalid CA inputs)')
+            time = []
+            v = []
             return 0,0
+        
+        # if len(time) != n_scans + 1:
+        #     print('you done fucked up (Error: invalid CA input1s)')
+        #     time = []
+        #     v = []
+        #     return 0,0
+            
+        par = array[n_scans]
+        voltage = float(par[0])
+        t = float(par[1])
+        # try:
+        #     voltage, t = map(float,
+        #                                 [ca_params[x].get() for x in strs])
+
+        # except Exception as e:
+        #     print('Error: invalid CV inputs')
+        #     print(e)
+        #     return 0,0
         return voltage, t
     
 
@@ -804,7 +849,7 @@ class GUI(Logger, GUISetupMethods):
             self.log('Error: cannot run CV while piezo is moving')
             return
         self.master.Potentiostat.set_amplifier()
-        self.master.Potentiostat.setup_CA()
+        self.master.Potentiostat.setup_CA(0)
         path = self.master.Potentiostat.run_CA()
         if not path: return
         
@@ -875,12 +920,13 @@ class GUI(Logger, GUISetupMethods):
             return
         
         self.set_amplifier()
-        self._run_hopping(fname, img)
+        self._run_hopping(fname, 0, img)
         
     
     @threads.new_thread
-    def _run_hopping(self, fname, img=None):
-        success = self.master.FeedbackController.hopping_mode(self.params['hopping'], img)
+    def _run_hopping(self, fname, n_scans, img=None):
+        success = self.master.FeedbackController.hopping_mode(self.params['hopping'], n_scans, img)
+        print(success, "1")
         settings = self.save_settings(ask_prompt = False)
         self.master.expt.save_settings(settings)
         self.master.expt.save(fname)
@@ -916,7 +962,8 @@ class GUI(Logger, GUISetupMethods):
             this_fname = fname.replace('.secmdata', f'_{(i+1):03d}.secmdata')
             
             # Run hopping mode scan
-            success = self._run_hopping(this_fname)
+            success = self._run_hopping(this_fname, i)
+            print(success, "2")
             
             if not success:
                 self.log('Multi hopping aborted due to incomplete scan')
@@ -937,6 +984,58 @@ class GUI(Logger, GUISetupMethods):
             return
         time.sleep(0.5 + abs(n_steps)/1000)
         return
+    
+    # def run_multi_CA_hopping(self):
+    #     if self.master.Piezo.isMoving():
+    #         self.log('Error: cannot run hopping mode while piezo is moving')
+    #         return
+    #     popup = HoppingCAPopup(self)
+    #     popup.make_popup()
+    #     if not popup.ready:
+    #         return
+        
+    #     if not popup.validate_responses():
+    #         return
+        
+    #     fname = filedialog.asksaveasfilename(
+    #             defaultextension='.secmdata', initialdir='D:\SECM\Data')
+    #     if not fname: 
+    #         return
+    #     CA_params_array = popup.get_CA_params()
+    #     n_scans = int(popup.n_scans.get())
+    #     dist    = int(popup.move_dist.get())
+    #     print(CA_params_array)
+        
+    #     self._multi_hopping(fname, CA_params_array, n_scans, dist)
+        
+    
+    # @threads.new_thread
+    # def _multi_CA_hopping(self, fname, n_scans, dist):
+    #     for i in range(n_scans):
+    #         this_fname = fname.replace('.secmdata', f'_{(i+1):03d}.secmdata')
+            
+    #         # Run hopping mode scan
+    #         success = self._run_hopping(this_fname)
+            
+    #         if not success:
+    #             self.log('Multi hopping aborted due to incomplete scan')
+    #             self.master.Piezo.goto_z(80) # Retract on failed scan
+    #             return
+            
+    #         # Move to next spot
+    #         n_steps = self.master.PicoMotor.move_y(-dist)
+    #         if not n_steps:
+    #             self.log('Failed to move y piezo')
+    #             return
+    #         time.sleep(2 + abs(n_steps)/1000)
+        
+    #     # Move far away after completing scans
+    #     self.log(f'Multi hopping mode complete. Moving additional {2*dist} um')
+    #     n_steps = self.master.PicoMotor.move_y(-2*dist)
+    #     if not n_steps:
+    #         return
+    #     time.sleep(0.5 + abs(n_steps)/1000)
+    #     return
     
     def run_hopping_image(self): 
         '''

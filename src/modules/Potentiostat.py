@@ -710,7 +710,7 @@ class HEKA(Potentiostat):
         # E0, E1, E2, E3, v, t0
         parameters = self.master.GUI.get_CV_params()
         if parameters == (0,0,0,0,0,0):
-            return False
+            return False #If there are already parameters, Doesn't actually stop the run, needs to fix.
         
         # Update Values in pgf
         values, duration = self._generate_CV_params(*parameters)
@@ -725,7 +725,7 @@ class HEKA(Potentiostat):
         return
     
     
-    def setup_CA(self):
+    def setup_CA(self, n_scans):
         '''
         Read CA settings from GUI
         Send commands to setup amplifier
@@ -735,9 +735,9 @@ class HEKA(Potentiostat):
         '''
         # Pull parameters from GUI
         # voltage, t
-        parameters = self.master.GUI.get_CA_params()
+        parameters = self.master.GUI.get_CA_params(n_scans)
         if parameters == (0,0):
-            return False
+            return False #If there are already parameters, Doesn't actually stop the run, needs to fix.
         
         # Update Values in pgf
         values, duration = self._generate_CA_params(*parameters)
@@ -830,7 +830,7 @@ class HEKA(Potentiostat):
         '''
         path: string, path to save to
         
-        Send command to run a CV using the current settings
+        Send command to run a CA using the current settings
         
         Returns: string, path to saved data file
         '''

@@ -36,7 +36,7 @@ gains = ['0.005 mV/pA','0.01 mV/pA', '0.02 mV/pA', '0.05 mV/pA',
          '200 mV/pA', '500 mV/pA', '1000 mV/pA', '2000 mV/pA']
 
 hopping_methods = ['CV', 'CV then EIS', 'CV then 5x EIS amps', 
-           'CV then 5x EIS wait', 'Custom']
+           'CV then 5x EIS wait', 'CA', 'hopping CA', 'Custom']
 
 
 def where(l, val):
@@ -249,10 +249,10 @@ class GUISetupMethods():
         Labels_in_column(frame, left_labels, 0, 0, (E))
         Labels_in_column(frame, right_labels, 2, 0, (W))
         
-        V = EntryStringVar(frame, 6, 0, 1, (W,E), tab=True, 
+        V = EntryStringVar(frame, 10, 0, 1, (W,E), tab=True, 
                                returnTab=True, default= '0')
-        t = EntryStringVar(frame, 6, 1, 1, (W,E), tab=True, 
-                               returnTab=True, default= '0.2')
+        t = EntryStringVar(frame, 10, 1, 1, (W,E), tab=True, 
+                               returnTab=True, default= '10')
         
         Button(frame, text='Run CA', command=self.run_CA).grid(
             row=2, column=1)
@@ -260,6 +260,14 @@ class GUISetupMethods():
             row=3, column=1)
         Button(frame, text='Run Custom', command=self.run_custom).grid(
             row=4, column=1)
+        
+        # CA_params_all = []
+        # for i in range(len(t)):
+        #     g = {'voltage': V[i], 't': t[i]}
+        #     CA_params_all.append(g)
+        
+        #self.params['CA'] = CA_params_all[0]
+        
         self.params['CA'] = {'voltage': V, 't': t}
         return
 
@@ -331,6 +339,8 @@ class GUISetupMethods():
             row=5, column=1, sticky=(W,E))
         Button(frame, text='Image pattern mode', command=self.run_hopping_image).grid(
             row=6, column=1, sticky=(W,E))
+        # Button(frame, text= 'Multi hopping multi CA scan', command=self.run_multi_CA_hopping).grid(
+        #     row=7, column=1, sticky=(W,E))
         
         self.params['hopping'] = {'size': length, 'Z': height, 'n_pts': n_pts, 
                                   'method': method}
