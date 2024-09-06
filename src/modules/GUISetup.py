@@ -244,8 +244,8 @@ class GUISetupMethods():
     
     
     def MakeCAFrame(self, frame):
-        left_labels = ['V', 'Time', '']
-        right_labels = ['V', 'S', '']
+        left_labels = ['E = ', 'Time = ', '']
+        right_labels = ['V', 's', '']
         Labels_in_column(frame, left_labels, 0, 0, (E))
         Labels_in_column(frame, right_labels, 2, 0, (W))
         
