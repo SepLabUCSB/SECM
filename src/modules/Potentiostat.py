@@ -259,6 +259,7 @@ class HEKA(Potentiostat):
         
         # Initialize local parameter storage
         self.CV_params          = None
+        self.CA_params          = None
         self.EIS_params         = None
         self.EIS_freqs          = None
         self.EIS_corrections    = None
@@ -297,11 +298,11 @@ class HEKA(Potentiostat):
         '''
         self._idle()
         self._send_multiple_cmds(['Set N Break 1',
-                                  'Set N Stop 1'])
-        self._idle()
-        self._send_multiple_cmds(['Set N Break 1',
-                                  'Set N Stop 1',
                                   'Set N Store 1'])
+        # self._idle()
+        # self._send_multiple_cmds(['Set N Break 1',
+                                  # 'Set N Stop 1',
+                                  # 'Set N Store 1'])
         self._idle()
         
         
@@ -313,7 +314,7 @@ class HEKA(Potentiostat):
         st = time.time()
         while time.time() - st < timeout:
             if self.master.ABORT:
-                self.abort()
+                self._abort()
                 return 'abort'
             self._send_command('Query')
             try:
@@ -581,6 +582,21 @@ class HEKA(Potentiostat):
         
         return values, n_cycles*1/min(f0, f1)
     
+    def _generate_CA_params(self, voltage, t):
+        '''
+        *** POTENTIALS IN V, ***
+        
+        Parameter assignments:
+            0: DC bias   (V) (p1)
+            1: scan time (s) (p2)
+        '''
+        
+        values = {
+            0: voltage,
+            1: t
+            }
+        
+        return values, t
     
     def _set_EIS_amplifier(self, E0, f0, f1, n_pts, n_cycles, amp,
                            gain=8):
@@ -717,7 +733,20 @@ class HEKA(Potentiostat):
         
         Returns: bool, whether or not setup was successful
         '''
-        self._error_msg('setup_CA')
+        # Pull parameters from GUI
+        # voltage, t
+        parameters = self.master.GUI.get_CA_params()
+        if parameters == (0,0):
+            return False
+        
+        # Update Values in pgf
+        values, duration = self._generate_CA_params(*parameters)
+        self._update_Values(values)
+        
+        # Store locally
+        self.CA_params = values
+        
+        self.log(f'Set CA parameters: {self.CA_params}', quiet=True)
         return
     
     
@@ -797,14 +826,42 @@ class HEKA(Potentiostat):
         return ''
     
     
-    def run_CA(self):
+    def run_CA(self, path:str=None):
         '''
-        Send command to run a CA using the current settings
+        path: string, path to save to
+        
+        Send command to run a CV using the current settings
         
         Returns: string, path to saved data file
         '''
-        self._error_msg('run_CA')
-        return
+        if not self.SoftwareRunning():
+            return ''
+        
+        if self.isRunning():
+            self.log('Error: received command to run CV but already running')
+            return ''
+        
+        self._running()
+        # voltage = self.CA_params[0]
+        duration = self.CA_params[1]
+        
+        sequence = '_CA'
+        timeout = duration + 3
+        
+        self.log(f'Running sequence {sequence}', quiet=True)
+        self._send_command(f'ExecuteSequence {sequence}')
+        self.start_ADC(timeout=timeout)
+        
+        success = self._await(timeout=timeout)
+        
+        self.stop_ADC()
+        
+        self._idle()
+        
+        if success == 'success':
+            return self._save_last_experiment(path)
+        
+        return ''
     
     
     def run_EIS(self, path:str=None):

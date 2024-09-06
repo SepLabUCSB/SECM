@@ -244,10 +244,23 @@ class GUISetupMethods():
     
     
     def MakeCAFrame(self, frame):
+        left_labels = ['V', 'Time', '']
+        right_labels = ['V', 'S', '']
+        Labels_in_column(frame, left_labels, 0, 0, (E))
+        Labels_in_column(frame, right_labels, 2, 0, (W))
+        
+        V = EntryStringVar(frame, 6, 0, 1, (W,E), tab=True, 
+                               returnTab=True, default= '0')
+        t = EntryStringVar(frame, 6, 1, 1, (W,E), tab=True, 
+                               returnTab=True, default= '0.2')
+        
+        Button(frame, text='Run CA', command=self.run_CA).grid(
+            row=2, column=1)
         Button(frame, text='Poll ADC', command=self.master.ADC.polling).grid(
-            row=0, column=0)
+            row=3, column=1)
         Button(frame, text='Run Custom', command=self.run_custom).grid(
-            row=1, column=0)
+            row=4, column=1)
+        self.params['CA'] = {'voltage': V, 't': t}
         return
 
 
