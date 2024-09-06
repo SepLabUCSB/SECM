@@ -115,6 +115,7 @@ class Piezo(Logger):
         if not self._piezo_on:
             return
         self.port.write(f'{msg}\r'.encode('utf-8'))
+        time.sleep(0.1)
         # r = self.port.read_all()
         # if r:
         #     self.log(r)
