@@ -227,7 +227,7 @@ class FeedbackController(Logger):
 
         self.Piezo.goto(80,80,height)
         
-        self.Potentiostat.run_OCP()
+        
         self.Potentiostat.hold_potential(voltage)
         
         while True:
@@ -271,6 +271,7 @@ class FeedbackController(Logger):
         Step probe closer to surface starting at point (x,y,z). 
         Stop when measured i > i_cutoff
         '''
+        self.Potentiostat.run_OCP()
         
         # Get cutoff current from GUI
         voltage = self.master.GUI.params['approach']['voltage'].get()
@@ -354,6 +355,7 @@ class FeedbackController(Logger):
         self.ADC.STOP_POLLING()  
         self.Piezo.start_monitoring()
         self._piezo_counter = self.Piezo.counter
+        self.Potentiostat._abort()
         return self.Piezo.z, on_surface
     
     

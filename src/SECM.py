@@ -828,7 +828,8 @@ class GUI(Logger, GUISetupMethods):
         #     time = []
         #     v = []
         #     return 0,0
-            
+        print(n_scans)
+        print(array)
         par = array[n_scans]
         voltage = float(par[0])
         t = float(par[1])
@@ -925,6 +926,7 @@ class GUI(Logger, GUISetupMethods):
     
     @threads.new_thread
     def _run_hopping(self, fname, n_scans, img=None):
+        print('0')
         success = self.master.FeedbackController.hopping_mode(self.params['hopping'], n_scans, img)
         print(success, "1")
         settings = self.save_settings(ask_prompt = False)
@@ -932,6 +934,7 @@ class GUI(Logger, GUISetupMethods):
         self.master.expt.save(fname)
         return success
         
+   
     
     def run_multi_hopping(self):
         if self.master.Piezo.isMoving():
@@ -962,21 +965,29 @@ class GUI(Logger, GUISetupMethods):
             this_fname = fname.replace('.secmdata', f'_{(i+1):03d}.secmdata')
             
             # Run hopping mode scan
-            success = self._run_hopping(this_fname, i)
+            # success = self._run_hopping(fname, i)
+            success = self.master.FeedbackController.hopping_mode(self.params['hopping'], i, None)
+            print(success, "1")
+            settings = self.save_settings(ask_prompt = False)
+            self.master.expt.save_settings(settings)
+            self.master.expt.save(fname)
             print(success, "2")
-            
-            if not success:
+            # while success == None:
+            #     print("waiting for ur ass")
+            #     time.sleep(1)
+                
+            if success is False:
                 self.log('Multi hopping aborted due to incomplete scan')
                 self.master.Piezo.goto_z(80) # Retract on failed scan
                 return
-            
+            print('3')
             # Move to next spot
             n_steps = self.master.PicoMotor.move_y(-dist)
             if not n_steps:
                 self.log('Failed to move y piezo')
                 return
             time.sleep(2 + abs(n_steps)/1000)
-        
+            print ("4")
         # Move far away after completing scans
         self.log(f'Multi hopping mode complete. Moving additional {2*dist} um')
         n_steps = self.master.PicoMotor.move_y(-2*dist)
