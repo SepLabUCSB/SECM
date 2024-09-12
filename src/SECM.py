@@ -1101,23 +1101,23 @@ class GUI(Logger, GUISetupMethods):
     
     
     def z_piezo_go(self):
-        steps = self._z_piezosteps.get()
+        dist = self._z_piezosteps.get()
         try:
-            steps = int(steps)
+            dist = int(dist)
         except:
-            print(f'Invalid input:"{steps}"')
+            print(f'Invalid input:"{dist}"')
             return
-        self.master.PicoMotor.step(steps)
+        self.master.PicoMotor.move_z(dist)
         return
     
     def y_piezo_go(self):
-        steps = self._y_piezosteps.get()
+        dist = self._y_piezosteps.get()
         try:
-            steps = int(steps)
+            steps = int(dist)
         except:
-            print(f'Invalid input:"{steps}"')
+            print(f'Invalid input:"{dist}"')
             return
-        self.master.PicoMotor.step_y(steps)
+        self.master.PicoMotor.move_y(dist)
         return
     
     

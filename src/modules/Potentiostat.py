@@ -282,7 +282,7 @@ class HEKA(Potentiostat):
         with open(self.file, 'w') as f:
             f.write(f'+{self.num}\n{cmd}\n')
         self.num += 1
-        time.sleep(0.1)
+        time.sleep(0.2)
     
     def _send_multiple_cmds(self, cmds:list):
         with open(self.file, 'w') as f:

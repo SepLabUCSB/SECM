@@ -393,15 +393,16 @@ class GUISetupMethods():
         self._z_piezosteps  = StringVar(value='0')
         self._y_piezosteps  = StringVar(value='0')
         
-        Label(frame, text='Z Steps:').grid(row=0, column=0, sticky=(W,E))
+        Label(frame, text='Z Dist:').grid(row=0, column=0, sticky=(W,E))
         Entry(frame, textvariable=self._z_piezosteps, width=8).grid(row=0, column=1, sticky=(W,E))
         Button(frame, text='Go Z', command=self.z_piezo_go).grid(row=0, column=2, sticky=(W,E))
         
-        Label(frame, text='Y Steps:').grid(row=1, column=0, sticky=(W,E))
+        Label(frame, text='Y Dist:').grid(row=1, column=0, sticky=(W,E))
         Entry(frame, textvariable=self._y_piezosteps, width=8).grid(row=1, column=1, sticky=(W,E))
         Button(frame, text='Go Y', command=self.y_piezo_go).grid(row=1, column=2, sticky=(W,E))
         
-        Label(frame, text='(1000 steps = ~30 μm)').grid(row=0, column=3, sticky=(W))
+        Label(frame, text='μm (positive is up, negative is down)').grid(row=0, column=3, sticky=(W))
+        Label(frame, text='μm').grid(row=1, column=3, sticky=(W))
         Button(frame, text='Stop', command=self.z_piezo_stop).grid(row=2, column=1, columnspan=2, sticky=(W,E))
         return
 
