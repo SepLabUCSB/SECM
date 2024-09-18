@@ -699,17 +699,17 @@ class GUI(Logger, GUISetupMethods):
     
     def get_CV_params(self):
         cv_params = self.params['CV'].copy()
-        strs = ['E0', 'E1', 'E2', 'Ef', 'v', 't0']
+        strs = ['E0', 'E1', 'E2', 'Ef', 'v', 't0', 'Nc']
         try:
-            E0, E1, E2, E3, v, t0 = map(float,
+            E0, E1, E2, E3, v, t0, Nc = map(float,
                                         [cv_params[x].get() for x in strs])
-            print(E0, E1, E2, E3, v, t0)
+            print(E0, E1, E2, E3, v, t0, Nc)
 
         except Exception as e:
             print('Error: invalid CV inputs')
             print(e)
-            return 0,0,0,0,0,0
-        return E0, E1, E2, E3, v, t0
+            return 0,0,0,0,0,0,0
+        return E0, E1, E2, E3, v, t0, Nc
     
     
     
@@ -732,21 +732,22 @@ class GUI(Logger, GUISetupMethods):
         return self._run_CV()
        
     
-    def _run_CV(self):
+    def _run_CV(self, path:str=None):
         if self.master.Piezo.isMoving():
             self.log('Error: cannot run CV while piezo is moving')
             return
         self.master.Potentiostat.set_amplifier()
-        self.master.Potentiostat.setup_CV()
-        path = self.master.Potentiostat.run_CV()
-        if not path: return
-        
-        DataPoint = make_datapoint_from_file(path, 'CVDataPoint')
-        if DataPoint:
-            self.master.ADC.force_data(DataPoint)
-        
-        self.master.make_ready()
-        self.log('Finished running CV.')
+        Nc = self.master.Potentiostat.setup_CV()
+        for a in range(0, Nc):
+            path = self.master.Potentiostat.run_CV(path)
+            if not path: return
+            
+            DataPoint = make_datapoint_from_file(path, 'CVDataPoint')
+            if DataPoint:
+                self.master.ADC.force_data(DataPoint)
+            
+            self.master.make_ready()
+            self.log('Finished running CV.')
         return path
     
     

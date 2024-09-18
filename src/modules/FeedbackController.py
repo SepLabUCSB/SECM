@@ -760,7 +760,7 @@ class FeedbackController(Logger):
         if save_path.endswith('.secmdata'):
             save_path = save_path.replace('.secmdata', '')
         
-        path = self.Potentiostat.run_CV(path=f'{save_path}/{name}')
+        path = self._run_CV(path=f'{save_path}/{name}')
         t, v, i = read_heka_data(path)
         return t, v, i
     

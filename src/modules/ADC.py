@@ -280,6 +280,8 @@ class ADC(Logger):
         self.polling_off()
         self.log('Ending polling', quiet=True)
         
+        
+        
         return
     
     

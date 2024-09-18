@@ -529,7 +529,7 @@ class HEKA(Potentiostat):
         pass
     
     
-    def _generate_CV_params(self, E0, E1, E2, E3, scan_rate, quiet_time):
+    def _generate_CV_params(self, E0, E1, E2, E3, scan_rate, quiet_time, Nc):
         '''
         *** POTENTIALS IN V, SCAN_RATE IN V/s, QUIET_TIME IN s ***
         1. Hold at E0 for quiet_time
@@ -709,7 +709,9 @@ class HEKA(Potentiostat):
         # Pull parameters from GUI  
         # E0, E1, E2, E3, v, t0
         parameters = self.master.GUI.get_CV_params()
-        if parameters == (0,0,0,0,0,0):
+        Nc = int(parameters[6])
+        print(Nc)
+        if parameters == (0,0,0,0,0,0,0):
             return False #If there are already parameters, Doesn't actually stop the run, needs to fix.
         
         # Update Values in pgf
@@ -722,7 +724,7 @@ class HEKA(Potentiostat):
         self.CV_params['duration'] = duration
         
         self.log(f'Set CV parameters: {self.CV_params}', quiet=True)
-        return
+        return Nc
     
     
     def setup_CA(self, n_scans):
