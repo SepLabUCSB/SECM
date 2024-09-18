@@ -237,7 +237,14 @@ class PicoMotor(Logger):
             return
         
         self.command(f'1PR{n_steps}')
-        
+    
+    def move_z(self, dist):
+        n_steps = int(dist/0.03)
+        self.log(f'Moving {n_steps} steps on z piezo')
+        if 2 in self.connected_motors:
+            self.step(n_steps)
+            return n_steps
+        return False
         
     def halt(self):
         '''

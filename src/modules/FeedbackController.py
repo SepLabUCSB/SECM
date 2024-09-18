@@ -227,7 +227,7 @@ class FeedbackController(Logger):
 
         self.Piezo.goto(80,80,height)
         
-        self.Potentiostat.run_OCP()
+        
         self.Potentiostat.hold_potential(voltage)
         
         while True:
@@ -271,6 +271,7 @@ class FeedbackController(Logger):
         Step probe closer to surface starting at point (x,y,z). 
         Stop when measured i > i_cutoff
         '''
+        self.Potentiostat.run_OCP()
         
         # Get cutoff current from GUI
         voltage = self.master.GUI.params['approach']['voltage'].get()
@@ -354,10 +355,11 @@ class FeedbackController(Logger):
         self.ADC.STOP_POLLING()  
         self.Piezo.start_monitoring()
         self._piezo_counter = self.Piezo.counter
+        self.Potentiostat._abort()
         return self.Piezo.z, on_surface
     
     
-    def hopping_mode(self, params, point_array = None):
+    def hopping_mode(self, params, n_scans, point_array = None):
         '''
         Run a hopping mode scan.
         
@@ -379,7 +381,7 @@ class FeedbackController(Logger):
         
         
         # Setup potentiostat for experiment
-        if not self.potentiostat_setup(expt_type):
+        if not self.potentiostat_setup(expt_type, n_scans):
             self.log('Failed to set up potentiostat! Cannot run hopping mode')
             return False
                                 
@@ -485,7 +487,7 @@ class FeedbackController(Logger):
     #### POTENTIOSTAT CONTROLS ####
     ###############################
     
-    def potentiostat_setup(self, expt_type):
+    def potentiostat_setup(self, expt_type, n_scans):
         if self.master.TEST_MODE:
             return True
         
@@ -498,6 +500,17 @@ class FeedbackController(Logger):
             self.Potentiostat.setup_EIS()
             return True
         
+        if expt_type == 'CA':
+            self.Potentiostat.set_amplifier()
+            self.Potentiostat.setup_CA(0)
+            return True
+        
+        if expt_type == 'hopping CA':
+            self.Potentiostat.set_amplifier()
+            self.Potentiostat.setup_CA(n_scans)
+            return True
+            
+            
         if ('CV' in expt_type) and ('EIS' in expt_type):
             # We setup potentiostat settings twice at each point:
             # first for CV then for EIS. Done in run_echems()
@@ -558,7 +571,18 @@ class FeedbackController(Logger):
                 return 'failed'
             if type(t) == int:
                 return None
-            data = CVDataPoint(loc = loc, data = [t, voltage, current])   
+            data = CVDataPoint(loc = loc, data = [t, voltage, current])
+        
+        
+        if expt_type in ('CA', 'hopping CA'):
+            try:
+                t, voltage, current = self.run_CA(expt.path, i)
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
+                return 'failed'
+            if type(t) == int:
+                return None
+            data = CVDataPoint(loc = loc, data = [t, voltage, current])
         
             
         if expt_type == 'CV then EIS':
@@ -766,7 +790,19 @@ class FeedbackController(Logger):
         return t, v, i
     
 
-    
+    def run_CA(self, save_path, name):
+        '''
+        Send command to run CV with the current parameters and save the data
+        '''
+        if self.master.TEST_MODE:
+            return self.fake_CV(name)
+        
+        if save_path.endswith('.secmdata'):
+            save_path = save_path.replace('.secmdata', '')
+        
+        path = self.Potentiostat.run_CA(path=f'{save_path}/{name}')
+        t, v, i = read_heka_data(path)
+        return t, v, i
     
     
     
