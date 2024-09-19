@@ -245,25 +245,43 @@ class HEKA(Potentiostat):
     
     def __init__(self, master, input_file = input_file,
                  output_file = output_file):
+        
         # Register self to master as master.Potentiostat
         super().__init__(master)
+        if not self.master.TEST_MODE:
+            # Clear input file
+            print(self.master.TEST_MODE)
+            self.file = input_file
+            with open(self.file, 'w') as f:
+                f.close()
+            self.num = 0
+            
+            # Initialize Reader object
+            self.Reader = HekaReader(master, output_file)
+            
+           
+        else:
+            try:
+                # Clear input file
+                self.file = input_file
+                with open(self.file, 'w') as f:
+                    f.close()
+                self.num = 0
+                
+                # Initialize Reader object
+                self.Reader = HekaReader(master, output_file)
+                
+            except Exception as e:
+                self.log('HEKA not found')
+                self.log(e)
+                
         
-        # Clear input file
-        self.file = input_file
-        with open(self.file, 'w') as f:
-            f.close()
-        self.num = 0
-        
-        # Initialize Reader object
-        self.Reader = HekaReader(master, output_file)
-        
-        # Initialize local parameter storage
+         # Initialize local parameter storage
         self.CV_params          = None
         self.CA_params          = None
         self.EIS_params         = None
         self.EIS_freqs          = None
         self.EIS_corrections    = None
-    
     
     
     #####################################
@@ -655,7 +673,10 @@ class HEKA(Potentiostat):
         
         For HEKA, just stop the reader thread.
         '''
-        self.Reader.stop() 
+        try:
+            self.Reader.stop()
+        except:
+            self.log('HekaReader not Initialized')
     
     
     def SoftwareRunning(self):

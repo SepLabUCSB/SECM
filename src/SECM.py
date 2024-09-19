@@ -12,7 +12,7 @@ from functools import partial
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib
-# from .modules.HekaIO import HekaReader, HekaWriter
+from .modules.HekaIO import HekaReader, HekaWriter
 from .modules.Potentiostat import HEKA
 from .modules.ADC import ADC
 from .modules.Piezo import Piezo
