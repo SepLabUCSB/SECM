@@ -746,8 +746,8 @@ class GUI(Logger, GUISetupMethods):
             if DataPoint:
                 self.master.ADC.force_data(DataPoint)
             
-            self.master.make_ready()
-            self.log('Finished running CV.')
+        self.master.make_ready()
+        self.log('Finished running CV.')
         return path
     
     

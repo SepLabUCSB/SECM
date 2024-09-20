@@ -540,14 +540,18 @@ class FeedbackController(Logger):
         Return         
         '''
         if expt_type == 'CV':
-            try:
-                t, voltage, current = self.run_CV(expt.path, i)
-            except Exception as e:
-                self.log(traceback.format_exc(), quiet=True)
-                return 'failed'
-            if type(t) == int:
-                return None
-            data = CVDataPoint(loc = loc, data = [t, voltage, current])
+            points = []
+            Nc = self.master.Potentiostat.setup_CV()
+            for x in range(Nc):
+                try:
+                    t, voltage, current = self.run_CV(expt.path, i)
+                except Exception as e:
+                    self.log(traceback.format_exc(), quiet=True)
+                    return 'failed'
+                if type(t) == int:
+                    return None
+                points.append(CVDataPoint(loc = loc, data = [t, voltage, current]))
+            data = PointsList(loc=loc, data = points)
         
         
         if expt_type == 'EIS':
@@ -760,7 +764,7 @@ class FeedbackController(Logger):
         if save_path.endswith('.secmdata'):
             save_path = save_path.replace('.secmdata', '')
         
-        path = self._run_CV(path=f'{save_path}/{name}')
+        path = self.Potentiostat.run_CV(path=f'{save_path}/{name}')
         t, v, i = read_heka_data(path)
         return t, v, i
     
