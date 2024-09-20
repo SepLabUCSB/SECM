@@ -325,6 +325,10 @@ class GUI(Logger, GUISetupMethods):
         # Initialize plotter
         Plotter(self.master, self.HeatmapFig, self.EchemFig)
         
+        self.fig2selection.trace('w', self.fig_opt_changed)
+        self.fig2ptselection.trace('w', self.fig_opt_changed)
+        self.EIS_view_selection.trace('w', self.fig_opt_changed)
+        
         self.MakeStopButtonFrame(StopButtonFrame)
         self.MakePstatFrame(PstatFrame)
         self.MakeSECMFrame(SECMFrame)
@@ -411,7 +415,7 @@ class GUI(Logger, GUISetupMethods):
         
     
     def select_next_data(self, *args):
-        'Callback from pressing ` (tilde). Plot next echem data in the PointsList'
+        'Callback from pressing F1. Plot next echem data in the PointsList'
         menu_length = self.fig2ptoptmenu['menu'].index("end") + 1
         if menu_length == 1:
             return
@@ -636,7 +640,7 @@ class GUI(Logger, GUISetupMethods):
     ########## DISPLAY FIGURE CALLBACKS ###########
     
     # Selected new view for fig2
-    def fig_opt_changed(self, _):
+    def fig_opt_changed(self, *args):
         self.master.Plotter.EchemFig.set_datapoint(
             DataPoint = self.master.Plotter.EchemFig.DataPoint,
             forced=True
