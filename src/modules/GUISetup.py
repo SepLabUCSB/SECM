@@ -237,6 +237,8 @@ class GUISetupMethods():
         
         Button(frame, text='Run EIS', command=self.run_EIS).grid(row=6, column=1,
                                                                  sticky=(W,E))
+        Button(frame, text='Record Reference', command=self.run_EIS_corrections).grid(row=7, column=1,
+                                                                 sticky=(W,E))
         
         self.params['EIS'] = {'E0':DC, 'f0':f0, 'f1':f1, 
                               'n_pts':n_pts, 'n_cycles':n_cycles, 'amp':amp}
