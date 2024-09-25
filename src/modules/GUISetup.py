@@ -190,8 +190,8 @@ class GUISetupMethods():
         frame.grid(row=0, column=0)
         figframe.grid(row=0, column=1)
         
-        left_labels = ['E0 = ', 't0 = ', 'E1 = ', 'E2 = ', 'Ef = ', 'v = ']
-        right_labels = ['V', 's', 'V', 'V', 'V', 'V/s']
+        left_labels = ['E0 = ', 't0 = ', 'E1 = ', 'E2 = ', 'Ef = ', 'v = ', 'Nc = ']
+        right_labels = ['V', 's', 'V', 'V', 'V', 'V/s', 'cycles']
         Labels_in_column(frame, left_labels, 0, 0, (E))
         Labels_in_column(frame, right_labels, 2, 0, (W))
         
@@ -207,8 +207,10 @@ class GUISetupMethods():
                                returnTab=True, default= '0')
         v  = EntryStringVar(frame, 6, 5, 1, (W,E), tab=True, 
                                returnTab=True, default= '0.1')
+        Nc = EntryStringVar(frame, 6, 6, 1, (W,E), tab=True,
+                               returnTab = True, default= '1')
         
-        Button(frame, text='Run CV', command = self.run_CV).grid(row=6, column=1, sticky=(W,E))
+        Button(frame, text='Run CV', command = self.run_CV).grid(row=7, column=1, sticky=(W,E))
         
         fig = plt.Figure(figsize=(3,2), dpi=50)
         ax = fig.add_subplot(111)
@@ -217,7 +219,7 @@ class GUISetupMethods():
         make_CV_fig(ax)
         
         self.params['CV'] = {'E0': E0, 'E1': E1, 'E2': E2, 
-                             'Ef': Ef, 't0': t0, 'v':v}
+                             'Ef': Ef, 't0': t0, 'v':v, 'Nc': Nc}
         return
     
     
