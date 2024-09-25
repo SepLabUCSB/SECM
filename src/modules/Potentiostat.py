@@ -245,25 +245,43 @@ class HEKA(Potentiostat):
     
     def __init__(self, master, input_file = input_file,
                  output_file = output_file):
+        
         # Register self to master as master.Potentiostat
         super().__init__(master)
+        if not self.master.TEST_MODE:
+            # Clear input file
+            print(self.master.TEST_MODE)
+            self.file = input_file
+            with open(self.file, 'w') as f:
+                f.close()
+            self.num = 0
+            
+            # Initialize Reader object
+            self.Reader = HekaReader(master, output_file)
+            
+           
+        else:
+            try:
+                # Clear input file
+                self.file = input_file
+                with open(self.file, 'w') as f:
+                    f.close()
+                self.num = 0
+                
+                # Initialize Reader object
+                self.Reader = HekaReader(master, output_file)
+                
+            except Exception as e:
+                self.log('HEKA not found')
+                self.log(e)
+                
         
-        # Clear input file
-        self.file = input_file
-        with open(self.file, 'w') as f:
-            f.close()
-        self.num = 0
-        
-        # Initialize Reader object
-        self.Reader = HekaReader(master, output_file)
-        
-        # Initialize local parameter storage
+         # Initialize local parameter storage
         self.CV_params          = None
         self.CA_params          = None
         self.EIS_params         = None
         self.EIS_freqs          = None
         self.EIS_corrections    = None
-    
     
     
     #####################################
@@ -465,7 +483,7 @@ class HEKA(Potentiostat):
                                            )
         if not connected:
             self.EIS_corrections = None
-            return
+            return False
         
         
         '''
@@ -520,9 +538,11 @@ class HEKA(Potentiostat):
         d[key] = self.EIS_corrections
         json.dump(d, open(file, 'w'))
         
-        messagebox.askokcancel('Waveform corrections',
+        end = messagebox.askokcancel('Waveform corrections',
                                message='Correction factors recorded.\nUnplug the model circuit and reconnect your experiment. \n Press OK when ready.')
-        
+        if not end:
+            return False
+        return True
             
     
     def _get_EIS_filters(self):
@@ -655,7 +675,10 @@ class HEKA(Potentiostat):
         
         For HEKA, just stop the reader thread.
         '''
-        self.Reader.stop() 
+        try:
+            self.Reader.stop()
+        except:
+            self.log('HekaReader not Initialized')
     
     
     def SoftwareRunning(self):
@@ -773,8 +796,10 @@ class HEKA(Potentiostat):
         
         if (asDict(*parameters) != self.EIS_params or force_waveform_rewrite):
             self._make_EIS_waveform(*parameters)
-            self._check_EIS_corrections(*parameters,
+            corrections = self._check_EIS_corrections(*parameters,
                                         forced=force_waveform_rewrite)
+            if not corrections:
+                return False
         
         self.EIS_params = asDict(*parameters)
         self.log('Set EIS parameters', 1)
