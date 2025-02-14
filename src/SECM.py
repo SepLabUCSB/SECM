@@ -619,7 +619,7 @@ class GUI(Logger, GUISetupMethods):
                 for i in range(n_pts):
                     _pt = pt[i]
                     pt_type = str(_pt)
-                    this_path = path.replace('.csv', f'_{pt_type}{i}.csv')
+                    this_path = path.replace('.csv', f'_{pt_type}{i:03}.csv')
                     if pt_type == 'EISDataPoint':
                         this_path = this_path.replace('.csv', '.txt')
                     _pt._save(this_path)

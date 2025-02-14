@@ -188,12 +188,12 @@ def write_tpl_file(vs, fname):
         
 if __name__ == '__main__':        
     
-    file_name = r'C:\Users\miguelorozco\Desktop\FT-EIS_1.tpl'
-    starting_frequency = 1         # Hz
+    file_name = r'C:\Users\miguelorozco\Desktop\FT-EIS_2.tpl'
+    starting_frequency = 10         # Hz
     ending_frequency = 1000       # Hz
     number_of_points = 18
     peak_to_peak_amplitude = 0.020 # Volts
-    number_of_cycles = 5
+    number_of_cycles = 1
     
     freqs, phases, mVpp = generate_waveform(starting_frequency,
                                             ending_frequency,
@@ -207,6 +207,7 @@ if __name__ == '__main__':
     print(f'Sample Interval: {sample_rate} Hz')
     print(f'TPL file saved as: {file_name}')
     print(f"Frequencies: {','.join([str(elem) for elem in freqs])}")
+    print(f'Total time for waveform: {(1/starting_frequency)*number_of_cycles} (s)')
     # Hz = 50000 #sampling rate
     # A = -0.514   #amplitude
     # A *= 2
