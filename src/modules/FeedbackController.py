@@ -381,7 +381,7 @@ class FeedbackController(Logger):
         
         
         # Setup potentiostat for experiment
-        if not self.potentiostat_setup(expt_type, n_scans):
+        if not self.potentiostat_setup(expt_type, 0):
             self.log('Failed to set up potentiostat! Cannot run hopping mode')
             return False
                                 
@@ -517,11 +517,11 @@ class FeedbackController(Logger):
             
             # Do EIS setup first to make waveform and check for pre-recorded
             # EIS correction factors
-            if not self.potentiostat_setup('EIS'):
+            if not self.potentiostat_setup('EIS', 0):
                 return False
             
             # Then do CV setup to set up for approach curve and 1st CV
-            return self.potentiostat_setup('CV')
+            return self.potentiostat_setup('CV', 0)
         
         
         self.log(f'Error: {expt_type=} not recognized in potentiostat_setup()')
@@ -591,7 +591,7 @@ class FeedbackController(Logger):
             
         if expt_type == 'CV then EIS':
             # Run CV
-            if not self.potentiostat_setup('CV'): 
+            if not self.potentiostat_setup('CV', 0): 
                 return None
             try:
                 t, voltage, current = self.run_CV(expt.path, i)
@@ -612,7 +612,7 @@ class FeedbackController(Logger):
             # Run EIS: Set DC bias
             self.log(f'Detected E0 = {E0:0.3f} V')
             self.master.GUI.params['EIS']['E0'].set(f'{E0*1000:0.1f}')
-            if not self.potentiostat_setup('EIS'): 
+            if not self.potentiostat_setup('EIS', 0): 
                 return None
             time.sleep(5)
             
@@ -624,7 +624,7 @@ class FeedbackController(Logger):
                 return CVdata
             if type(t) == int:
                 return None
-            self.potentiostat_setup('CV')
+            self.potentiostat_setup('CV', 0)
             time.sleep(0.2)
             self.Potentiostat.hold_potential(start_V)
             time.sleep(2)
@@ -636,7 +636,7 @@ class FeedbackController(Logger):
         
         if expt_type == 'CV then 5x EIS amps':
             # Run CV
-            if not self.potentiostat_setup('CV'): 
+            if not self.potentiostat_setup('CV', 0): 
                 return None
             try:
                 t, voltage, current = self.run_CV(expt.path, i)
@@ -662,7 +662,7 @@ class FeedbackController(Logger):
             for mVpp in [10, 20, 50, 100, 200]:
                 self.log(f'Running EIS with amplitude = {mVpp} mV')
                 self.master.GUI.params['EIS']['amp'].set(f'{mVpp}')
-                if not self.potentiostat_setup('EIS'):
+                if not self.potentiostat_setup('EIS', 0):
                     return None
                 time.sleep(5)
                 
@@ -679,7 +679,7 @@ class FeedbackController(Logger):
                                 corrections = self.Potentiostat.EIS_corrections)
                 EIS_POINTS.append(EISdata)
                 
-            self.potentiostat_setup('CV')
+            self.potentiostat_setup('CV', 0)
             time.sleep(0.2)
             self.Potentiostat.hold_potential(start_V)
             time.sleep(2)
@@ -689,7 +689,7 @@ class FeedbackController(Logger):
             
         if expt_type == 'CV then 5x EIS wait':
             # Run CV
-            if not self.potentiostat_setup('CV'): 
+            if not self.potentiostat_setup('CV', 0): 
                 return None
             try:
                 t, voltage, current = self.run_CV(expt.path, i)
@@ -710,7 +710,7 @@ class FeedbackController(Logger):
             
             self.log(f'Detected E0 = {E0:0.3f} V')
             self.master.GUI.params['EIS']['E0'].set(f'{E0*1000:0.1f}')
-            if not self.potentiostat_setup('EIS'):
+            if not self.potentiostat_setup('EIS', 0):
                 return None
             time.sleep(5)
             
@@ -732,10 +732,10 @@ class FeedbackController(Logger):
                                 applied_freqs = self.Potentiostat.EIS_freqs,
                                 corrections = self.Potentiostat.EIS_corrections)
                 EIS_POINTS.append(EISdata)
-                self.potentiostat_setup('EIS')
+                self.potentiostat_setup('EIS', 0)
                 time.sleep(10)
                 
-            self.potentiostat_setup('CV')
+            self.potentiostat_setup('CV', 0)
             time.sleep(0.2)
             self.Potentiostat.hold_potential(start_V)
             time.sleep(2)

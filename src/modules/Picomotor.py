@@ -279,6 +279,7 @@ class PicoMotor(Logger):
         Args:
             dist: int, distance in microns
         '''
+        dist = int(dist)
         if dist >= 0:
             n_steps = int(dist/0.03)
         elif dist < 0:
