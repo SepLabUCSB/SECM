@@ -35,7 +35,7 @@ gains = ['0.005 mV/pA','0.01 mV/pA', '0.02 mV/pA', '0.05 mV/pA',
          '20 mV/pA', '--', '50 mV/pA', '100 mV/pA',
          '200 mV/pA', '500 mV/pA', '1000 mV/pA', '2000 mV/pA']
 
-hopping_methods = ['CV', 'CV then EIS', 'CV then 5x EIS amps', 
+hopping_methods = ['CV', 'CV then CA', 'CV then EIS', 'CV then 5x EIS amps', 
            'CV then 5x EIS wait', 'CA', 'hopping CA', 'Custom']
 
 

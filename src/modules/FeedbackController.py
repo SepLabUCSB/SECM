@@ -588,6 +588,42 @@ class FeedbackController(Logger):
                 return None
             data = CVDataPoint(loc = loc, data = [t, voltage, current])
         
+        
+        if expt_type == 'CV then CA':
+            # Run CV
+            if not self.potentiostat_setup('CV', 0): 
+                return None
+            try:
+                t, voltage, current = self.run_CV(expt.path, i)
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
+                return 'failed'
+            if type(t) == int:
+                return None
+            CVdata = CVDataPoint(loc=loc, data=[t,voltage,current])
+            
+            # Check for peak detection
+            CVdata = E0_finder_analysis(CVdata, '')
+            start_V = voltage[0]
+            E0 = CVdata.analysis[(E0_finder_analysis, '')]
+            if E0 == 0:
+                return CVdata
+            
+            print('CV done')
+            
+            # Run CA
+            try:
+                t, voltage, current = self.run_CA(expt.path, i)
+            except Exception as e:
+                self.log(traceback.format_exc(), quiet=True)
+                return 'failed'
+            if type(t) == int:
+                return None
+            CAdata = CVDataPoint(loc = loc, data = [t, voltage, current])
+            
+            print('CA done')
+            
+            data = PointsList(loc=loc, data = [CVdata, CAdata])
             
         if expt_type == 'CV then EIS':
             # Run CV

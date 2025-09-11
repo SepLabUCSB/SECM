@@ -200,7 +200,7 @@ class PrintLogger():
     set sys.stdout = PrintLogger, then print() will print to
     PrintLogger.textbox
     '''
-    def __init__(self, textbox): 
+    def __init__(self, textbox): # pass reference to text widget
         self.textbox = textbox # tk.Text object
         self.textbox.tag_config("red", foreground="red")
         self.textbox.tag_config('black', foreground='black')
