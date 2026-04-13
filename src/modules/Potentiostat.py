@@ -442,7 +442,7 @@ class HEKA(Potentiostat):
         return 
     
     
-    def _check_EIS_corrections(self, E0, f0, f1, n_pts, n_cycles, amp,
+    def _check_EIS_corrections(self, E0, f0, f1, n_pts, n_cycles, amp, gain,
                                forced=False):
         '''
         Checks if the current waveform is in the stored corrections file.
@@ -503,8 +503,8 @@ class HEKA(Potentiostat):
             ])
                
         # Do the measurement - set up the right parameters first
-        self.EIS_params = asDict(E0, f0, f1, n_pts, n_cycles, amp)
-        self._set_EIS_amplifier(0, f0, f1, n_pts, n_cycles, amp, gain=8)
+        self.EIS_params = asDict(E0, f0, f1, n_pts, n_cycles, amp, gain)
+        self._set_EIS_amplifier(0, f0, f1, n_pts, n_cycles, amp, gain)
         time.sleep(2)
         path = self.run_EIS(path='src/temp/EIS.mat')
         
@@ -784,7 +784,7 @@ class HEKA(Potentiostat):
         Returns: None
         '''
         # Pull parameters from GUI
-        # E0, f0, f1, n_pts, n_cycles, amp
+        # E0, f0, f1, n_pts, n_cycles, amp, gain
         parameters = self.master.GUI.get_EIS_params()
         if parameters == (0,0,0,0,0,0,0):
             return False
@@ -1086,8 +1086,9 @@ class BioLogic(Potentiostat):
         return
 
 
-def asDict(E0, f0, f1, n_pts, n_cycles, amp):
+def asDict(E0, f0, f1, n_pts, n_cycles, amp, gain):
     # Helper function for HEKA EIS parameters
     return {'E0': E0, 'f0': f0, 'f1': f1, 'n_pts': n_pts, 
-            'n_cycles': n_cycles, 'amp': amp, 'duration':n_cycles*1/min(f0, f1)}
+            'n_cycles': n_cycles, 'amp': amp, 'gain': gain,
+            'duration':n_cycles*1/min(f0, f1)}
         
