@@ -757,15 +757,15 @@ class GUI(Logger, GUISetupMethods):
     
     def get_EIS_params(self):
         eis_params = self.params['EIS'].copy()
-        strs = ['E0', 'f0', 'f1', 'n_pts', 'n_cycles', 'amp']
+        strs = ['E0', 'f0', 'f1', 'n_pts', 'n_cycles', 'amp', 'gain']
         try:
             vals = map(float, [eis_params[x].get() for x in strs])
-            E0, f0, f1, n_pts, n_cycles, amp = vals
-            n_pts, n_cycles = int(n_pts), int(n_cycles)
+            E0, f0, f1, n_pts, n_cycles, amp, gain = vals
+            n_pts, n_cycles, gain = int(n_pts), int(n_cycles), int(gain)
         except:
             print('Error: invalid EIS inputs')
-            return 0,0,0,0,0,0
-        return E0, f0, f1, n_pts, n_cycles, amp
+            return 0,0,0,0,0,0,0
+        return E0, f0, f1, n_pts, n_cycles, amp, gain
     
     
     @threads.new_thread

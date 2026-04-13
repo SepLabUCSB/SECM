@@ -225,7 +225,7 @@ class GUISetupMethods():
     
     def MakeEISFrame(self, frame):
         
-        left_labels = ['DC bias:', 'Scan from...', 'To...', 'Collect:', 'Cycles:', 'Amplitude:', '']
+        left_labels = ['DC bias:', 'Scan from...', 'To...', 'Collect:', 'Cycles:', 'Amplitude:', 'Gain:']
         right_labels = ['mV', 'Hz', 'Hz', 'points', '', 'mVpp', '']
         Labels_in_column(frame, left_labels, 0, 0, (E))
         Labels_in_column(frame, right_labels, 2, 0, (W))
@@ -236,14 +236,16 @@ class GUISetupMethods():
         n_pts = EntryStringVar(frame, 6, 3, 1, (W,E), default=18, tab=True, returnTab=True)
         n_cycles = EntryStringVar(frame, 6, 4, 1, (W,E), default=1, tab=True, returnTab=True)
         amp = EntryStringVar(frame, 6, 5, 1, (W,E), default=20, tab=True, returnTab=True)
+        gain = OptionMenuStringVar(frame, gains, 6, 1, (W,E), idx=8)
         
-        Button(frame, text='Run EIS', command=self.run_EIS).grid(row=6, column=1,
+        Button(frame, text='Run EIS', command=self.run_EIS).grid(row=7, column=1,
                                                                  sticky=(W,E))
-        Button(frame, text='Record Reference', command=self.run_EIS_corrections).grid(row=7, column=1,
+        Button(frame, text='Record Reference', command=self.run_EIS_corrections).grid(row=8, column=1,
                                                                  sticky=(W,E))
         
         self.params['EIS'] = {'E0':DC, 'f0':f0, 'f1':f1, 
-                              'n_pts':n_pts, 'n_cycles':n_cycles, 'amp':amp}
+                              'n_pts':n_pts, 'n_cycles':n_cycles, 'amp':amp,
+                              'gain': gain}
         return
     
     

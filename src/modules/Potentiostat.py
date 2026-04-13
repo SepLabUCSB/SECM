@@ -433,7 +433,7 @@ class HEKA(Potentiostat):
         return
     
     
-    def _make_EIS_waveform(self, E0, f0, f1, n_pts, n_cycles, amp):
+    def _make_EIS_waveform(self, E0, f0, f1, n_pts, n_cycles, amp, gain):
         sample_rate = get_EIS_sample_rate(max(f0, f1))
         file = f'D:/SECM/_auto_eis-{sample_rate//1000}kHz_1.tpl'
         self.EIS_freqs = generate_tpl(f0, f1, n_pts, n_cycles, 
@@ -586,7 +586,7 @@ class HEKA(Potentiostat):
         return values, duration
         
     
-    def _generate_EIS_params(self, E0, f0, f1, n_pts, n_cycles, amp):
+    def _generate_EIS_params(self, E0, f0, f1, n_pts, n_cycles, amp, gain):
         '''
         *** POTENTIALS IN V, ***
         
@@ -618,8 +618,7 @@ class HEKA(Potentiostat):
         
         return values, t
     
-    def _set_EIS_amplifier(self, E0, f0, f1, n_pts, n_cycles, amp,
-                           gain=8):
+    def _set_EIS_amplifier(self, E0, f0, f1, n_pts, n_cycles, amp, gain):
         '''
         Determine best filters to use for FFT-EIS
         
@@ -787,7 +786,7 @@ class HEKA(Potentiostat):
         # Pull parameters from GUI
         # E0, f0, f1, n_pts, n_cycles, amp
         parameters = self.master.GUI.get_EIS_params()
-        if parameters == (0,0,0,0,0,0):
+        if parameters == (0,0,0,0,0,0,0):
             return False
         
         values, duration = self._generate_EIS_params(*parameters)
