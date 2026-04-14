@@ -21,7 +21,7 @@ from .modules.Plotter import Plotter, ExporterGenerator
 from .modules.DataStorage import Experiment, EISDataPoint, load_from_file
 from .modules.Picomotor import PicoMotor
 from .modules.ImageCorrelator import ImageCorrelator
-from .modules.GUISetup import GUISetupMethods, convert_to_index
+from .modules.GUISetup import GUISetupMethods, convert_to_index, get_EIS_gain
 from .utils.utils import run, Logger, threads
 from .gui.hopping_popup import HoppingPopup
 # from .gui.hoppingcapopup import HoppingCAPopup
@@ -757,11 +757,12 @@ class GUI(Logger, GUISetupMethods):
     
     def get_EIS_params(self):
         eis_params = self.params['EIS'].copy()
-        strs = ['E0', 'f0', 'f1', 'n_pts', 'n_cycles', 'amp', 'gain']
+        strs = ['E0', 'f0', 'f1', 'n_pts', 'n_cycles', 'amp']
         try:
             vals = map(float, [eis_params[x].get() for x in strs])
-            E0, f0, f1, n_pts, n_cycles, amp, gain = vals
-            n_pts, n_cycles, gain = int(n_pts), int(n_cycles), int(gain)
+            E0, f0, f1, n_pts, n_cycles, amp = vals
+            n_pts, n_cycles = int(n_pts), int(n_cycles)
+            gain = get_EIS_gain(eis_params)
         except:
             print('Error: invalid EIS inputs')
             return 0,0,0,0,0,0,0

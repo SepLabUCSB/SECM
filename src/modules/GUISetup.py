@@ -62,6 +62,11 @@ def convert_to_index(amp_params):
     return params    
 
 
+def get_EIS_gain(EIS_params):
+    val = where(gains, EIS_params['gain'].get())
+    return val
+
+
 def focus_next_widget(event):
     widget = event.widget.tk_focusNext()
     widget.focus()
